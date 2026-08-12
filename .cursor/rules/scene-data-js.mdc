@@ -6,9 +6,11 @@ alwaysApply: false
 
 # 分幕实现约定
 
-- 一幕一个模块（如 `scene0-opening.js` …），禁止把 0–5 幕揉进单文件大杂烩。
-- 数据只从 `data/1-<scene>-*.json` 读取；对象 ID 不要在组件里硬编码第二份。
+- 一幕一个目录：`frontend/src/scenes/scene{N}-*/`（`index.js` + Vue），禁止揉进单文件大杂烩。
+- 独立调试：`?scene=0..5`（别名 `plan`/`effect`/`skill`），见 `frontend/README.md`。
+- 数据只通过 `services/loadSceneData.js` 读 `@data/1-*.json`；不要硬编码第二份业务 ID。
+- 幕间禁止强依赖上一幕运行时状态；分工开发 3/4/5 时可直接打开对应 `?scene=`。
 - 讲解对齐用 `actions[]`（`when` + `do` + `bind`）；先做动作，语音后配。
-- 图层/配色复用 baseline 风格（青/夜景科技风），不要引入 agent-loop 的另一套主题色。
+- 图层/配色用 `styles/theme.css`（baseline 青/夜景），不要引入 agent-loop 紫系主题。
 - 缺失字段走 JSON 内 `db_supported` / `gaps`，UI 可降级但要可追踪。
 ---

@@ -15,3 +15,14 @@
 3. 经十东西进口饱和度不可用时，用进口 link **速度 + 拥堵延时指数** 降级。
 
 详见 `docs/data-sniff-report.md`、`data/1-sniff-report.json` → `decisions`。
+
+## 前端独立调试（已落地骨架）
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+- `?scene=0..5`，别名：`plan` / `effect` / `skill`
+- 默认 `?scene=3`，便于 3/4/5 分工
+- 模块：`frontend/src/scenes/scene{N}-*/`
+- 说明：`frontend/README.md`

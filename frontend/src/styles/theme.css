@@ -1,0 +1,33 @@
+:root {
+  --bg: #040c1e;
+  --bg-panel: rgba(0, 10, 18, 0.86);
+  --cyan: #00e5ff;
+  --cyan-dim: rgba(0, 229, 255, 0.72);
+  --cyan-border: rgba(0, 229, 255, 0.28);
+  --cyan-border-strong: rgba(0, 229, 255, 0.55);
+  --text: rgba(220, 245, 255, 0.92);
+  --text-muted: rgba(160, 200, 220, 0.7);
+  --danger: #ff4444;
+  --warn: #ffcc00;
+  --ok: #33cc88;
+  --font-mono: 'Courier New', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+button {
+  font-family: inherit;
+}
