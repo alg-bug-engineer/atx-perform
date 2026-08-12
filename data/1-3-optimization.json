@@ -2,7 +2,14 @@
   "meta": {
     "scene_index": 3,
     "name": "优化方案",
-    "strategy": "相位协调（轻微截流不致上游溢出）"
+    "strategy": "相位协调（轻微截流不致上游溢出）",
+    "implementation_ref": {
+      "project": "references/agent-loop-project",
+      "branch": "main",
+      "note": "逻辑对齐agent-loop main 方案生成幕；UI/配色对齐 references/baseline / 本项目",
+      "assets": "assets/"
+    },
+    "ui_theme": "baseline_atx_perform"
   },
   "layout": "split_before_after",
   "baseline_signal_plans": {

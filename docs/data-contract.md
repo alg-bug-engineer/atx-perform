@@ -11,7 +11,7 @@
 | `1-0-opening.json` | 0 | 扫描 / 标红 / 拉近镜头动作 |
 | `1-1-channelization.json` | 1 | 双路口渠化臂与几何 |
 | `1-1-problem-locate.json` | 1 | 指标卡、路况着色、讲解动作绑定 |
-| `1-2-cause-analysis.json` | 2 | 上游溯源、供需、下游约束 |
+| `1-2-cause-analysis.json` | 2 | 上/下游溯源份额、直行需求、供需、东西进口降级指标 |
 | `1-3-optimization.json` | 3 | 现状相位 + 优化占位 + 对比脚本 |
 | `1-4-effect-eval.json` | 4 | 效果评估结构（待回填） |
 | `1-5-skill-solidify.json` | 5 | 技能固化结构（待回填） |
@@ -38,6 +38,17 @@
 - `derived_state_from_speed`：按速度派生（推荐渲染）
   - ≥35 → 1；≥20 → 2；≥10 → 3；\<10 → 4
 
+## 流量溯源与需求口径
+
+- 指标：仅 `flow_share_ratio`（占比份额）。
+- 方向：`upstream_traces`（UPSTREAM）与 `downstream_traces`（DOWNSTREAM），转向 `left|through|right`，`chain_hop≤3`。
+- 路口需求：`demand_flow_veh_h = turn_flow_veh_h.through`（直行）。
+- 经十东西进口：优先 `jingshi_ew_fallback_metrics` 的速度 + 拥堵延时指数。
+
+## 幕 3–5 实现参考
+
+见 `docs/implementation-refs.md`（agent-loop main → 本项目配色）。
+
 ## 缺口
 
-以 `1-sniff-report.json` / `docs/data-sniff-report.md` 为准；字段级 `db_supported=false` 表示数据库不足以支撑该叙事点。
+以 `1-sniff-report.json` / `docs/data-sniff-report.md` 为准；已接受/已降级的缺口带 `status` 字段。
