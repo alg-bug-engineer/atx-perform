@@ -17,7 +17,8 @@
       "day_of_week_label": "周一",
       "step_start": 210,
       "step_end": 221
-    }
+    },
+    "updated_at": "2026-08-12T14:37:43"
   },
   "resolved": {
     "downstream_inter_id": "011wwe28ctu00001",
@@ -34,7 +35,11 @@
     "baseline_plans": {
       "jingshi_plan_no": 13,
       "jiefang_plan_no": 23
-    }
+    },
+    "downstream_trace_rows": 23,
+    "demand_policy": "through_flow_as_intersection_demand",
+    "trace_metric": "flow_share_ratio",
+    "ew_fallback": "speed_and_delay_index"
   },
   "gaps": [
     {
@@ -50,8 +55,9 @@
       "scene": 1,
       "field": "经十路西进口/东西向西向东饱和度",
       "severity": "dws_turn_saturation_5min_mm 西进口(dir8=6)晚高峰饱和度全为 0；西进口转向流量亦全为 0",
-      "workaround": "东西向饱和度讲解暂用东进口直行饱和度，或路口 evaluation.saturation_max",
-      "db_supported": false
+      "workaround": "经十东西进口改展示 avg_speed_kmh + delay_index（见 1-1 / 1-2 ew_fallback）",
+      "db_supported": false,
+      "status": "mitigated_by_speed_delay"
     },
     {
       "id": "GAP-JIEFANG-SAT",
@@ -74,8 +80,9 @@
       "scene": 2,
       "field": "北进口左转/右转流量",
       "severity": "晚高峰 dws_inter_link_turn_flow_5min_mm 北进口左转、右转 turn_flow_total=0，仅直行有值",
-      "workaround": "溯源可视化仍展示三转向分支；需求流量以直行流量为主，并在 JSON 标记缺失",
-      "db_supported": false
+      "workaround": "路口需求=北进口直行流量；左/右绝对流量仍为0，溯源动画仍按份额展示三转向",
+      "db_supported": false,
+      "status": "accepted_through_as_demand"
     },
     {
       "id": "GAP-RIGHT-LANE-CAP",
@@ -90,32 +97,36 @@
       "scene": 2,
       "field": "上游溯源绝对流量(辆/h)",
       "severity": "ads_ts_inter_turn_flow_correlate_d 仅提供 flow_share_ratio(%) 与 hop，不含绝对流量；无法直接得到各上游路口辆/h",
-      "workaround": "上游来车流量展示用北进口转向流量合计；溯源动画用 share_ratio 分配视觉权重；需求= max(转向流量和, 可视化权重折算值)",
-      "db_supported": false
+      "workaround": "已确认：可视化与讲解使用 flow_share_ratio；不要求绝对辆/h",
+      "db_supported": false,
+      "status": "accepted_share_only"
     },
     {
       "id": "GAP-OPT-PLAN",
       "scene": 3,
       "field": "优化后相位方案 / 对比仿真曲线",
       "severity": "库内仅有现状 day_plan / plan_cfg / stage_timing，无本剧本‘相位协调优化后’方案及排队时序曲线",
-      "workaround": "幕3左右对比动画与排队曲线需产品/仿真生成后写入 JSON；现状方案已落盘作左侧基线",
-      "db_supported": false
+      "workaround": "采用 references/agent-loop-project（main）方案生成幕代码逻辑，配色对齐 baseline/atx-perform",
+      "db_supported": false,
+      "status": "implement_from_agent_loop"
     },
     {
       "id": "GAP-EFFECT-SERIES",
       "scene": 4,
       "field": "效果评估前后对比时序",
       "severity": "库内无本剧本优化前后对照实验序列；仅有周均/历史 mm 指标",
-      "workaround": "结构与样式对齐 agent-loop-project + assets/效果评估.png；数值待方案确定后回填",
-      "db_supported": false
+      "workaround": "采用 agent-loop main 效果评估幕代码逻辑与时序结构",
+      "db_supported": false,
+      "status": "implement_from_agent_loop"
     },
     {
       "id": "GAP-SKILL-CONTENT",
       "scene": 5,
       "field": "技能固化内容",
       "severity": "非数据库字段，来自 agent-loop-project 技能沉淀流程",
-      "workaround": "幕5从 references/agent-loop-project 迁 UI/逻辑，内容 JSON 后续编写",
-      "db_supported": false
+      "workaround": "采用 agent-loop 技能固化/沉淀代码逻辑，配色对齐本项目",
+      "db_supported": false,
+      "status": "implement_from_agent_loop"
     }
   ],
   "files": [
@@ -128,5 +139,31 @@
     "1-4-effect-eval.json",
     "1-5-skill-solidify.json",
     "1-sniff-report.json"
+  ],
+  "decisions": [
+    {
+      "id": "DEC-TRACE-SHARE",
+      "decision": "流量溯源仅使用 flow_share_ratio 占比份额"
+    },
+    {
+      "id": "DEC-DEMAND-THROUGH",
+      "decision": "路口需求先取北进口直行流量"
+    },
+    {
+      "id": "DEC-EW-FALLBACK",
+      "decision": "经十东西进口用速度+拥堵延时指数降级代替饱和度"
+    },
+    {
+      "id": "DEC-OPT-FROM-AGENT-LOOP",
+      "decision": "优化方案可视化对齐 agent-loop main 方案生成幕逻辑，仅改配色UI"
+    },
+    {
+      "id": "DEC-EFFECT-FROM-AGENT-LOOP",
+      "decision": "效果时序对齐 agent-loop main 效果评估逻辑"
+    },
+    {
+      "id": "DEC-SKILL-FROM-AGENT-LOOP",
+      "decision": "技能固化对齐 agent-loop 技能沉淀逻辑"
+    }
   ]
 }

@@ -25,10 +25,14 @@ alwaysApply: true
 - 问题路段：`12wwe28fmwwe28ct01`（奥体西 N→S，解放东→经十）。
 - 下游路口：`011wwe28ctu00001`；上游路口：`011wwe28fmc00001`。
 - 排队长度展示固定 **270 m**（专家值）。
+- 流量溯源只用 `flow_share_ratio`；路口需求先用北进口直行流量。
+- 经十东西进口：速度 + 拥堵延时指数降级（不用缺失的西向饱和度）。
+- 幕 3/4/5：逻辑对齐 `references/agent-loop-project` main（方案生成 / 效果评估 / 技能固化），配色对齐 baseline。
 - 开发阶段只做地图/面板动作，不接 TTS；预留与播报对齐的 action timeline。
 
 ## 数据缺口
 
 - 凡 `db_supported=false` 或 `docs/data-sniff-report.md` 中的 GAP-*，实现时必须保留占位/降级，不得假装库内已有。
 - 路况颜色优先用速度派生 state，不盲目信 `max_state`。
+- 实现映射见 `docs/implementation-refs.md`。
 ---

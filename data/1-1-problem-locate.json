@@ -69,7 +69,66 @@
     "db_supported_partial": true,
     "gaps": [
       "GAP-WEST-SAT"
-    ]
+    ],
+    "fallback_policy": "东西进口饱和度/西向流量不可用时，改用进口 link 速度 + 拥堵延时指数",
+    "fallback_metrics": {
+      "west_entrance_W2E": {
+        "link_id": "12wwe289qwwe28ct01",
+        "road_name": "经十路:转山西路-欣顺路, 经十路:欣顺路-奥体西路(西向东)",
+        "length_m": 877.68,
+        "avg_speed_kmh": 26.208333333333332,
+        "congestion_delay_index": 3.4146912803300467,
+        "metric_source": "xianchang.dws_link_index_5min_mm",
+        "replaces": "turn_saturation / turn_flow (west sat/flow unavailable)"
+      },
+      "east_entrance_E2W": {
+        "link_id": "12wwe291ewwe28ct01",
+        "road_name": "经十路:奥体东路-无名道路, 经十路:无名道路-奥体西路(东向西)",
+        "length_m": 714.45,
+        "avg_speed_kmh": 14.513888888888891,
+        "congestion_delay_index": 5.810325264750378,
+        "metric_source": "xianchang.dws_link_index_5min_mm",
+        "replaces": "turn_saturation / turn_flow (west sat/flow unavailable)"
+      },
+      "west_exit_E2W": {
+        "link_id": "12wwe28ctwwe289q01",
+        "road_name": "经十路:奥体西路-转山西路(东向西)",
+        "length_m": 883.94,
+        "avg_speed_kmh": 11.277777777777779,
+        "congestion_delay_index": 3.3606839432341356,
+        "metric_source": "xianchang.dws_link_index_5min_mm",
+        "replaces": "turn_saturation / turn_flow (west sat/flow unavailable)"
+      },
+      "east_exit_W2E": {
+        "link_id": "12wwe28ctwwe291e01",
+        "road_name": "经十路:奥体西路-柳北路, 经十路:柳北路-无名道路(西向东)",
+        "length_m": 714.34,
+        "avg_speed_kmh": 9.118055555555555,
+        "congestion_delay_index": null,
+        "metric_source": "xianchang.dws_link_index_5min_mm",
+        "replaces": "turn_saturation / turn_flow (west sat/flow unavailable)"
+      }
+    },
+    "primary_display": {
+      "east_entrance": {
+        "link_id": "12wwe291ewwe28ct01",
+        "road_name": "经十路:奥体东路-无名道路, 经十路:无名道路-奥体西路(东向西)",
+        "length_m": 714.45,
+        "avg_speed_kmh": 14.513888888888891,
+        "congestion_delay_index": 5.810325264750378,
+        "metric_source": "xianchang.dws_link_index_5min_mm",
+        "replaces": "turn_saturation / turn_flow (west sat/flow unavailable)"
+      },
+      "west_entrance": {
+        "link_id": "12wwe289qwwe28ct01",
+        "road_name": "经十路:转山西路-欣顺路, 经十路:欣顺路-奥体西路(西向东)",
+        "length_m": 877.68,
+        "avg_speed_kmh": 26.208333333333332,
+        "congestion_delay_index": 3.4146912803300467,
+        "metric_source": "xianchang.dws_link_index_5min_mm",
+        "replaces": "turn_saturation / turn_flow (west sat/flow unavailable)"
+      }
+    }
   },
   "jiefang_east_metrics": {
     "inter_id": "011wwe28fmc00001",

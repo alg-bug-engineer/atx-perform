@@ -5,7 +5,14 @@
     "ui_ref": [
       "assets/效果评估.png",
       "references/agent-loop-project"
-    ]
+    ],
+    "implementation_ref": {
+      "project": "references/agent-loop-project",
+      "branch": "main",
+      "note": "逻辑对齐agent-loop main 效果评估幕；UI/配色对齐 references/baseline / 本项目",
+      "assets": "assets/"
+    },
+    "ui_theme": "baseline_atx_perform"
   },
   "metrics": [
     "queue_length_m",
