@@ -25,15 +25,10 @@ const ew = computed(() => locate.value?.jingshi_ew_metrics?.primary_display)
 <template>
   <SceneScaffold
     :title="SCENE_META.name"
-    subtitle="双路口渠化 + 问题路段指标；东西进口用速度/延时指数降级"
+    subtitle="双路口渠化与问题路段指标；东西进口以速度与延时指数辅助研判"
     :loading="loading"
     :error="error"
-    :data-files="SCENE_META.dataFiles"
   >
-    <template #stage>
-      <div class="stage-label">CHANNELIZATION + TRAFFIC COLOR · SCENE 1</div>
-    </template>
-
     <div v-if="metrics" class="cards">
       <div class="card">
         <span>速度</span>
@@ -49,14 +44,14 @@ const ew = computed(() => locate.value?.jingshi_ew_metrics?.primary_display)
       </div>
     </div>
 
-    <h3 v-if="ew">东西进口降级指标</h3>
+    <h3 v-if="ew">东西进口辅助指标</h3>
     <ul v-if="ew" class="list">
       <li>
-        东进口 E→W：{{ ew.east_entrance?.avg_speed_kmh?.toFixed?.(1) }} km/h ·
+        东进口：{{ ew.east_entrance?.avg_speed_kmh?.toFixed?.(1) }} km/h ·
         延时 {{ ew.east_entrance?.congestion_delay_index?.toFixed?.(2) }}
       </li>
       <li>
-        西进口 W→E：{{ ew.west_entrance?.avg_speed_kmh?.toFixed?.(1) }} km/h ·
+        西进口：{{ ew.west_entrance?.avg_speed_kmh?.toFixed?.(1) }} km/h ·
         延时 {{ ew.west_entrance?.congestion_delay_index?.toFixed?.(2) }}
       </li>
     </ul>
@@ -64,14 +59,6 @@ const ew = computed(() => locate.value?.jingshi_ew_metrics?.primary_display)
 </template>
 
 <style scoped>
-.stage-label {
-  position: absolute;
-  left: 24px;
-  bottom: 88px;
-  color: var(--cyan-dim);
-  font-size: 12px;
-  letter-spacing: 2px;
-}
 .cards {
   display: grid;
   gap: 8px;

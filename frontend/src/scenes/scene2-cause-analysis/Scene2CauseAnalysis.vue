@@ -32,15 +32,10 @@ const counts = computed(() => {
 <template>
   <SceneScaffold
     :title="SCENE_META.name"
-    subtitle="上/下游份额溯源；需求=北进口直行流量"
+    subtitle="上/下游流量份额溯源；路口需求取北进口直行流量"
     :loading="loading"
     :error="error"
-    :data-files="SCENE_META.dataFiles"
   >
-    <template #stage>
-      <div class="stage-label">FLOW TRACE SHARE · SCENE 2</div>
-    </template>
-
     <div v-if="demand" class="cards">
       <div class="card">
         <span>需求（直行）</span>
@@ -52,21 +47,13 @@ const counts = computed(() => {
       </div>
     </div>
 
-    <h3>溯源条目数（份额）</h3>
-    <p class="mono">UP {{ counts.up }}</p>
-    <p class="mono">DOWN {{ counts.down }}</p>
+    <h3>溯源流向统计</h3>
+    <p class="mono">上游 {{ counts.up }}</p>
+    <p class="mono">下游 {{ counts.down }}</p>
   </SceneScaffold>
 </template>
 
 <style scoped>
-.stage-label {
-  position: absolute;
-  left: 24px;
-  bottom: 88px;
-  color: var(--cyan-dim);
-  font-size: 12px;
-  letter-spacing: 2px;
-}
 .cards {
   display: grid;
   gap: 8px;

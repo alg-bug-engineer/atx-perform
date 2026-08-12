@@ -3,7 +3,7 @@
     "scene_index": 1,
     "name": "问题定位",
     "time_window": {
-      "label": "周一晚高峰 17:30-18:30",
+      "label": "周一晚高峰 17:00-19:00",
       "day_of_week": 1,
       "day_of_week_label": "周一",
       "step_start": 210,

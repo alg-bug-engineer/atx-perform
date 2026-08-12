@@ -24,29 +24,26 @@ const demo = computed(() => data.value?.demo_script)
 <template>
   <SceneScaffold
     :title="SCENE_META.name"
-    subtitle="分工开发入口：本幕独立挂载，不依赖 0–2 运行时状态"
+    subtitle="相位协调：经十优先消散，解放东错峰放行"
     :loading="loading"
     :error="error"
-    :data-files="SCENE_META.dataFiles"
-    :impl-ref="SCENE_META.implRef"
   >
     <template #stage>
       <div class="split">
         <div class="pane">
-          <span>BEFORE</span>
-          <small>解放东先绿 → 汇入 → 溢出</small>
+          <span>优化前</span>
+          <small>解放东先绿 → 汇入 → 溢出风险</small>
         </div>
         <div class="pane after">
-          <span>AFTER</span>
-          <small>经十先绿消散 → 解放东再绿</small>
+          <span>优化后</span>
+          <small>经十先绿消散 → 解放东再放行</small>
         </div>
       </div>
     </template>
 
-    <p class="lead">TODO：迁入 agent-loop 方案生成面板/相位画布，替换为 baseline 配色。</p>
     <ul v-if="demo" class="list">
-      <li>左栏脚本：{{ demo.left_before?.join(' → ') }}</li>
-      <li>右栏脚本：{{ demo.right_after?.join(' → ') }}</li>
+      <li>优化前：{{ demo.left_before?.join(' → ') }}</li>
+      <li>优化后：{{ demo.right_after?.join(' → ') }}</li>
     </ul>
     <div v-if="baseline" class="cards">
       <div class="card">
@@ -64,7 +61,7 @@ const demo = computed(() => data.value?.demo_script)
 <style scoped>
 .split {
   position: absolute;
-  inset: 90px 400px 90px 24px;
+  inset: 24px 400px 24px 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
@@ -92,10 +89,6 @@ const demo = computed(() => data.value?.demo_script)
   opacity: 0.8;
   text-align: center;
   padding: 0 12px;
-}
-.lead {
-  margin: 0 0 12px;
-  color: var(--warn);
 }
 .list {
   margin: 0 0 12px;

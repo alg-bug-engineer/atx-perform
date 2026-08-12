@@ -5,7 +5,7 @@ export const SCENE_META = {
   name: '技能固化',
   dataFiles: ['1-5-skill-solidify.json'],
   implRef:
-    'agent-loop → SkillSolidifyOverlay / SkillBuildPanel / useSkillBuildProcess / planFeedbackService.solidify',
+    'Overlay / ExperienceAbsorption / SkillBuildDrawer；落盘 data/skills',
 }
 
 export async function loadScene5Data() {

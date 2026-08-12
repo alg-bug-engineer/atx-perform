@@ -5,7 +5,7 @@ export const SCENE_META = {
   name: '效果评估',
   dataFiles: ['1-4-effect-eval.json'],
   implRef:
-    'agent-loop main → act-08/TrialEffectPanel.vue, TrialEffectCharts.vue, trialEffectSeries.js',
+    'agent-loop → TrialEffectPanel / TrialEffectCharts / trialEffectSeries（配色 baseline）',
 }
 
 export async function loadScene4Data() {

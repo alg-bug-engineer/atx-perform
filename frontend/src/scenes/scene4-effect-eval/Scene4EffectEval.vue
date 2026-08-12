@@ -1,77 +1,74 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import SceneScaffold from '../../shared/components/SceneScaffold.vue'
-import { SCENE_META, loadScene4Data } from './index.js'
+import { useSceneRoute } from '../../shared/useSceneRoute.js'
+import { loadScene4Data } from './index.js'
+import TrialEffectDrawer from './TrialEffectDrawer.vue'
+
+const { setScene } = useSceneRoute()
 
 const loading = ref(true)
 const error = ref('')
-const data = ref(null)
+const payload = ref(null)
 
 onMounted(async () => {
   try {
-    data.value = (await loadScene4Data()).effect
+    payload.value = (await loadScene4Data()).effect
   } catch (e) {
     error.value = e?.message || String(e)
   } finally {
     loading.value = false
   }
 })
+
+function goSkill() {
+  setScene('5')
+}
 </script>
 
 <template>
-  <SceneScaffold
-    :title="SCENE_META.name"
-    subtitle="分工开发入口：效果时序/图表独立调试 ?scene=4 或 ?scene=effect"
-    :loading="loading"
-    :error="error"
-    :data-files="SCENE_META.dataFiles"
-    :impl-ref="SCENE_META.implRef"
-  >
-    <template #stage>
-      <div class="chart-placeholder">
-        <span>TRIAL EFFECT SERIES</span>
-        <small>排队 / 速度 before-after 曲线位</small>
-      </div>
-    </template>
+  <div class="scene4" data-testid="scene4-effect-eval">
+    <div class="map-plane" aria-hidden="true">
+      <div class="grid" />
+    </div>
 
-    <p class="lead">TODO：迁入 TrialEffect* 时序与图表，主题变量改用 `--cyan` 等本项目色。</p>
-    <ul v-if="data" class="list">
-      <li>指标槽位：{{ data.metrics?.join(' · ') }}</li>
-      <li>UI 参考：{{ data.meta?.ui_ref?.join(' · ') }}</li>
-      <li>基线排队：{{ data.baseline_snapshot?.queue_length_m }} m</li>
-    </ul>
-  </SceneScaffold>
+    <div v-if="loading" class="state-banner">加载中…</div>
+    <div v-else-if="error" class="state-banner error">{{ error }}</div>
+    <TrialEffectDrawer
+      v-else-if="payload"
+      :payload="payload"
+      @finish="goSkill"
+    />
+  </div>
 </template>
 
 <style scoped>
-.chart-placeholder {
+.scene4 {
   position: absolute;
-  left: 24px;
-  right: 400px;
-  top: 120px;
-  bottom: 100px;
-  border: 1px dashed var(--cyan-border-strong);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--cyan-dim);
+  inset: 0;
+  pointer-events: none;
 }
-.chart-placeholder span {
-  letter-spacing: 2px;
+.map-plane {
+  position: absolute;
+  inset: 0;
 }
-.chart-placeholder small {
-  font-size: 11px;
-  opacity: 0.8;
+.grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
 }
-.lead {
-  margin: 0 0 12px;
-  color: var(--warn);
-}
-.list {
-  margin: 0;
-  padding-left: 18px;
+.state-banner {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
   color: var(--text-muted);
+  z-index: 40;
+}
+.state-banner.error {
+  color: var(--danger);
 }
 </style>

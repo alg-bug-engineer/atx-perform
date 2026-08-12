@@ -1,0 +1,208 @@
+/**
+ * 试运行效果序列（移植自 agent-loop act-08/trialEffectSeries.js）
+ * 基线与目标改读本项目 data/1-4-effect-eval.json，不再依赖 caseFixture。
+ */
+
+function num(v, fallback = null) {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+}
+
+function round1(v) {
+  return Math.round(v * 10) / 10
+}
+
+function round4(v) {
+  return Math.round(v * 10000) / 10000
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t
+}
+
+function smoothstep(t) {
+  return t * t * (3 - 2 * t)
+}
+
+export function calculateQueueRatio(queueLengthM, storageLengthM) {
+  const storage = num(storageLengthM, 0)
+  if (storage <= 0) return null
+  return round4(num(queueLengthM, 0) / storage)
+}
+
+export function buildTrialEffectSeries(payload = {}) {
+  const trial = payload.trial || {}
+  const baselineIn = payload.baseline || {}
+  const targets = payload.trial_targets || {}
+  const thresholds = {
+    queue_ratio_warning: 0.8,
+    queue_ratio_spillback: 1.0,
+    green_utilization_low: 0.6,
+    green_utilization_high: 0.85,
+    rollback_queue_ratio: 0.9,
+    ...(payload.thresholds || {}),
+  }
+  const context = payload.context || {}
+  const plan = payload.plan || {}
+  const timing = plan.timing || {}
+
+  const n = Math.max(1, Math.round(num(trial.cycles, null) ?? num(trial.observation_cycles, 5)))
+  const storage = num(baselineIn.storage_length_m, 367.89)
+  const queue0 = num(baselineIn.queue_length_m, 270)
+  const ratio0 = calculateQueueRatio(queue0, storage)
+    ?? num(baselineIn.queue_ratio, queue0 / storage)
+  const speed0 = num(baselineIn.avg_speed_kmh, 7.2)
+  const delay0 = num(baselineIn.delay_index, 5.28)
+  const green0 = num(baselineIn.green_utilization, 0.62)
+  const upRatio0 = num(baselineIn.upstream_queue_ratio, 0.22)
+  const upStorage = num(baselineIn.upstream_storage_length_m, 215.7)
+
+  const endRatio = num(targets.end_queue_ratio, Math.min(0.55, Math.max(0.4, ratio0 - 0.25)))
+  const endQueue = round1(storage * endRatio)
+  const endSpeed = num(targets.end_speed_kmh, 22)
+  const endDelay = num(targets.end_delay_index, 2.1)
+  const endGreen = num(targets.end_green_utilization, 0.72)
+  const endUpRatio = num(targets.end_upstream_queue_ratio, 0.35)
+
+  const cycles = []
+  for (let i = 0; i < n; i += 1) {
+    const t = n === 1 ? 1 : i / (n - 1)
+    const ease = smoothstep(t)
+    const queueLength = round1(lerp(queue0, endQueue, ease))
+    const queueRatio = calculateQueueRatio(queueLength, storage) ?? 0
+    const avgSpeed = round1(lerp(speed0, endSpeed, ease))
+    const delayIndex = round4(lerp(delay0, endDelay, ease))
+    const greenUtil = round4(lerp(green0, endGreen, ease))
+    const upQueueRatio = round4(lerp(upRatio0, endUpRatio, ease))
+    const upQueueLength = round1(upStorage * upQueueRatio)
+    const prev = i > 0 ? cycles[i - 1] : null
+    const rolledBack = upQueueRatio >= thresholds.rollback_queue_ratio
+    const spillover = upQueueRatio >= thresholds.queue_ratio_warning
+    cycles.push({
+      index: i + 1,
+      label: `第 ${i + 1} 周期`,
+      queue_length_m: queueLength,
+      queue_ratio: queueRatio,
+      avg_speed_kmh: avgSpeed,
+      delay_index: delayIndex,
+      green_utilization: greenUtil,
+      // 兼容图表字段名；本剧本监测上游溢出风险
+      downstream_queue_ratio: upQueueRatio,
+      downstream_queue_length_m: upQueueLength,
+      upstream_queue_ratio: upQueueRatio,
+      rolled_back: rolledBack,
+      spillover_risk: spillover || rolledBack,
+      improved: Boolean(prev && queueRatio < prev.queue_ratio),
+      note: rolledBack
+        ? '上游触及回滚线'
+        : spillover
+          ? '上游接近预警'
+          : queueRatio < thresholds.queue_ratio_warning
+            ? '目标排队缓解中'
+            : '消散进行中',
+    })
+  }
+
+  const last = cycles[cycles.length - 1]
+  const overflowRelieved = Boolean(last && last.queue_ratio < thresholds.queue_ratio_warning)
+  const upstreamSafe = Boolean(
+    last
+    && last.upstream_queue_ratio < thresholds.queue_ratio_warning
+    && last.upstream_queue_ratio < thresholds.rollback_queue_ratio
+    && !last.rolled_back,
+  )
+  const speedImproved = Boolean(last && last.avg_speed_kmh > speed0 + 3)
+  const success = overflowRelieved && upstreamSafe && !last?.rolled_back
+
+  const outcomeHighlights = [
+    {
+      id: 'overflow',
+      ok: overflowRelieved,
+      title: '问题路段排队已缓解',
+      detail: overflowRelieved
+        ? `排队比 ${fmtRatio2(ratio0)} → ${fmtRatio2(last.queue_ratio)}，已低于预警线 ${thresholds.queue_ratio_warning}`
+        : '目标排队比尚未降至预警线以下',
+    },
+    {
+      id: 'upstream',
+      ok: upstreamSafe,
+      title: '上游未继续外溢',
+      detail: upstreamSafe
+        ? `解放东上游排队比 ${fmtRatio2(upRatio0)} → ${fmtRatio2(last.upstream_queue_ratio)}，未触回滚`
+        : '上游排队接近或超过安全阈值',
+    },
+    {
+      id: 'speed',
+      ok: speedImproved,
+      title: '路段速度回升',
+      detail: speedImproved
+        ? `速度 ${speed0.toFixed(1)} → ${last.avg_speed_kmh.toFixed(1)} km/h，延时指数 ${delay0.toFixed(2)} → ${last.delay_index.toFixed(2)}`
+        : '速度改善不足',
+    },
+  ]
+
+  return {
+    cyclesCount: n,
+    planName: plan.short_name || plan.name || '相位协调试运行',
+    intersection: context.intersection || '奥体西路与经十路路口',
+    timePeriodLabel: context.time_period_label || '',
+    targetLabel: trial.target_label || '北进口直行',
+    downstreamName: trial.downstream_name || context.upstream_intersection || '奥体西路与解放东路路口',
+    timing: {
+      targetGreenDeltaS: num(timing.target_green_delta_s, 0),
+      donorGreenDeltaS: num(timing.donor_green_delta_s, 0),
+      cycleDeltaS: 0,
+      jingshiNote: timing.jingshi_offset_note || '',
+      jiefangNote: timing.jiefang_release_note || '',
+    },
+    thresholds,
+    baseline: {
+      queue_length_m: round1(queue0),
+      queue_ratio: round4(ratio0),
+      avg_speed_kmh: round1(speed0),
+      delay_index: round4(delay0),
+      green_utilization: round4(green0),
+      downstream_queue_ratio: round4(upRatio0),
+      storage_length_m: round1(storage),
+    },
+    cycles,
+    metrics: Array.isArray(trial.metrics) ? trial.metrics : [],
+    successConditions: Array.isArray(trial.success_conditions) ? trial.success_conditions : [],
+    rollbackRules: Array.isArray(trial.rollback_rules) ? trial.rollback_rules : [],
+    outcomeHighlights,
+    overflowRelieved,
+    upstreamSafe,
+    speedImproved,
+    verdict: success
+      ? `试运行 ${n} 周期达标：问题路段排队缓解，速度回升，上游未造成显著外溢。`
+      : `试运行 ${n} 周期观察结束，请复核监测指标。`,
+    successText: trial.success || '缓解目标排队且不加重上游溢出风险',
+    rolledBack: Boolean(last?.rolled_back),
+    rollbackThreshold: thresholds.rollback_queue_ratio,
+  }
+}
+
+export function fmtMeters(v) {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return `${round1(v)} m`
+}
+
+export function fmtRatio2(v) {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return (Math.round(v * 100) / 100).toFixed(2)
+}
+
+export function fmtPct(v) {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return `${(v * 100).toFixed(1)}%`
+}
+
+export function fmtDeltaS(v) {
+  if (v == null || !Number.isFinite(v)) return '—'
+  if (v === 0) return '±0s'
+  return v > 0 ? `+${v}s` : `${v}s`
+}
+
+export function fmtSpeed(v) {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return `${round1(v)} km/h`
+}

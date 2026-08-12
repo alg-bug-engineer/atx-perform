@@ -4,8 +4,6 @@ defineProps({
   subtitle: { type: String, default: '' },
   loading: { type: Boolean, default: false },
   error: { type: String, default: '' },
-  dataFiles: { type: Array, default: () => [] },
-  implRef: { type: String, default: '' },
 })
 </script>
 
@@ -22,19 +20,11 @@ defineProps({
         <p v-if="subtitle">{{ subtitle }}</p>
       </header>
 
-      <div v-if="loading" class="state">加载幕数据…</div>
+      <div v-if="loading" class="state">加载中…</div>
       <div v-else-if="error" class="state error">{{ error }}</div>
       <div v-else class="body">
         <slot />
       </div>
-
-      <footer class="panel-foot">
-        <div v-if="dataFiles.length" class="files">
-          <span>数据</span>
-          <code v-for="f in dataFiles" :key="f">{{ f }}</code>
-        </div>
-        <div v-if="implRef" class="impl">{{ implRef }}</div>
-      </footer>
     </aside>
   </section>
 </template>
@@ -65,7 +55,7 @@ defineProps({
 .panel {
   position: relative;
   z-index: 5;
-  margin: 72px 16px 72px 0;
+  margin: 12px 16px 24px 0;
   border: 1px solid var(--cyan-border);
   background: var(--bg-panel);
   backdrop-filter: blur(8px);
@@ -109,30 +99,5 @@ defineProps({
 
 .state.error {
   color: var(--danger);
-}
-
-.panel-foot {
-  padding: 10px 16px 14px;
-  border-top: 1px solid var(--cyan-border);
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-.files {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.files code {
-  color: var(--cyan-dim);
-  border: 1px solid var(--cyan-border);
-  padding: 1px 6px;
-}
-
-.impl {
-  opacity: 0.85;
 }
 </style>
