@@ -1,0 +1,32 @@
+# 环境与密钥
+.env
+.env.*
+!.env.example
+!env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# IDE / 系统
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# 运行产物（保留目录结构）
+logs/*
+!logs/.gitkeep
+data/*
+!data/.gitkeep
