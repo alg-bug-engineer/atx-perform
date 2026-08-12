@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "scene_index": 5,
+    "name": "技能固化",
+    "ui_ref": [
+      "assets/技能固化.png",
+      "references/agent-loop-project"
+    ]
+  },
+  "skills": [],
+  "db_supported": false
+}

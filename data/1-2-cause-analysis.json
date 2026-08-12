@@ -1,0 +1,418 @@
+{
+  "meta": {
+    "scene_index": 2,
+    "name": "分析成因",
+    "target_inter_id": "011wwe28ctu00001",
+    "approach": "北进口",
+    "turns": [
+      "left",
+      "through",
+      "right"
+    ]
+  },
+  "hide": [
+    "dual_intersection_channelization"
+  ],
+  "upstream_traces": {
+    "source": "xianchang.ads_ts_inter_turn_flow_correlate_d",
+    "filter": {
+      "period_type": "EVENING_PEAK",
+      "day_of_week": "周一",
+      "trace_type": "UPSTREAM",
+      "max_hop": 3
+    },
+    "by_turn": {
+      "left": [
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 1,
+          "cor_inter_id": "011wwe28f5f00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 1,
+          "flow_share_ratio": 71.79,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 1,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "永绥路与齐音路路口",
+          "cor_lon": 117.108427,
+          "cor_lat": 36.661851
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 1,
+          "cor_inter_id": "011wwe28fmc00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 24.69,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 1,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "奥体西路与解放东路路口",
+          "cor_lon": 117.111368,
+          "cor_lat": 36.663092
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 1,
+          "cor_inter_id": "011wwe28f7c00001",
+          "cor_f_dir8_no": 6,
+          "cor_turn_dir_no": 3,
+          "flow_share_ratio": 63.98,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 2,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "解放东路与齐川路路口",
+          "cor_lon": 117.108428,
+          "cor_lat": 36.662959
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 1,
+          "cor_inter_id": "011wwe28fty00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 12.22,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 2,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "坤顺路与奥体西路路口",
+          "cor_lon": 117.11126,
+          "cor_lat": 36.665179
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 1,
+          "cor_inter_id": "011wwe28f3100001",
+          "cor_f_dir8_no": 6,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 58.94,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 3,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "茂岭山三号路与解放东路路口",
+          "cor_lon": 117.104881,
+          "cor_lat": 36.663005
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 1,
+          "cor_inter_id": "011wwe28gm900001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 10.45,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 3,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "安成街与奥体西路路口",
+          "cor_lon": 117.111028,
+          "cor_lat": 36.668467
+        }
+      ],
+      "through": [
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28fmc00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 48.07,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 1,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "奥体西路与解放东路路口",
+          "cor_lon": 117.111368,
+          "cor_lat": 36.663092
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28f5f00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 1,
+          "flow_share_ratio": 47.11,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 1,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "永绥路与齐音路路口",
+          "cor_lon": 117.108427,
+          "cor_lat": 36.661851
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28f7c00001",
+          "cor_f_dir8_no": 6,
+          "cor_turn_dir_no": 3,
+          "flow_share_ratio": 38.76,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 2,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "解放东路与齐川路路口",
+          "cor_lon": 117.108428,
+          "cor_lat": 36.662959
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28fty00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 30.41,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 2,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "坤顺路与奥体西路路口",
+          "cor_lon": 117.11126,
+          "cor_lat": 36.665179
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28f7c00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 6.96,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 2,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "解放东路与齐川路路口",
+          "cor_lon": 117.108428,
+          "cor_lat": 36.662959
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28f3100001",
+          "cor_f_dir8_no": 6,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 35.01,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 3,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "茂岭山三号路与解放东路路口",
+          "cor_lon": 117.104881,
+          "cor_lat": 36.663005
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28gm900001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 25.48,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 3,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "安成街与奥体西路路口",
+          "cor_lon": 117.111028,
+          "cor_lat": 36.668467
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 2,
+          "cor_inter_id": "011wwe28f7z00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 6.75,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 3,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "书昌街与齐音路路口",
+          "cor_lon": 117.108429,
+          "cor_lat": 36.664068
+        }
+      ],
+      "right": [
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 3,
+          "cor_inter_id": "011wwe28fmc00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 81.31,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 1,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "奥体西路与解放东路路口",
+          "cor_lon": 117.111368,
+          "cor_lat": 36.663092
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 3,
+          "cor_inter_id": "011wwe28fty00001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 34.59,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 2,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "坤顺路与奥体西路路口",
+          "cor_lon": 117.11126,
+          "cor_lat": 36.665179
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 3,
+          "cor_inter_id": "011wwe28fty00001",
+          "cor_f_dir8_no": 2,
+          "cor_turn_dir_no": 1,
+          "flow_share_ratio": 6.76,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 2,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "坤顺路与奥体西路路口",
+          "cor_lon": 117.11126,
+          "cor_lat": 36.665179
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 3,
+          "cor_inter_id": "011wwe28gm900001",
+          "cor_f_dir8_no": 0,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 29.42,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 3,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "安成街与奥体西路路口",
+          "cor_lon": 117.111028,
+          "cor_lat": 36.668467
+        },
+        {
+          "f_dir8_no": 0,
+          "turn_dir_no": 3,
+          "cor_inter_id": "011wwe2948q00001",
+          "cor_f_dir8_no": 2,
+          "cor_turn_dir_no": 2,
+          "flow_share_ratio": 5.57,
+          "trace_type": "UPSTREAM",
+          "chain_hop": 3,
+          "period_type": "EVENING_PEAK",
+          "day_of_week": "周一",
+          "dt": "20260601",
+          "cor_inter_name": "坤顺路与礼耕路路口",
+          "cor_lon": 117.114783,
+          "cor_lat": 36.665241
+        }
+      ]
+    }
+  },
+  "demand_supply": {
+    "turn_flow_veh_h": {
+      "left": 0.0,
+      "through": 520.0,
+      "right": 0.0,
+      "sum": 520.0
+    },
+    "demand_flow_veh_h": 520.0,
+    "demand_formula": "max(三转向流量和, 溯源绝对流量和)；当前库无溯源绝对流量，故=转向流量和",
+    "supply_capacity_veh_h": 1285.6,
+    "supply_lanes": [
+      {
+        "lane_no": 1,
+        "turn_dir_no": 1,
+        "cap": 286.4
+      },
+      {
+        "lane_no": 2,
+        "turn_dir_no": 1,
+        "cap": 286.4
+      },
+      {
+        "lane_no": 3,
+        "turn_dir_no": 2,
+        "cap": 356.4
+      },
+      {
+        "lane_no": 4,
+        "turn_dir_no": 2,
+        "cap": 356.4
+      }
+    ],
+    "saturation_flow_lookup": {
+      "dayofweek": 3,
+      "period": "16:00-17:20",
+      "lanes": [
+        {
+          "lane_no": 3,
+          "sf": 1310.0,
+          "sh": 2.748
+        },
+        {
+          "lane_no": 4,
+          "sf": 1344.3,
+          "sh": 2.678
+        }
+      ],
+      "sum": 2654.3
+    },
+    "demand_exceeds_supply": false,
+    "narrative_claim": "需求未超过供给"
+  },
+  "downstream_constraint": {
+    "inter_id": "011wwe28ctu00001",
+    "east_through_saturation": 0.76,
+    "west_through_saturation": 0.0,
+    "intersection_saturation_max": 1.2865916666666668,
+    "intersection_los": "F",
+    "story": "经十路保障东西向通勤；东西向饱和度高，周期内难再向南北向分配可用绿灯"
+  },
+  "actions": [
+    {
+      "id": "trace_through",
+      "do": "waterflow_trace",
+      "turn": "through"
+    },
+    {
+      "id": "trace_right",
+      "do": "waterflow_trace",
+      "turn": "right"
+    },
+    {
+      "id": "trace_left",
+      "do": "waterflow_trace",
+      "turn": "left"
+    },
+    {
+      "id": "annotate_demand_supply",
+      "do": "show_demand_supply_cards_on_problem_link"
+    }
+  ]
+}

@@ -29,10 +29,11 @@ dist/
 references/*
 !references/.gitkeep
 
-# 运行产物（保留目录结构）
+# 运行产物（保留目录结构；幕数据 JSON 入库）
 logs/*
 !logs/.gitkeep
 data/*
 !data/.gitkeep
+!data/1-*.json
 frontend/*
 !frontend/.gitkeep

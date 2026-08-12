@@ -1,0 +1,857 @@
+{
+  "meta": {
+    "scene_index": 1,
+    "name": "问题定位",
+    "time_window": {
+      "label": "周一晚高峰 17:30-18:30",
+      "day_of_week": 1,
+      "day_of_week_label": "周一",
+      "step_start": 210,
+      "step_end": 221
+    }
+  },
+  "actions": [
+    {
+      "id": "a1",
+      "when": "narration:发现问题路段",
+      "do": "emphasize_problem_link_dash_or_blink"
+    },
+    {
+      "id": "a2",
+      "when": "narration:拥堵延时指数",
+      "do": "show_problem_link_metric_card",
+      "bind": "problem_link_metrics"
+    },
+    {
+      "id": "a3",
+      "when": "narration:下游经十路口东西向饱和度",
+      "do": "emphasize_east_to_west_flow_arrow_and_card",
+      "bind": "jingshi_ew_metrics"
+    },
+    {
+      "id": "a4",
+      "when": "narration:解放东路口东向饱和度",
+      "do": "emphasize_jiefang_intersection",
+      "bind": "jiefang_east_metrics"
+    }
+  ],
+  "problem_link_metrics": {
+    "link_id": "12wwe28fmwwe28ct01",
+    "avg_speed_kmh": 7.201388888888888,
+    "congestion_delay_index": 5.277966809933143,
+    "congestion_delay_index_field": "xianchang.dws_link_index_5min_mm.delay_index",
+    "jam_delay_index_weekly": 1.3195083333333333,
+    "queue_length_m": 270,
+    "queue_length_source": "expert_survey",
+    "storage_length_m": 367.89,
+    "storage_length_source": "dim_link_info.length_m",
+    "note": "拥堵延时指数主展示 delay_index_mm；weekly jam_delay_index 作对照"
+  },
+  "jingshi_north_through_saturation": {
+    "inter_id": "011wwe28ctu00001",
+    "dir8_code": 0,
+    "dir_label": "北进口",
+    "turn_dir_no": 2,
+    "turn_label": "直行",
+    "turn_saturation": 0.8431583333333333,
+    "db_supported": true
+  },
+  "jingshi_ew_metrics": {
+    "east_approach_through_saturation": 0.76,
+    "west_approach_through_saturation": 0.0,
+    "east_to_west_arrow": {
+      "from_dir": "E",
+      "to_dir": "W",
+      "link_id": "12wwe291ewwe28ct01",
+      "turn_flow_veh_h": 1230.0
+    },
+    "intersection_saturation_max": 1.2865916666666668,
+    "db_supported_partial": true,
+    "gaps": [
+      "GAP-WEST-SAT"
+    ]
+  },
+  "jiefang_east_metrics": {
+    "inter_id": "011wwe28fmc00001",
+    "east_approach_through_saturation": 0.0,
+    "east_approach_left_saturation": 0.0,
+    "db_supported": false,
+    "gaps": [
+      "GAP-JIEFANG-SAT"
+    ]
+  },
+  "traffic_color_links": [
+    {
+      "link_id": "12wwe289qwwe28ct01",
+      "road_name": "经十路:转山西路-欣顺路, 经十路:欣顺路-奥体西路(西向东)",
+      "length_m": 877.68,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.101817,
+            36.65745
+          ],
+          [
+            117.102907,
+            36.657751
+          ],
+          [
+            117.103615,
+            36.657944
+          ],
+          [
+            117.105197,
+            36.658426
+          ],
+          [
+            117.106249,
+            36.658727
+          ],
+          [
+            117.107053,
+            36.658952
+          ],
+          [
+            117.107622,
+            36.659065
+          ],
+          [
+            117.108158,
+            36.659145
+          ],
+          [
+            117.108743,
+            36.659194
+          ],
+          [
+            117.108995,
+            36.659204
+          ],
+          [
+            117.11054,
+            36.659231
+          ],
+          [
+            117.111281,
+            36.659242
+          ]
+        ]
+      },
+      "avg_speed_kmh": 26.208333333333332,
+      "delay_index_mm": 3.4146912803300467,
+      "jam_delay_index_weekly": 1.2368583333333334,
+      "db_max_state": 2,
+      "derived_state_from_speed": 2,
+      "color": "yellow",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28cnwwe28ct01",
+      "road_name": "奥体西路:无名道路-经十路(南向北)",
+      "length_m": 264.42,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111833,
+            36.656908
+          ],
+          [
+            117.111694,
+            36.657203
+          ],
+          [
+            117.111576,
+            36.657568
+          ],
+          [
+            117.111516,
+            36.657852
+          ],
+          [
+            117.111484,
+            36.658185
+          ],
+          [
+            117.111484,
+            36.659253
+          ]
+        ]
+      },
+      "avg_speed_kmh": null,
+      "delay_index_mm": null,
+      "jam_delay_index_weekly": null,
+      "db_max_state": null,
+      "derived_state_from_speed": null,
+      "color": null,
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28ctwwe289q01",
+      "road_name": "经十路:奥体西路-转山西路(东向西)",
+      "length_m": 883.94,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.11127,
+            36.659483
+          ],
+          [
+            117.110089,
+            36.659435
+          ],
+          [
+            117.108947,
+            36.659387
+          ],
+          [
+            117.108298,
+            36.659344
+          ],
+          [
+            117.107772,
+            36.659279
+          ],
+          [
+            117.107407,
+            36.65921
+          ],
+          [
+            117.106624,
+            36.659016
+          ],
+          [
+            117.103829,
+            36.658217
+          ],
+          [
+            117.101748,
+            36.6576
+          ]
+        ]
+      },
+      "avg_speed_kmh": 11.277777777777779,
+      "delay_index_mm": 3.3606839432341356,
+      "jam_delay_index_weekly": 1.6065333333333334,
+      "db_max_state": 1,
+      "derived_state_from_speed": 3,
+      "color": "red",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28ctwwe28bx01",
+      "road_name": "奥体西路:无名道路-龙奥北路(西北向东南)",
+      "length_m": 591.7,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111281,
+            36.659242
+          ],
+          [
+            117.111264,
+            36.658636
+          ],
+          [
+            117.111275,
+            36.658121
+          ],
+          [
+            117.111345,
+            36.657632
+          ],
+          [
+            117.111458,
+            36.657246
+          ],
+          [
+            117.111511,
+            36.657107
+          ],
+          [
+            117.111634,
+            36.656865
+          ],
+          [
+            117.111731,
+            36.656688
+          ],
+          [
+            117.111924,
+            36.656388
+          ],
+          [
+            117.112053,
+            36.6562
+          ],
+          [
+            117.112091,
+            36.656141
+          ],
+          [
+            117.112122,
+            36.656093
+          ],
+          [
+            117.112675,
+            36.655251
+          ],
+          [
+            117.112922,
+            36.654891
+          ],
+          [
+            117.113276,
+            36.654269
+          ]
+        ]
+      },
+      "avg_speed_kmh": 24.020833333333332,
+      "delay_index_mm": 1.4318385650224215,
+      "jam_delay_index_weekly": 1.379675,
+      "db_max_state": 1,
+      "derived_state_from_speed": 2,
+      "color": "yellow",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28ctwwe28cs01",
+      "road_name": "经十路辅路:奥体西路-茂岭山三号路(东向西)",
+      "length_m": 133.5,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111275,
+            36.659671
+          ],
+          [
+            117.110824,
+            36.659655
+          ],
+          [
+            117.109784,
+            36.659607
+          ]
+        ]
+      },
+      "avg_speed_kmh": null,
+      "delay_index_mm": null,
+      "jam_delay_index_weekly": null,
+      "db_max_state": null,
+      "derived_state_from_speed": null,
+      "color": null,
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28ctwwe28fm01",
+      "road_name": "奥体西路:无名道路-解放东路(南向北)",
+      "length_m": 368.43,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111474,
+            36.659671
+          ],
+          [
+            117.111474,
+            36.660594
+          ],
+          [
+            117.111474,
+            36.660621
+          ],
+          [
+            117.111474,
+            36.661377
+          ],
+          [
+            117.111479,
+            36.661817
+          ],
+          [
+            117.111479,
+            36.661849
+          ],
+          [
+            117.111468,
+            36.662927
+          ],
+          [
+            117.111468,
+            36.662991
+          ]
+        ]
+      },
+      "avg_speed_kmh": 11.722222222222223,
+      "delay_index_mm": 4.095741632278771,
+      "jam_delay_index_weekly": 1.1739916666666668,
+      "db_max_state": 1,
+      "derived_state_from_speed": 3,
+      "color": "red",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28ctwwe291e01",
+      "road_name": "经十路:奥体西路-柳北路, 经十路:柳北路-无名道路(西向东)",
+      "length_m": 714.34,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111484,
+            36.659253
+          ],
+          [
+            117.114258,
+            36.659387
+          ],
+          [
+            117.114724,
+            36.659408
+          ],
+          [
+            117.11554,
+            36.659429
+          ],
+          [
+            117.116425,
+            36.659467
+          ],
+          [
+            117.119461,
+            36.659612
+          ]
+        ]
+      },
+      "avg_speed_kmh": 9.118055555555555,
+      "delay_index_mm": null,
+      "jam_delay_index_weekly": 1.0446583333333332,
+      "db_max_state": 1,
+      "derived_state_from_speed": 4,
+      "color": "red",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28f7wwe28fm01",
+      "road_name": "解放东路:无名道路-奥体西路(西向东)",
+      "length_m": 252.9,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.108448,
+            36.662916
+          ],
+          [
+            117.109124,
+            36.662975
+          ],
+          [
+            117.110009,
+            36.663029
+          ],
+          [
+            117.11127,
+            36.663051
+          ]
+        ]
+      },
+      "avg_speed_kmh": 6.354166666666667,
+      "delay_index_mm": 4.4600062455389,
+      "jam_delay_index_weekly": 1.4939416666666667,
+      "db_max_state": 1,
+      "derived_state_from_speed": 4,
+      "color": "red",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28fmwwe28ct01",
+      "road_name": "奥体西路:解放东路-经十路(北向南)",
+      "length_m": 367.89,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.11127,
+            36.662986
+          ],
+          [
+            117.11127,
+            36.662932
+          ],
+          [
+            117.111281,
+            36.661865
+          ],
+          [
+            117.111281,
+            36.661817
+          ],
+          [
+            117.111281,
+            36.661377
+          ],
+          [
+            117.111286,
+            36.661017
+          ],
+          [
+            117.111286,
+            36.660594
+          ],
+          [
+            117.111281,
+            36.659746
+          ],
+          [
+            117.111275,
+            36.659671
+          ]
+        ]
+      },
+      "avg_speed_kmh": 7.201388888888888,
+      "delay_index_mm": 5.277966809933143,
+      "jam_delay_index_weekly": 1.3195083333333333,
+      "db_max_state": 1,
+      "derived_state_from_speed": 4,
+      "color": "red",
+      "is_problem_link": true
+    },
+    {
+      "link_id": "12wwe28fmwwe28f701",
+      "road_name": "解放东路:奥体西路-雪晴路(东向西)",
+      "length_m": 254.48,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.11127,
+            36.663131
+          ],
+          [
+            117.110041,
+            36.663115
+          ],
+          [
+            117.109929,
+            36.663104
+          ],
+          [
+            117.109864,
+            36.663099
+          ],
+          [
+            117.10943,
+            36.663067
+          ],
+          [
+            117.108427,
+            36.663045
+          ]
+        ]
+      },
+      "avg_speed_kmh": 13.048611111111112,
+      "delay_index_mm": 1.04775828460039,
+      "jam_delay_index_weekly": 2.689975,
+      "db_max_state": 1,
+      "derived_state_from_speed": 3,
+      "color": "red",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28fmwwe28ft01",
+      "road_name": "奥体西路:无名道路-坤顺路(南向北)",
+      "length_m": 215.7,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111463,
+            36.66319
+          ],
+          [
+            117.111425,
+            36.664048
+          ],
+          [
+            117.111361,
+            36.665132
+          ]
+        ]
+      },
+      "avg_speed_kmh": 21.916666666666668,
+      "delay_index_mm": 1.2048207975769814,
+      "jam_delay_index_weekly": 1.5183833333333332,
+      "db_max_state": 1,
+      "derived_state_from_speed": 2,
+      "color": "yellow",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28fmwwe294201",
+      "road_name": "解放东路:无名道路-礼耕路(西向东)",
+      "length_m": 294.95,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111468,
+            36.663056
+          ],
+          [
+            117.112235,
+            36.663061
+          ],
+          [
+            117.112364,
+            36.663061
+          ],
+          [
+            117.113163,
+            36.663061
+          ],
+          [
+            117.113684,
+            36.663061
+          ],
+          [
+            117.113936,
+            36.663061
+          ],
+          [
+            117.114258,
+            36.663056
+          ],
+          [
+            117.114767,
+            36.663061
+          ]
+        ]
+      },
+      "avg_speed_kmh": 21.812499999999996,
+      "delay_index_mm": 1.154647435897436,
+      "jam_delay_index_weekly": 1.5408083333333333,
+      "db_max_state": 1,
+      "derived_state_from_speed": 2,
+      "color": "yellow",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28frwwe28fm01",
+      "road_name": "解放东路:无名道路-奥体西路(东向西)",
+      "length_m": 197.59,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.113678,
+            36.663126
+          ],
+          [
+            117.113174,
+            36.663126
+          ],
+          [
+            117.112364,
+            36.663136
+          ],
+          [
+            117.111468,
+            36.663136
+          ]
+        ]
+      },
+      "avg_speed_kmh": null,
+      "delay_index_mm": null,
+      "jam_delay_index_weekly": null,
+      "db_max_state": null,
+      "derived_state_from_speed": null,
+      "color": null,
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe28ftwwe28fm01",
+      "road_name": "奥体西路:无名道路-解放东路(北向南)",
+      "length_m": 215.68,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.111168,
+            36.665132
+          ],
+          [
+            117.111264,
+            36.66319
+          ]
+        ]
+      },
+      "avg_speed_kmh": 3.2916666666666665,
+      "delay_index_mm": 8.304064476322688,
+      "jam_delay_index_weekly": 2.1906,
+      "db_max_state": 1,
+      "derived_state_from_speed": 4,
+      "color": "red",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe291ewwe28ct01",
+      "road_name": "经十路:奥体东路-无名道路, 经十路:无名道路-奥体西路(东向西)",
+      "length_m": 714.45,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.119456,
+            36.659794
+          ],
+          [
+            117.116704,
+            36.659682
+          ],
+          [
+            117.115212,
+            36.659628
+          ],
+          [
+            117.114258,
+            36.659596
+          ],
+          [
+            117.113399,
+            36.659564
+          ],
+          [
+            117.111474,
+            36.659489
+          ]
+        ]
+      },
+      "avg_speed_kmh": 14.513888888888891,
+      "delay_index_mm": 5.810325264750378,
+      "jam_delay_index_weekly": 1.6504666666666667,
+      "db_max_state": 2,
+      "derived_state_from_speed": 3,
+      "color": "red",
+      "is_problem_link": false
+    },
+    {
+      "link_id": "12wwe291ewwe28ct02",
+      "road_name": "经十路辅路:经十路-无名道路, 经十路辅路:无名道路-奥体西路(东向西)",
+      "length_m": 1893.16,
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.119451,
+            36.659982
+          ],
+          [
+            117.117911,
+            36.659912
+          ],
+          [
+            117.117653,
+            36.659902
+          ],
+          [
+            117.117509,
+            36.659896
+          ],
+          [
+            117.116119,
+            36.659843
+          ],
+          [
+            117.116044,
+            36.659837
+          ],
+          [
+            117.115776,
+            36.659826
+          ],
+          [
+            117.114258,
+            36.659773
+          ],
+          [
+            117.112734,
+            36.659719
+          ],
+          [
+            117.115776,
+            36.659826
+          ],
+          [
+            117.114258,
+            36.659773
+          ],
+          [
+            117.112734,
+            36.659719
+          ],
+          [
+            117.115776,
+            36.659826
+          ],
+          [
+            117.114258,
+            36.659773
+          ],
+          [
+            117.112734,
+            36.659719
+          ],
+          [
+            117.112482,
+            36.659714
+          ],
+          [
+            117.112734,
+            36.659719
+          ],
+          [
+            117.112482,
+            36.659714
+          ],
+          [
+            117.112734,
+            36.659719
+          ],
+          [
+            117.112482,
+            36.659714
+          ],
+          [
+            117.112439,
+            36.659709
+          ],
+          [
+            117.111474,
+            36.659671
+          ]
+        ]
+      },
+      "avg_speed_kmh": 18.090277777777782,
+      "delay_index_mm": 1.9969415579630037,
+      "jam_delay_index_weekly": 1.4228333333333334,
+      "db_max_state": 2,
+      "derived_state_from_speed": 3,
+      "color": "red",
+      "is_problem_link": false
+    }
+  ],
+  "state_legend": {
+    "1": "绿",
+    "2": "黄",
+    "3": "红",
+    "4": "红",
+    "source": "derived_from_speed_fallback"
+  },
+  "channelization_ref": "1-1-channelization.json"
+}

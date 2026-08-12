@@ -1,0 +1,14 @@
+---
+description: 分幕 JS 与 data JSON 约定
+globs: frontend/**/*.{js,vue,ts},data/**/*.json
+alwaysApply: false
+---
+
+# 分幕实现约定
+
+- 一幕一个模块（如 `scene0-opening.js` …），禁止把 0–5 幕揉进单文件大杂烩。
+- 数据只从 `data/1-<scene>-*.json` 读取；对象 ID 不要在组件里硬编码第二份。
+- 讲解对齐用 `actions[]`（`when` + `do` + `bind`）；先做动作，语音后配。
+- 图层/配色复用 baseline 风格（青/夜景科技风），不要引入 agent-loop 的另一套主题色。
+- 缺失字段走 JSON 内 `db_supported` / `gaps`，UI 可降级但要可追踪。
+---

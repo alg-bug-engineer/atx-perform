@@ -1,0 +1,1086 @@
+{
+  "meta": {
+    "source": "road6.dwd_tfc_rltn_wide_inter_ft_link + dim_link_info",
+    "version_id": "20260501"
+  },
+  "by_intersection": {
+    "011wwe28ctu00001": {
+      "inter_name": "奥体西路与经十路路口",
+      "arms": [
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe28fmwwe28ct01",
+          "link_role": "entrance",
+          "approach_angle": 358.274,
+          "dir8_code": "0",
+          "dir8_label": "北进口",
+          "dir4_code": "0",
+          "dir4_label": "北进口",
+          "lane_num": 5,
+          "c_lane_num": 5,
+          "lane_info": "B|B|C|C|D",
+          "turn_move": "12|12|11|11|13",
+          "f_dist_m": 390.6,
+          "t_dist_m": 25.1,
+          "road_name": "奥体西路:解放东路-经十路(北向南)",
+          "length_m": 367.89,
+          "max_speed": 70,
+          "f_angle": 180.0,
+          "t_angle": 184.57,
+          "f_inter_id": "011wwe28fmc00001",
+          "t_inter_id": "011wwe28ctu00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.11127,
+                36.662986
+              ],
+              [
+                117.11127,
+                36.662932
+              ],
+              [
+                117.111281,
+                36.661865
+              ],
+              [
+                117.111281,
+                36.661817
+              ],
+              [
+                117.111281,
+                36.661377
+              ],
+              [
+                117.111286,
+                36.661017
+              ],
+              [
+                117.111286,
+                36.660594
+              ],
+              [
+                117.111281,
+                36.659746
+              ],
+              [
+                117.111275,
+                36.659671
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe28ctwwe28fm01",
+          "link_role": "exit",
+          "approach_angle": 1.496,
+          "dir8_code": "0",
+          "dir8_label": "北出口",
+          "dir4_code": "0",
+          "dir4_label": "北出口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "B|C|C|D",
+          "turn_move": "12|11|11|13",
+          "f_dist_m": 24.9,
+          "t_dist_m": 391.1,
+          "road_name": "奥体西路:无名道路-解放东路(南向北)",
+          "length_m": 368.43,
+          "max_speed": 70,
+          "f_angle": 0.0,
+          "t_angle": 0.0,
+          "f_inter_id": "011wwe28ctu00001",
+          "t_inter_id": "011wwe28fmc00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111474,
+                36.659671
+              ],
+              [
+                117.111474,
+                36.660594
+              ],
+              [
+                117.111474,
+                36.660621
+              ],
+              [
+                117.111474,
+                36.661377
+              ],
+              [
+                117.111479,
+                36.661817
+              ],
+              [
+                117.111479,
+                36.661849
+              ],
+              [
+                117.111468,
+                36.662927
+              ],
+              [
+                117.111468,
+                36.662991
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe291ewwe28ct02",
+          "link_role": "entrance",
+          "approach_angle": 86.365,
+          "dir8_code": "2",
+          "dir8_label": "东进口",
+          "dir4_code": "1",
+          "dir4_label": "东进口",
+          "lane_num": 3,
+          "c_lane_num": 2,
+          "lane_info": "C|D",
+          "turn_move": "11|13",
+          "f_dist_m": 898.1,
+          "t_dist_m": 24.9,
+          "road_name": "经十路辅路:经十路-无名道路, 经十路辅路:无名道路-奥体西路(东向西)",
+          "length_m": 1893.16,
+          "max_speed": 50,
+          "f_angle": 267.4,
+          "t_angle": 267.74,
+          "f_inter_id": "011wwe291ey00001",
+          "t_inter_id": "011wwe28ctu00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.119451,
+                36.659982
+              ],
+              [
+                117.117911,
+                36.659912
+              ],
+              [
+                117.117653,
+                36.659902
+              ],
+              [
+                117.117509,
+                36.659896
+              ],
+              [
+                117.116119,
+                36.659843
+              ],
+              [
+                117.116044,
+                36.659837
+              ],
+              [
+                117.115776,
+                36.659826
+              ],
+              [
+                117.114258,
+                36.659773
+              ],
+              [
+                117.112734,
+                36.659719
+              ],
+              [
+                117.115776,
+                36.659826
+              ],
+              [
+                117.114258,
+                36.659773
+              ],
+              [
+                117.112734,
+                36.659719
+              ],
+              [
+                117.115776,
+                36.659826
+              ],
+              [
+                117.114258,
+                36.659773
+              ],
+              [
+                117.112734,
+                36.659719
+              ],
+              [
+                117.112482,
+                36.659714
+              ],
+              [
+                117.112734,
+                36.659719
+              ],
+              [
+                117.112482,
+                36.659714
+              ],
+              [
+                117.112734,
+                36.659719
+              ],
+              [
+                117.112482,
+                36.659714
+              ],
+              [
+                117.112439,
+                36.659709
+              ],
+              [
+                117.111474,
+                36.659671
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe291ewwe28ct01",
+          "link_role": "entrance",
+          "approach_angle": 87.697,
+          "dir8_code": "2",
+          "dir8_label": "东进口",
+          "dir4_code": "1",
+          "dir4_label": "东进口",
+          "lane_num": 8,
+          "c_lane_num": 10,
+          "lane_info": "B|B|B|C|C|C|C|C|C|C",
+          "turn_move": "12|12|12|11|11|11|11|11|11|11",
+          "f_dist_m": 897.6,
+          "t_dist_m": 11.1,
+          "road_name": "经十路:奥体东路-无名道路, 经十路:无名道路-奥体西路(东向西)",
+          "length_m": 714.45,
+          "max_speed": 80,
+          "f_angle": 267.67,
+          "t_angle": 267.77,
+          "f_inter_id": "011wwe291ey00001",
+          "t_inter_id": "011wwe28ctu00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.119456,
+                36.659794
+              ],
+              [
+                117.116704,
+                36.659682
+              ],
+              [
+                117.115212,
+                36.659628
+              ],
+              [
+                117.114258,
+                36.659596
+              ],
+              [
+                117.113399,
+                36.659564
+              ],
+              [
+                117.111474,
+                36.659489
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe28ctwwe291e01",
+          "link_role": "exit",
+          "approach_angle": 88.987,
+          "dir8_code": "2",
+          "dir8_label": "东出口",
+          "dir4_code": "1",
+          "dir4_label": "东出口",
+          "lane_num": 6,
+          "c_lane_num": 7,
+          "lane_info": "C|C|C|C|C|C|C",
+          "turn_move": "11|11|11|11|11|11|11",
+          "f_dist_m": 26.8,
+          "t_dist_m": 897.6,
+          "road_name": "经十路:奥体西路-柳北路, 经十路:柳北路-无名道路(西向东)",
+          "length_m": 714.34,
+          "max_speed": 80,
+          "f_angle": 87.23,
+          "t_angle": 87.27,
+          "f_inter_id": "011wwe28ctu00001",
+          "t_inter_id": "011wwe291ey00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111484,
+                36.659253
+              ],
+              [
+                117.114258,
+                36.659387
+              ],
+              [
+                117.114724,
+                36.659408
+              ],
+              [
+                117.11554,
+                36.659429
+              ],
+              [
+                117.116425,
+                36.659467
+              ],
+              [
+                117.119461,
+                36.659612
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe28cnwwe28ct01",
+          "link_role": "entrance",
+          "approach_angle": 169.882,
+          "dir8_code": "4",
+          "dir8_label": "南进口",
+          "dir4_code": "2",
+          "dir4_label": "南进口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "AB|B|C|CD",
+          "turn_move": "32|12|11|22",
+          "f_dist_m": 288.8,
+          "t_dist_m": 26.8,
+          "road_name": "奥体西路:无名道路-经十路(南向北)",
+          "length_m": 264.42,
+          "max_speed": 70,
+          "f_angle": 334.77,
+          "t_angle": 0.0,
+          "f_inter_id": "011wwe28cnj00001",
+          "t_inter_id": "011wwe28ctu00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111833,
+                36.656908
+              ],
+              [
+                117.111694,
+                36.657203
+              ],
+              [
+                117.111576,
+                36.657568
+              ],
+              [
+                117.111516,
+                36.657852
+              ],
+              [
+                117.111484,
+                36.658185
+              ],
+              [
+                117.111484,
+                36.659253
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe28ctwwe28bx01",
+          "link_role": "exit",
+          "approach_angle": 159.928,
+          "dir8_code": "4",
+          "dir8_label": "南出口",
+          "dir4_code": "2",
+          "dir4_label": "南出口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "B|B|B|C",
+          "turn_move": "12|12|12|11",
+          "f_dist_m": 27.3,
+          "t_dist_m": 614.5,
+          "road_name": "奥体西路:无名道路-龙奥北路(西北向东南)",
+          "length_m": 591.7,
+          "max_speed": 70,
+          "f_angle": 181.61,
+          "t_angle": 150.35,
+          "f_inter_id": "011wwe28ctu00001",
+          "t_inter_id": "011wwe28bxq00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111281,
+                36.659242
+              ],
+              [
+                117.111264,
+                36.658636
+              ],
+              [
+                117.111275,
+                36.658121
+              ],
+              [
+                117.111345,
+                36.657632
+              ],
+              [
+                117.111458,
+                36.657246
+              ],
+              [
+                117.111511,
+                36.657107
+              ],
+              [
+                117.111634,
+                36.656865
+              ],
+              [
+                117.111731,
+                36.656688
+              ],
+              [
+                117.111924,
+                36.656388
+              ],
+              [
+                117.112053,
+                36.6562
+              ],
+              [
+                117.112091,
+                36.656141
+              ],
+              [
+                117.112122,
+                36.656093
+              ],
+              [
+                117.112675,
+                36.655251
+              ],
+              [
+                117.112922,
+                36.654891
+              ],
+              [
+                117.113276,
+                36.654269
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe289qwwe28ct01",
+          "link_role": "entrance",
+          "approach_angle": 258.074,
+          "dir8_code": "6",
+          "dir8_label": "西进口",
+          "dir4_code": "3",
+          "dir4_label": "西进口",
+          "lane_num": 9,
+          "c_lane_num": 9,
+          "lane_info": "B|B|C|C|C|C|C|D|D",
+          "turn_move": "12|12|11|11|11|11|11|13|13",
+          "f_dist_m": 1084.5,
+          "t_dist_m": 27.3,
+          "road_name": "经十路:转山西路-欣顺路, 经十路:欣顺路-奥体西路(西向东)",
+          "length_m": 877.68,
+          "max_speed": 80,
+          "f_angle": 74.56,
+          "t_angle": 89.15,
+          "f_inter_id": "011wwe289qc00001",
+          "t_inter_id": "011wwe28ctu00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.101817,
+                36.65745
+              ],
+              [
+                117.102907,
+                36.657751
+              ],
+              [
+                117.103615,
+                36.657944
+              ],
+              [
+                117.105197,
+                36.658426
+              ],
+              [
+                117.106249,
+                36.658727
+              ],
+              [
+                117.107053,
+                36.658952
+              ],
+              [
+                117.107622,
+                36.659065
+              ],
+              [
+                117.108158,
+                36.659145
+              ],
+              [
+                117.108743,
+                36.659194
+              ],
+              [
+                117.108995,
+                36.659204
+              ],
+              [
+                117.11054,
+                36.659231
+              ],
+              [
+                117.111281,
+                36.659242
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe28ctwwe28cs01",
+          "link_role": "exit",
+          "approach_angle": 274.954,
+          "dir8_code": "6",
+          "dir8_label": "西出口",
+          "dir4_code": "3",
+          "dir4_label": "西出口",
+          "lane_num": 1,
+          "c_lane_num": 1,
+          "lane_info": "C",
+          "turn_move": "11",
+          "f_dist_m": 25.1,
+          "t_dist_m": 177.4,
+          "road_name": "经十路辅路:奥体西路-茂岭山三号路(东向西)",
+          "length_m": 133.5,
+          "max_speed": 50,
+          "f_angle": 267.97,
+          "t_angle": 267.36,
+          "f_inter_id": "011wwe28ctu00001",
+          "t_inter_id": "011wwe28csv00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111275,
+                36.659671
+              ],
+              [
+                117.110824,
+                36.659655
+              ],
+              [
+                117.109784,
+                36.659607
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28ctu00001",
+          "link_id": "12wwe28ctwwe289q01",
+          "link_role": "exit",
+          "approach_angle": 259.014,
+          "dir8_code": "6",
+          "dir8_label": "西出口",
+          "dir4_code": "3",
+          "dir4_label": "西出口",
+          "lane_num": 7,
+          "c_lane_num": 7,
+          "lane_info": "B|B|C|C|C|C|C",
+          "turn_move": "12|12|11|11|11|11|11",
+          "f_dist_m": 11.9,
+          "t_dist_m": 1088.7,
+          "road_name": "经十路:奥体西路-转山西路(东向西)",
+          "length_m": 883.94,
+          "max_speed": 80,
+          "f_angle": 267.67,
+          "t_angle": 253.49,
+          "f_inter_id": "011wwe28ctu00001",
+          "t_inter_id": "011wwe289qc00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.11127,
+                36.659483
+              ],
+              [
+                117.110089,
+                36.659435
+              ],
+              [
+                117.108947,
+                36.659387
+              ],
+              [
+                117.108298,
+                36.659344
+              ],
+              [
+                117.107772,
+                36.659279
+              ],
+              [
+                117.107407,
+                36.65921
+              ],
+              [
+                117.106624,
+                36.659016
+              ],
+              [
+                117.103829,
+                36.658217
+              ],
+              [
+                117.101748,
+                36.6576
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "011wwe28fmc00001": {
+      "inter_name": "奥体西路与解放东路路口",
+      "arms": [
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28ftwwe28fm01",
+          "link_role": "entrance",
+          "approach_angle": 354.401,
+          "dir8_code": "0",
+          "dir8_label": "北进口",
+          "dir4_code": "0",
+          "dir4_label": "北进口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "B|C|C|D",
+          "turn_move": "12|11|11|13",
+          "f_dist_m": 227.5,
+          "t_dist_m": 15.9,
+          "road_name": "奥体西路:无名道路-解放东路(北向南)",
+          "length_m": 215.68,
+          "max_speed": 70,
+          "f_angle": 177.17,
+          "t_angle": 177.17,
+          "f_inter_id": "011wwe28fty00001",
+          "t_inter_id": "011wwe28fmc00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111168,
+                36.665132
+              ],
+              [
+                117.111264,
+                36.66319
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28fmwwe28ft01",
+          "link_role": "exit",
+          "approach_angle": 359.803,
+          "dir8_code": "0",
+          "dir8_label": "北出口",
+          "dir4_code": "0",
+          "dir4_label": "北出口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "B|C|C|D",
+          "turn_move": "12|11|11|13",
+          "f_dist_m": 15.2,
+          "t_dist_m": 226.4,
+          "road_name": "奥体西路:无名道路-坤顺路(南向北)",
+          "length_m": 215.7,
+          "max_speed": 70,
+          "f_angle": 357.46,
+          "t_angle": 356.62,
+          "f_inter_id": "011wwe28fmc00001",
+          "t_inter_id": "011wwe28fty00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111463,
+                36.66319
+              ],
+              [
+                117.111425,
+                36.664048
+              ],
+              [
+                117.111361,
+                36.665132
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28frwwe28fm01",
+          "link_role": "entrance",
+          "approach_angle": 89.157,
+          "dir8_code": "2",
+          "dir8_label": "东进口",
+          "dir4_code": "1",
+          "dir4_label": "东进口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "B|C|C|CD",
+          "turn_move": "12|11|11|22",
+          "f_dist_m": 256.4,
+          "t_dist_m": 12.1,
+          "road_name": "解放东路:无名道路-奥体西路(东向西)",
+          "length_m": 197.59,
+          "max_speed": 70,
+          "f_angle": 270.0,
+          "t_angle": 270.0,
+          "f_inter_id": "011wwe28frd00001",
+          "t_inter_id": "011wwe28fmc00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.113678,
+                36.663126
+              ],
+              [
+                117.113174,
+                36.663126
+              ],
+              [
+                117.112364,
+                36.663136
+              ],
+              [
+                117.111468,
+                36.663136
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28fmwwe294201",
+          "link_role": "exit",
+          "approach_angle": 90.523,
+          "dir8_code": "2",
+          "dir8_label": "东出口",
+          "dir4_code": "1",
+          "dir4_label": "东出口",
+          "lane_num": 3,
+          "c_lane_num": 3,
+          "lane_info": "C|C|CD",
+          "turn_move": "11|11|22",
+          "f_dist_m": 11.8,
+          "t_dist_m": 377.3,
+          "road_name": "解放东路:无名道路-礼耕路(西向东)",
+          "length_m": 294.95,
+          "max_speed": 70,
+          "f_angle": 89.63,
+          "t_angle": 89.44,
+          "f_inter_id": "011wwe28fmc00001",
+          "t_inter_id": "011wwe2942300001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111468,
+                36.663056
+              ],
+              [
+                117.112235,
+                36.663061
+              ],
+              [
+                117.112364,
+                36.663061
+              ],
+              [
+                117.113163,
+                36.663061
+              ],
+              [
+                117.113684,
+                36.663061
+              ],
+              [
+                117.113936,
+                36.663061
+              ],
+              [
+                117.114258,
+                36.663056
+              ],
+              [
+                117.114767,
+                36.663061
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28ctwwe28fm01",
+          "link_role": "entrance",
+          "approach_angle": 178.225,
+          "dir8_code": "4",
+          "dir8_label": "南进口",
+          "dir4_code": "2",
+          "dir4_label": "南进口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "B|C|C|D",
+          "turn_move": "12|11|11|13",
+          "f_dist_m": 379.9,
+          "t_dist_m": 15.8,
+          "road_name": "奥体西路:无名道路-解放东路(南向北)",
+          "length_m": 368.43,
+          "max_speed": 70,
+          "f_angle": 0.0,
+          "t_angle": 0.0,
+          "f_inter_id": "011wwe28ctu00001",
+          "t_inter_id": "011wwe28fmc00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.111474,
+                36.659671
+              ],
+              [
+                117.111474,
+                36.660594
+              ],
+              [
+                117.111474,
+                36.660621
+              ],
+              [
+                117.111474,
+                36.661377
+              ],
+              [
+                117.111479,
+                36.661817
+              ],
+              [
+                117.111479,
+                36.661849
+              ],
+              [
+                117.111468,
+                36.662927
+              ],
+              [
+                117.111468,
+                36.662991
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28fmwwe28ct01",
+          "link_role": "exit",
+          "approach_angle": 181.557,
+          "dir8_code": "4",
+          "dir8_label": "南出口",
+          "dir4_code": "2",
+          "dir4_label": "南出口",
+          "lane_num": 5,
+          "c_lane_num": 5,
+          "lane_info": "B|B|C|C|D",
+          "turn_move": "12|12|11|11|13",
+          "f_dist_m": 16.0,
+          "t_dist_m": 379.9,
+          "road_name": "奥体西路:解放东路-经十路(北向南)",
+          "length_m": 367.89,
+          "max_speed": 70,
+          "f_angle": 180.0,
+          "t_angle": 184.57,
+          "f_inter_id": "011wwe28fmc00001",
+          "t_inter_id": "011wwe28ctu00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.11127,
+                36.662986
+              ],
+              [
+                117.11127,
+                36.662932
+              ],
+              [
+                117.111281,
+                36.661865
+              ],
+              [
+                117.111281,
+                36.661817
+              ],
+              [
+                117.111281,
+                36.661377
+              ],
+              [
+                117.111286,
+                36.661017
+              ],
+              [
+                117.111286,
+                36.660594
+              ],
+              [
+                117.111281,
+                36.659746
+              ],
+              [
+                117.111275,
+                36.659671
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28f7wwe28fm01",
+          "link_role": "entrance",
+          "approach_angle": 266.551,
+          "dir8_code": "6",
+          "dir8_label": "西进口",
+          "dir4_code": "3",
+          "dir4_label": "西进口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "FZ|B|C|CD",
+          "turn_move": "40|12|11|22",
+          "f_dist_m": 324.7,
+          "t_dist_m": 11.8,
+          "road_name": "解放东路:无名道路-奥体西路(西向东)",
+          "length_m": 252.9,
+          "max_speed": 70,
+          "f_angle": 85.01,
+          "t_angle": 89.0,
+          "f_inter_id": "011wwe28f7c00001",
+          "t_inter_id": "011wwe28fmc00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.108448,
+                36.662916
+              ],
+              [
+                117.109124,
+                36.662975
+              ],
+              [
+                117.110009,
+                36.663029
+              ],
+              [
+                117.11127,
+                36.663051
+              ]
+            ]
+          }
+        },
+        {
+          "inter_id": "011wwe28fmc00001",
+          "link_id": "12wwe28fmwwe28f701",
+          "link_role": "exit",
+          "approach_angle": 269.084,
+          "dir8_code": "6",
+          "dir8_label": "西出口",
+          "dir4_code": "3",
+          "dir4_label": "西出口",
+          "lane_num": 4,
+          "c_lane_num": 4,
+          "lane_info": "B|FZ|C|CD",
+          "turn_move": "12|40|11|22",
+          "f_dist_m": 11.7,
+          "t_dist_m": 326.5,
+          "road_name": "解放东路:奥体西路-雪晴路(东向西)",
+          "length_m": 254.48,
+          "max_speed": 70,
+          "f_angle": 269.25,
+          "t_angle": 268.74,
+          "f_inter_id": "011wwe28fmc00001",
+          "t_inter_id": "011wwe28f7c00001",
+          "geom": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                117.11127,
+                36.663131
+              ],
+              [
+                117.110041,
+                36.663115
+              ],
+              [
+                117.109929,
+                36.663104
+              ],
+              [
+                117.109864,
+                36.663099
+              ],
+              [
+                117.10943,
+                36.663067
+              ],
+              [
+                117.108427,
+                36.663045
+              ]
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "lane_code_hint": {
+    "lane_info": "B=左转相关, C=直行, D=右转, AB/CD/FZ 为复合功能（库内原始编码）",
+    "turn_move": "11=直行, 12=左转, 13=右转, 22/32/40=复合或特殊（按库内 turn_move 原样保留）"
+  }
+}

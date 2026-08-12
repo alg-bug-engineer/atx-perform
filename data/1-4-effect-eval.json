@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "scene_index": 4,
+    "name": "效果评估",
+    "ui_ref": [
+      "assets/效果评估.png",
+      "references/agent-loop-project"
+    ]
+  },
+  "metrics": [
+    "queue_length_m",
+    "avg_speed_kmh",
+    "delay_index"
+  ],
+  "series": {
+    "before": [],
+    "after": []
+  },
+  "db_supported": false,
+  "baseline_snapshot": {
+    "link_id": "12wwe28fmwwe28ct01",
+    "avg_speed_kmh": 7.201388888888888,
+    "congestion_delay_index": 5.277966809933143,
+    "congestion_delay_index_field": "xianchang.dws_link_index_5min_mm.delay_index",
+    "jam_delay_index_weekly": 1.3195083333333333,
+    "queue_length_m": 270,
+    "queue_length_source": "expert_survey",
+    "storage_length_m": 367.89,
+    "storage_length_source": "dim_link_info.length_m",
+    "note": "拥堵延时指数主展示 delay_index_mm；weekly jam_delay_index 作对照"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "scene_index": 0,
+    "name": "开幕-发现问题"
+  },
+  "camera": {
+    "overview_center": {
+      "lon": 117.11137,
+      "lat": 36.66128
+    },
+    "problem_link_id": "12wwe28fmwwe28ct01",
+    "pull_in_targets": [
+      "011wwe28fmc00001",
+      "011wwe28ctu00001"
+    ]
+  },
+  "actions": [
+    {
+      "id": "scan",
+      "do": "corridor_or_map_scan"
+    },
+    {
+      "id": "alert",
+      "do": "problem_link_red_blink",
+      "link_id": "12wwe28fmwwe28ct01"
+    },
+    {
+      "id": "fly",
+      "do": "auto_zoom_to_problem_link",
+      "link_id": "12wwe28fmwwe28ct01"
+    }
+  ],
+  "objects_ref": "1-scene-objects.json"
+}
