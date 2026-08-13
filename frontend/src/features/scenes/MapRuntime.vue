@@ -23,6 +23,18 @@ import {
   scene2EnterRequest,
 } from '../../shared/home-idle-state.js';
 
+/**
+ * 分幕调试下由外层指定进入哪一幕：
+ * initialScene='idle' → 幕 0 开幕；'scene2' → 幕 2 流量溯源（跳过开幕演绎）
+ * routeMode=true 时不在内部切幕，改抛事件交给 ?scene= 路由
+ */
+const props = defineProps({
+  initialScene: { type: String, default: 'idle' },
+  routeMode: { type: Boolean, default: false },
+});
+
+const emit = defineEmits(['enter-scene2', 'ready']);
+
 const hostRef = ref(null);
 const loadingText = ref('加载地图…');
 const ready = ref(false);
@@ -313,6 +325,14 @@ async function boot() {
   ready.value = true;
   loadingText.value = '';
   tick();
+  emit('ready');
+
+  if (props.initialScene === 'scene2') {
+    enterScene2();
+    await onEnterScene2();
+    return;
+  }
+  enterIdle();
   scene0.play();
 }
 
@@ -354,7 +374,10 @@ defineExpose({ replay: onReplay });
       </div>
     </Transition>
     <SceneChrome v-if="ready" />
-    <HomeIdleStage v-if="showHomeIdle" @enter-scene2="onEnterScene2" />
+    <HomeIdleStage
+      v-if="showHomeIdle"
+      @enter-scene2="routeMode ? emit('enter-scene2') : onEnterScene2()"
+    />
 
     <aside v-if="showScene2Ui && dockStack.length" class="scene2-dock">
       <div v-for="item in dockStack" :key="item.kind" class="dock-card">
@@ -418,7 +441,7 @@ defineExpose({ replay: onReplay });
 
     <div v-if="ready" class="bottom-actions">
       <button
-        v-if="showScene2Ui"
+        v-if="showScene2Ui && !routeMode"
         type="button"
         class="action-btn"
         @click="onBackIdle"

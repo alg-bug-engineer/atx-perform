@@ -4,6 +4,7 @@
  */
 
 let currentAudio = null
+let speaking = false
 
 /**
  * @param {string} audioUrl
@@ -78,6 +79,7 @@ export function playAudio(audioUrl, { onStart, onEnd, fallbackMs = 0 } = {}) {
 }
 
 export function stopCurrent() {
+  speaking = false
   if (!currentAudio) return
   try {
     currentAudio.pause()
@@ -86,6 +88,11 @@ export function stopCurrent() {
     /* ignore */
   }
   currentAudio = null
+}
+
+/** 是否仍在出声：幕间交棒（act-voice / act-timing）用它判断能否推进 */
+export function isTtsPlaybackActive() {
+  return speaking || Boolean(currentAudio && !currentAudio.paused && !currentAudio.ended)
 }
 
 /**
@@ -97,12 +104,17 @@ export function speak(text, { onStart, onEnd } = {}) {
     onEnd?.()
     return () => {}
   }
+  speaking = true
   onStart?.()
+  const finish = () => {
+    speaking = false
+    onEnd?.()
+  }
   // 无音频 URL 时按字数估时，保证字幕节奏仍可用
   const ms = Math.min(12000, Math.max(1800, String(text).length * 220))
-  const t = setTimeout(() => onEnd?.(), ms)
+  const t = setTimeout(finish, ms)
   return () => {
     clearTimeout(t)
-    onEnd?.()
+    finish()
   }
 }

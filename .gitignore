@@ -48,4 +48,5 @@ frontend/.vite/
 
 # 浏览器自动化的临时快照 / 截图
 .playwright-cli/
+.playwright/
 scene-*.png

@@ -1,8 +1,11 @@
 /**
  * 幕 0 / 首页 idle：对齐 agent-loop startCityMonitorIntro
- * cityScan(~3.2s) → 揭示左栏 → 聚焦 COR-AOTIXI-JFD-JS → zoomToCityMonitor
+ * cityScan(~3.2s) → 揭示左栏 → 聚焦 COR-AOTIXI-JFD-JS → 问题路段标红闪烁 → 拉近镜头
+ * 问题路段几何取本地 data/1-scene-objects.json（剧本要求：标红闪烁 + 自动连贯拉近）
  */
+import sceneObjects from '@data/1-scene-objects.json';
 import { createCityScan } from '../../layers/cityScan.js';
+import { createProblemLinkAlert } from '../../layers/problemLinkAlert.js';
 import {
   HOME_FOCUS_CORRIDOR_ID,
   loadCityMonitorDemo,
@@ -10,12 +13,17 @@ import {
 import {
   cityMonitorReveal,
   cityMonitorSelection,
+  openingBeat,
   resetHomeIdleState,
 } from '../../shared/home-idle-state.js';
 
 const SCAN_BUFFER_MS = 3400;
 const OVERVIEW_HEIGHT = 1600;
 const SCAN_BOOST = 0.55;
+/** 揭示监控后停留多久再标红问题路段，再多久拉近 */
+const ALERT_DELAY_MS = 1600;
+const DIVE_DELAY_MS = 2000;
+const DIVE_HEIGHT = 260;
 
 function scanBoundsFromIntersections(intersections) {
   let minX = Infinity;
@@ -74,16 +82,27 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
   if (scanMesh?.material) scanMesh.material.opacity = 0;
   runtime.scene.add(cityScan);
 
-  let timer = null;
+  const problemAlert = createProblemLinkAlert(sceneObjects.problem_link?.geom);
+  runtime.scene.add(problemAlert.group);
+
+  const timers = new Set();
   let playing = false;
   let disposed = false;
   let scanBoost = SCAN_BOOST;
 
+  function later(fn, ms) {
+    const id = setTimeout(() => {
+      timers.delete(id);
+      if (!playing || disposed) return;
+      fn();
+    }, ms);
+    timers.add(id);
+    return id;
+  }
+
   function clearTimer() {
-    if (timer != null) {
-      clearTimeout(timer);
-      timer = null;
-    }
+    for (const id of timers) clearTimeout(id);
+    timers.clear();
   }
 
   function goOverview() {
@@ -115,6 +134,25 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
     });
   }
 
+  /** 标红闪烁问题路段，再连贯拉近到路段中心 */
+  function alertProblemLink() {
+    openingBeat.value = 'alert';
+    problemAlert.show();
+    hooks.onBeat?.('alert');
+
+    later(() => {
+      openingBeat.value = 'dive';
+      const { worldCenter } = problemAlert;
+      runtime.animateCamera({
+        posTarget: { x: worldCenter.x, y: DIVE_HEIGHT, z: worldCenter.z },
+        lookTarget: { x: worldCenter.x, y: 0, z: worldCenter.z },
+        lerp: 0.03,
+      });
+      hooks.onBeat?.('dive');
+      hooks.onComplete?.();
+    }, DIVE_DELAY_MS);
+  }
+
   async function revealMonitor() {
     cityMonitorFx?.clear?.();
     const demo = await loadCityMonitorDemo();
@@ -126,9 +164,11 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
       ts: Date.now(),
     };
     cityMonitorReveal.value = true;
+    openingBeat.value = 'reveal';
+    hooks.onBeat?.('reveal');
     const focus = cityMonitorFx.setSelection('corridor', HOME_FOCUS_CORRIDOR_ID);
     zoomToFocus(focus);
-    hooks.onComplete?.();
+    later(alertProblemLink, ALERT_DELAY_MS);
   }
 
   function play() {
@@ -137,15 +177,16 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
     playing = true;
     resetHomeIdleState();
     cityMonitorFx.clear();
+    problemAlert.hide();
     goOverview();
 
     const t0 = performance.now() / 1000;
     scanBoost = SCAN_BOOST;
     cityScan.trigger(t0);
+    openingBeat.value = 'scan';
+    hooks.onBeat?.('scan');
 
-    timer = setTimeout(() => {
-      timer = null;
-      if (!playing || disposed) return;
+    later(() => {
       scanBoost = 0;
       void revealMonitor();
     }, SCAN_BUFFER_MS);
@@ -154,6 +195,8 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
   function stop() {
     playing = false;
     clearTimer();
+    problemAlert.hide();
+    openingBeat.value = '';
   }
 
   function replay() {
@@ -174,6 +217,7 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
       scanMesh.material.opacity *= scanBoost;
     }
     cityMonitorFx?.update?.(time);
+    problemAlert.update(time);
   }
 
   function dispose() {
@@ -181,6 +225,8 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
     stop();
     runtime.scene.remove(cityScan);
     cityScan.dispose?.();
+    runtime.scene.remove(problemAlert.group);
+    problemAlert.dispose?.();
   }
 
   return {

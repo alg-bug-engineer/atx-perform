@@ -7,6 +7,9 @@ export const cityMonitorSelection = ref(null);
 /** idle = 首页监控；scene2 = 成因分析（上游溯源） */
 export const activeScene = ref('idle');
 
+/** 幕 0 分镜节拍：'' | 'scan' | 'reveal' | 'alert' | 'dive'（供字幕与播报对齐） */
+export const openingBeat = ref('');
+
 /**
  * 从叙事幕请求跳转到首页「分析成因」（递增信号，供 MapRuntime 消费）。
  * 幕 2（流量溯源）暂用跳转方式复用首页 scene2-cause，后续再改造为原生幕。

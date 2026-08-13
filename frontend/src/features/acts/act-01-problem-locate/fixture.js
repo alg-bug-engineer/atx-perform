@@ -1,10 +1,10 @@
 /**
- * 幕 1 · 问题定位 — 模块自包含数据
+ * 幕 1 · 问题定位 — 模块数据装配
  *
- * 数据来源：
- * - data/1-scene-objects.json（路口坐标 / 问题路段）
- * - data/1-1-problem-locate.json（指标卡、路况着色）
- * - docs/data-sniff-report.md（车流量 520 辆/h 等）
+ * 一律读本幕的本地 JSON，不再抄写数值：
+ * - data/1-scene-objects.json（路口坐标 / 问题路段几何）
+ * - data/1-1-problem-locate.json（指标卡、路况着色 16 条 link）
+ * - docs/data-sniff-report.md（车流量 520 辆/h 等库内缺项）
  *
  * 场景：线优化案例 —— 奥体西路·经十路上游区域
  * 关键路口：
@@ -13,6 +13,18 @@
  *   - 经十路与奥体西路路口（南，目标）
  * 主流向：奥体西路 北向南（N→S）
  */
+
+import sceneObjects from '@data/1-scene-objects.json';
+import locateData from '@data/1-1-problem-locate.json';
+
+const SCENE_INTERSECTIONS = sceneObjects.intersections || {};
+const SCENE_PROBLEM_LINK = sceneObjects.problem_link || {};
+const LOCATE_METRICS = locateData.problem_link_metrics || {};
+const COLOR_LINKS = locateData.traffic_color_links || [];
+
+function colorLink(linkId) {
+  return COLOR_LINKS.find((l) => l.link_id === linkId) || {};
+}
 
 /** 投影中心与尺度（对齐 geo/loader.js：1 单位 = 10 m） */
 export const PROJECTION = {
@@ -28,21 +40,21 @@ export const PROJECTION = {
 export const INTERSECTIONS = {
   // 目标路口（下游，幕镜头锚点）
   jingshi: {
-    interId: '011wwe28ctu00001',
+    interId: SCENE_INTERSECTIONS.downstream_jingshi?.inter_id,
     name: '经十路与奥体西路路口',
     shortName: '经十路口',
     role: 'downstream_target',
-    lon: 117.111376,
-    lat: 36.659469,
+    lon: SCENE_INTERSECTIONS.downstream_jingshi?.lon,
+    lat: SCENE_INTERSECTIONS.downstream_jingshi?.lat,
   },
   // 上游路口（问题路段北端）
   jiefang: {
-    interId: '011wwe28fmc00001',
+    interId: SCENE_INTERSECTIONS.upstream_jiefang?.inter_id,
     name: '解放路与奥体西路路口',
     shortName: '解放路口',
     role: 'upstream_overflow_risk',
-    lon: 117.111368,
-    lat: 36.663092,
+    lon: SCENE_INTERSECTIONS.upstream_jiefang?.lon,
+    lat: SCENE_INTERSECTIONS.upstream_jiefang?.lat,
   },
   // 上游上游路口（坤顺路，线优化廊道北端）
   kunshun: {
@@ -58,32 +70,33 @@ export const INTERSECTIONS = {
 
 /** 问题路段（奥体西路:解放东路-经十路 北向南） */
 export const PROBLEM_LINK = {
-  linkId: '12wwe28fmwwe28ct01',
-  roadName: '奥体西路:解放东路-经十路(北向南)',
-  direction: 'N_to_S',
-  lengthM: 367.89,
-  queueLengthM: 270, // 专家调研值（强制）
-  queueLengthSource: 'expert_survey',
-  storageLengthM: 367.89,
-  storageLengthSource: 'dim_link_info.length_m',
-  avgSpeedKmh: 7.2,
-  delayIndex: 5.28, // congestion_delay_index（主展示）
-  jamDelayIndexWeekly: 1.32, // 周表拥堵延时指数（对照）
-  northThroughSaturation: 0.84, // 经十路口北进口直行饱和度
-  northThroughFlowVehH: 520, // 北进口直行流量（sniff report）
-  stateDerived: 4, // 速度派生：红
+  linkId: SCENE_PROBLEM_LINK.link_id,
+  roadName: SCENE_PROBLEM_LINK.road_name,
+  direction: SCENE_PROBLEM_LINK.direction,
+  lengthM: SCENE_PROBLEM_LINK.length_m,
+  queueLengthM: LOCATE_METRICS.queue_length_m, // 专家调研值 270 m（强制）
+  queueLengthSource: LOCATE_METRICS.queue_length_source,
+  storageLengthM: LOCATE_METRICS.storage_length_m,
+  storageLengthSource: LOCATE_METRICS.storage_length_source,
+  avgSpeedKmh: LOCATE_METRICS.avg_speed_kmh,
+  delayIndex: LOCATE_METRICS.congestion_delay_index, // 主展示
+  jamDelayIndexWeekly: LOCATE_METRICS.jam_delay_index_weekly, // 周表对照
+  northThroughSaturation: locateData.jingshi_north_through_saturation?.turn_saturation,
+  northThroughFlowVehH: 520, // 北进口直行流量：库内在幕 2 溯源表，见 docs/data-sniff-report.md
+  stateDerived: colorLink(SCENE_PROBLEM_LINK.link_id).derived_state_from_speed ?? 4,
 };
 
 /** 上游坤顺段（奥体西路:无名道路-解放东路 北向南） */
+const KUNSHUN_LINK_ID = '12wwe28ftwwe28fm01';
 export const KUNSHUN_LINK = {
-  linkId: '12wwe28ftwwe28fm01',
-  roadName: '奥体西路:无名道路-解放东路(北向南)',
+  linkId: KUNSHUN_LINK_ID,
+  roadName: colorLink(KUNSHUN_LINK_ID).road_name || '奥体西路:无名道路-解放东路(北向南)',
   direction: 'N_to_S',
-  lengthM: 215.68,
-  avgSpeedKmh: 3.29,
-  delayIndex: 8.3, // delay_index_mm
-  jamDelayIndexWeekly: 2.19,
-  stateDerived: 4, // 红
+  lengthM: colorLink(KUNSHUN_LINK_ID).length_m,
+  avgSpeedKmh: colorLink(KUNSHUN_LINK_ID).avg_speed_kmh,
+  delayIndex: colorLink(KUNSHUN_LINK_ID).delay_index_mm,
+  jamDelayIndexWeekly: colorLink(KUNSHUN_LINK_ID).jam_delay_index_weekly,
+  stateDerived: colorLink(KUNSHUN_LINK_ID).derived_state_from_speed ?? 4,
   gaps: ['GAP-NORTH-LR-FLOW'], // 坤顺路口无转向流量数据
 };
 
@@ -445,71 +458,22 @@ export const DEFAULT_PROMPT =
 // ══════════════════════════════════════════════════════════════════
 
 /**
- * case 路况覆盖范围：北入口（问题路段）+ 上游两个路段
- * - 北入口：奥体西路:解放东路-经十路(北向南) —— 问题路段，排队 270m
- * - 上游 1：奥体西路:无名道路-解放东路(北向南) —— 坤顺→解放东（N→S 走廊）
- * - 上游 2：解放东路:无名道路-奥体西路(西向东) —— 汇入解放路口的西向车流
+ * 路况着色范围：data/1-1-problem-locate.json 的 traffic_color_links（问题路段 + 周边双向 link），
+ * 按剧本要求做成「高德导航实时路况」式的红黄绿，而不是只给三条。
  *
- * 数值来源：PG 嗅探（road6/xianchang，2026-05-01 路网，周一 17:30-18:30）：
+ * 数值来源：PG 嗅探（road6/xianchang，2026-05-01 路网，周一晚高峰）：
  *   dws_link_index_5min_mm.avg_speed / delay_index → 按速度派生状态
  *   ≥35→1绿 / ≥20→2黄 / ≥10→3红 / <10→4深红（data-contract.md）
+ *   速度缺值的 link 保持 null（灰），不臆造。
  * Live 模式下由后端接口从 PG 读取（见 trafficColorService.js）。
  */
-export const TRAFFIC_COLOR_CASE_LINKS = [
-  {
-    link_id: '12wwe28ftwwe28fm01',
-    road_name: '奥体西路:无名道路-解放东路(北向南)',
-    role: 'upstream_1',
-    avg_speed_kmh: 3.2916666666666665,
-    delay_index: 8.304064476322688,
-    derived_state: 4,
-    geom: {
-      type: 'LineString',
-      coordinates: [
-        [117.111168, 36.665132],
-        [117.111264, 36.66319],
-      ],
-    },
-  },
-  {
-    link_id: '12wwe28f7wwe28fm01',
-    road_name: '解放东路:无名道路-奥体西路(西向东)',
-    role: 'upstream_2',
-    avg_speed_kmh: 6.354166666666667,
-    delay_index: 4.4600062455389,
-    derived_state: 4,
-    geom: {
-      type: 'LineString',
-      coordinates: [
-        [117.108448, 36.662916],
-        [117.109124, 36.662975],
-        [117.110009, 36.663029],
-        [117.11127, 36.663051],
-      ],
-    },
-  },
-  {
-    link_id: '12wwe28fmwwe28ct01',
-    road_name: '奥体西路:解放东路-经十路(北向南)',
-    role: 'north_entrance',
-    avg_speed_kmh: 7.201388888888888,
-    delay_index: 5.277966809933143,
-    derived_state: 4,
-    queue_length_m: 270,
-    is_problem_link: true,
-    geom: {
-      type: 'LineString',
-      coordinates: [
-        [117.11127, 36.662986],
-        [117.11127, 36.662932],
-        [117.111281, 36.661865],
-        [117.111281, 36.661817],
-        [117.111281, 36.661377],
-        [117.111286, 36.661017],
-        [117.111286, 36.660594],
-        [117.111281, 36.659746],
-        [117.111275, 36.659671],
-      ],
-    },
-  },
-];
+export const TRAFFIC_COLOR_CASE_LINKS = COLOR_LINKS.map((l) => ({
+  link_id: l.link_id,
+  road_name: l.road_name,
+  role: l.is_problem_link ? 'north_entrance' : 'context',
+  avg_speed_kmh: l.avg_speed_kmh,
+  delay_index: l.delay_index_mm,
+  derived_state: l.derived_state_from_speed,
+  ...(l.is_problem_link ? { queue_length_m: LOCATE_METRICS.queue_length_m, is_problem_link: true } : {}),
+  geom: l.geom,
+}));
