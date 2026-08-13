@@ -1,37 +1,62 @@
+/**
+ * 分幕注册表：一幕一个模块。
+ * name 为对外展示文案，禁止写入开发/对齐类说明。
+ */
 export const sceneRegistry = [
   {
-    key: 'traffic-origin',
-    name: '车流溯源',
-    component: () => import('../features/scenes/traffic-origin/TrafficOriginScene.vue'),
+    key: '0',
+    aliases: ['opening'],
+    name: '开幕',
+    component: () => import('../scenes/scene0-opening/Scene0Opening.vue'),
   },
   {
-    key: 'scene-region',
-    name: '目标区域',
-    component: () => import('../features/scenes/scene-region/SceneRegionArea.vue'),
+    key: '1',
+    aliases: ['locate', 'problem'],
+    name: '问题定位',
+    component: () => import('../scenes/scene1-problem-locate/Scene1ProblemLocate.vue'),
   },
   {
-    key: 'scene-a',
-    name: 'OD飞线',
-    component: () => import('../features/scenes/scene-a/SceneA.vue'),
+    key: '2',
+    aliases: ['cause', 'trace'],
+    name: '分析成因',
+    component: () => import('../scenes/scene2-cause-analysis/Scene2CauseAnalysis.vue'),
   },
   {
-    key: 'scene-b',
-    name: '拥堵蔓延',
-    component: () => import('../features/scenes/scene-b/SceneB.vue'),
+    key: '3',
+    aliases: ['plan', 'optimization'],
+    name: '优化方案',
+    component: () => import('../scenes/scene3-optimization/Scene3Optimization.vue'),
   },
   {
-    key: 'scene-c',
-    name: '路口诊断',
-    component: () => import('../features/scenes/scene-c/SceneC.vue'),
+    key: '3b',
+    aliases: ['signal', 'timing'],
+    name: '信控方案调节',
+    component: () => import('../scenes/scene3b-signal-plan/Scene3bSignalPlan.vue'),
   },
   {
-    key: 'scene-d',
-    name: '全域扫描',
-    component: () => import('../features/scenes/scene-d/SceneD.vue'),
+    key: '4',
+    aliases: ['effect', 'eval'],
+    name: '效果评估',
+    component: () => import('../scenes/scene4-effect-eval/Scene4EffectEval.vue'),
   },
   {
-    key: 'scene-e',
-    name: '干线诊断',
-    component: () => import('../features/scenes/scene-e/SceneE.vue'),
+    key: '5',
+    aliases: ['skill', 'solidify'],
+    name: '技能固化',
+    component: () => import('../scenes/scene5-skill-solidify/Scene5SkillSolidify.vue'),
   },
-];
+]
+
+export function resolveSceneKey(raw) {
+  if (raw == null || raw === '') return null
+  const token = String(raw).trim().toLowerCase()
+  for (const scene of sceneRegistry) {
+    if (scene.key === token) return scene.key
+    if (scene.aliases?.includes(token)) return scene.key
+  }
+  return null
+}
+
+export function getSceneByKey(key) {
+  return sceneRegistry.find((s) => s.key === key) || sceneRegistry[0]
+}

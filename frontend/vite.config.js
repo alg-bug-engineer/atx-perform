@@ -1,47 +1,25 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { skillSolidifyPlugin } from './plugins/skillSolidifyPlugin.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, '..');
-
-function attachDataMiddleware(middlewares) {
-  middlewares.use((req, res, next) => {
-    const url = req.url?.split('?')[0] ?? '';
-    if (!url.startsWith('/data/')) return next();
-    const file = path.join(repoRoot, decodeURIComponent(url));
-    if (!file.startsWith(path.join(repoRoot, 'data')) || !fs.existsSync(file)) {
-      return next();
-    }
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    fs.createReadStream(file).pipe(res);
-  });
-}
-
-function serveRepoData() {
-  return {
-    name: 'serve-repo-data',
-    configureServer(server) {
-      attachDataMiddleware(server.middlewares);
-    },
-    configurePreviewServer(server) {
-      attachDataMiddleware(server.middlewares);
-    },
-  };
-}
+const root = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.resolve(root, '..')
 
 export default defineConfig({
-  plugins: [vue(), serveRepoData()],
+  plugins: [vue(), skillSolidifyPlugin(repoRoot)],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': path.resolve(root, 'src'),
+      '@data': path.resolve(repoRoot, 'data'),
+      '@assets': path.resolve(repoRoot, 'assets'),
     },
   },
   server: {
+    port: 5174,
     fs: {
       allow: [repoRoot],
     },
   },
-});
+})

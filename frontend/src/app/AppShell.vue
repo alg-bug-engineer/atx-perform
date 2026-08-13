@@ -1,27 +1,59 @@
 <script setup>
-import MapRuntime from '../features/scenes/MapRuntime.vue';
-import TrafficOriginScene from '../features/scenes/traffic-origin/TrafficOriginScene.vue';
-import ActLoopShell from '../features/acts/ActLoopShell.vue';
-import { narrativeActive } from '../shared/narrative-state.js';
+import { computed, defineAsyncComponent, watch } from 'vue'
+import { sceneRegistry, getSceneByKey } from '../shared/scene-registry.js'
+import { useSceneRoute } from '../shared/useSceneRoute.js'
+import { playSceneNarration } from '../shared/sceneNarration.js'
+import DigitalAvatar from '../shared/components/DigitalAvatar.vue'
+import AppChrome from './AppChrome.vue'
+
+const { activeSceneKey, setScene } = useSceneRoute()
+
+const activeScene = computed(() => getSceneByKey(activeSceneKey.value))
+const activeSceneComponent = computed(() =>
+  defineAsyncComponent(activeScene.value.component),
+)
+
+watch(activeSceneKey, (key) => {
+  document.title = `奥体西绩效可视化 · ${getSceneByKey(key).name}`
+  playSceneNarration(key)
+}, { immediate: true })
 </script>
 
 <template>
-  <div class="app-shell">
-    <!-- 首页（idle）：城市监控 + 立即优化入口 + 分析成因 -->
-    <MapRuntime v-if="!narrativeActive" />
+  <div class="shell">
+    <AppChrome
+      :scenes="sceneRegistry"
+      :active-key="activeSceneKey"
+      @change="setScene"
+    />
 
-    <!-- 叙事幕模式：车流溯源地图 + 幕循环壳 -->
-    <template v-else>
-      <TrafficOriginScene />
-      <ActLoopShell />
-    </template>
+    <main class="viewport">
+      <component
+        :is="activeSceneComponent"
+        :key="activeScene.key"
+      />
+    </main>
+
+    <DigitalAvatar />
   </div>
 </template>
 
 <style scoped>
-.app-shell {
-  width: 100%;
-  height: 100%;
-  background: #000;
+.shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(0, 80, 120, 0.35), transparent 55%),
+    var(--bg);
+}
+
+.viewport {
+  position: absolute;
+  top: var(--app-chrome-h);
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 </style>

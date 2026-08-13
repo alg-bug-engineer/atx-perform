@@ -9,31 +9,91 @@
     "implementation_ref": {
       "project": "references/agent-loop-project",
       "branch": "main",
-      "note": "逻辑对齐agent-loop main 效果评估幕；UI/配色对齐 references/baseline / 本项目",
+      "note": "TrialEffectPanel / TrialEffectCharts / trialEffectSeries；配色 baseline",
       "assets": "assets/"
     },
     "ui_theme": "baseline_atx_perform"
   },
-  "metrics": [
-    "queue_length_m",
-    "avg_speed_kmh",
-    "delay_index"
-  ],
-  "series": {
-    "before": [],
-    "after": []
+  "trial": {
+    "cycles": 5,
+    "observation_cycles": 5,
+    "cycle_len_s": 220,
+    "downstream_name": "奥体西路与解放东路路口",
+    "target_label": "北进口直行",
+    "success": "缓解问题路段排队且不加重上游解放东路口溢出风险",
+    "fail": "排队比回升或上游触及回滚线",
+    "metrics": [
+      "queue_length_m",
+      "queue_ratio",
+      "avg_speed_kmh",
+      "delay_index",
+      "upstream_queue_ratio"
+    ],
+    "success_conditions": [
+      "问题路段排队比降至预警线 0.8 以下",
+      "路段速度回升、拥堵延时指数下降",
+      "上游解放东路口排队比未触及回滚线 0.9"
+    ],
+    "rollback_rules": [
+      "上游排队比 ≥ 0.9 立即回滚相位协调",
+      "目标排队比连续 2 周期回升则人工复核"
+    ]
   },
-  "db_supported": false,
-  "baseline_snapshot": {
-    "link_id": "12wwe28fmwwe28ct01",
-    "avg_speed_kmh": 7.201388888888888,
-    "congestion_delay_index": 5.277966809933143,
-    "congestion_delay_index_field": "xianchang.dws_link_index_5min_mm.delay_index",
-    "jam_delay_index_weekly": 1.3195083333333333,
+  "plan": {
+    "short_name": "相位协调试运行",
+    "name": "经十先绿消散 + 解放东错峰汇入",
+    "source_scene": 3,
+    "source_note": "参数与幕 3「优化方案」一致，取自 1-3-optimization.json optimized_signal_plans",
+    "timing": {
+      "cycle_len_s": 220,
+      "cycle_delta_s": 0,
+      "target_green_delta_s": 0,
+      "donor_green_delta_s": -6,
+      "offset_shift_s": 56,
+      "release_vs_downstream_green_s": {
+        "before": -26,
+        "after": 36
+      },
+      "jingshi_offset_note": "经十路配时全盘不动，绿时与相位差均为 ±0",
+      "jiefang_release_note": "解放东相位差后移 56s，北进口直行绿时 21s → 15s 轻微截流"
+    }
+  },
+  "context": {
+    "intersection": "奥体西路与经十路路口",
+    "upstream_intersection": "奥体西路与解放东路路口",
+    "time_period_label": "周一晚高峰 17:00-19:00",
+    "problem_link_id": "12wwe28fmwwe28ct01"
+  },
+  "baseline": {
     "queue_length_m": 270,
-    "queue_length_source": "expert_survey",
     "storage_length_m": 367.89,
-    "storage_length_source": "dim_link_info.length_m",
-    "note": "拥堵延时指数主展示 delay_index_mm；weekly jam_delay_index 作对照"
-  }
+    "queue_ratio": 0.7339,
+    "avg_speed_kmh": 7.2,
+    "delay_index": 5.28,
+    "green_utilization": 0.62,
+    "upstream_queue_ratio": 0.22,
+    "upstream_queue_length_m": 48,
+    "upstream_storage_length_m": 215.7,
+    "upstream_blocked_veh": 9,
+    "queue_length_source": "expert_survey",
+    "note": "排队 270m 为专家实测的常态排队；幕 3 走廊仿真的单周期峰值 368m（触顶蓄车能力即溢出）是另一口径，两者并存不互斥",
+    "upstream_blocked_note": "解放东路口内因下游吃满而进不来的滞留车辆峰值，取自幕 3 仿真 KPI blocked_veh"
+  },
+  "trial_targets": {
+    "end_queue_ratio": 0.48,
+    "end_speed_kmh": 22,
+    "end_delay_index": 2.1,
+    "end_green_utilization": 0.72,
+    "end_upstream_queue_ratio": 0.35,
+    "end_upstream_blocked_veh": 3,
+    "upstream_tradeoff_note": "北进口直行绿时压 6s，上游进口排队比由 0.22 升至 0.35（仍低于回滚线 0.9）；同时下游不再溢出、回灌消失，路口内滞留车辆由 9 辆降到 3 辆"
+  },
+  "thresholds": {
+    "queue_ratio_warning": 0.8,
+    "queue_ratio_spillback": 1.0,
+    "green_utilization_low": 0.6,
+    "green_utilization_high": 0.85,
+    "rollback_queue_ratio": 0.9
+  },
+  "db_supported": false
 }

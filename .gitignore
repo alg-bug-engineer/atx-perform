@@ -29,14 +29,19 @@ dist/
 references/*
 !references/.gitkeep
 
-# 运行产物（保留目录结构；幕数据 JSON 入库）
+# 运行产物（保留目录结构；幕数据 JSON / 固化技能包入库）
 logs/*
 !logs/.gitkeep
 data/*
 !data/.gitkeep
 !data/1-*.json
+!data/skills/
+!data/skills/**
+!data/tts/
+!data/tts/**
 
-# 前端源码入库；仅忽略构建产物与依赖
-frontend/node_modules/
-frontend/dist/
+# deepagent 原始输出（scripts/pull_deepagent_plan.py 拉取，仅本地留存）
+data/deepagent-raw/
+
+# frontend 源码入库；依赖与构建产物不入库（根级已忽略 node_modules/dist）
 frontend/.vite/

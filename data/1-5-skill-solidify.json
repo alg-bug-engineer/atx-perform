@@ -9,11 +9,209 @@
     "implementation_ref": {
       "project": "references/agent-loop-project",
       "branch": "main",
-      "note": "逻辑对齐agent-loop 技能固化/沉淀；UI/配色对齐 references/baseline / 本项目",
+      "note": "ExperienceAbsorption / SkillBuildDrawer / useSkillBuildProcess；配色 baseline",
       "assets": "assets/"
     },
     "ui_theme": "baseline_atx_perform"
   },
-  "skills": [],
+  "absorption": {
+    "action": "CREATE",
+    "stages": [
+      {
+        "key": "recap",
+        "label": "回顾本轮约束",
+        "monologue": "回顾本轮已采纳的诊断与治理约束：奥体西路与经十路路口 · 北向南直行 · 周一晚高峰 17:00–19:00。",
+        "evidence_chips": [
+          {
+            "key": "intersection",
+            "label": "路口",
+            "value": "奥体西路与经十路路口"
+          },
+          {
+            "key": "period",
+            "label": "时段",
+            "value": "17:00-19:00"
+          },
+          {
+            "key": "problem_type",
+            "label": "问题类型",
+            "value": "排队溢出风险"
+          }
+        ],
+        "duration_ms": 520
+      },
+      {
+        "key": "decompose",
+        "label": "解构为可索引字段",
+        "monologue": "将约束与方向解构为可索引字段。",
+        "evidence_chips": [
+          {
+            "key": "constraints",
+            "label": "约束条数",
+            "value": 3
+          },
+          {
+            "key": "directions",
+            "label": "方向",
+            "value": "北向南直行"
+          }
+        ],
+        "duration_ms": 560
+      },
+      {
+        "key": "retrieve",
+        "label": "检索既有技能库",
+        "monologue": "检索既有技能库，判断是否已有同键技能。",
+        "evidence_chips": [
+          {
+            "key": "existing",
+            "label": "既有技能数",
+            "value": 0
+          },
+          {
+            "key": "skill_id",
+            "label": "目录键",
+            "value": "aotixi-n2s-phase-coord-evening"
+          }
+        ],
+        "duration_ms": 600
+      },
+      {
+        "key": "compare",
+        "label": "比对 创建/更新",
+        "monologue": "比对内容签名，得出 CREATE / 更新判定。",
+        "evidence_chips": [
+          {
+            "key": "action",
+            "label": "判定",
+            "value": "CREATE"
+          }
+        ],
+        "duration_ms": 520
+      },
+      {
+        "key": "value",
+        "label": "价值前后对照",
+        "monologue": "对照固化前后的复用价值。",
+        "evidence_chips": [
+          {
+            "key": "recommended",
+            "label": "推荐做法",
+            "value": 3
+          },
+          {
+            "key": "principles",
+            "label": "策略原则",
+            "value": 3
+          }
+        ],
+        "duration_ms": 560
+      },
+      {
+        "key": "blueprint",
+        "label": "转化写入蓝图",
+        "monologue": "转化为可落盘的技能包蓝图。",
+        "evidence_chips": [
+          {
+            "key": "files",
+            "label": "待写文件",
+            "value": 4
+          }
+        ],
+        "duration_ms": 600
+      }
+    ],
+    "value_snapshot": {
+      "why_rows": [
+        {
+          "key": "reuse",
+          "label": "复用方式",
+          "before": "手工检索历史工单",
+          "after": "技能库按标签自动命中"
+        },
+        {
+          "key": "retrieval",
+          "label": "检索方式",
+          "before": "人工翻阅方案记录",
+          "after": "按路口/时段/问题类型秒级匹配"
+        },
+        {
+          "key": "fidelity",
+          "label": "约束保真",
+          "before": "口头传递易遗漏",
+          "after": "落盘试运行与回滚约束"
+        }
+      ]
+    }
+  },
+  "build": {
+    "stages": [
+      {
+        "key": "understanding",
+        "label": "理解本轮成果",
+        "progress": 8
+      },
+      {
+        "key": "planning",
+        "label": "规划技能包结构",
+        "progress": 20
+      },
+      {
+        "key": "writing_skill_md",
+        "label": "写入 SKILL.md",
+        "progress": 45
+      },
+      {
+        "key": "writing_reference",
+        "label": "写入 reference.md",
+        "progress": 62
+      },
+      {
+        "key": "writing_scripts",
+        "label": "写入取数脚本",
+        "progress": 80
+      },
+      {
+        "key": "writing_meta",
+        "label": "写入技能元信息",
+        "progress": 92
+      },
+      {
+        "key": "packaging",
+        "label": "打包与登记",
+        "progress": 100
+      }
+    ],
+    "files": [
+      {
+        "path": "SKILL.md",
+        "language": "markdown",
+        "content": "# 奥体西廊道相位协调技能\n\n## 场景\n- 廊道：奥体西路北向南（解放东路 → 经十路）\n- 目标路口：奥体西路与经十路路口\n- 上游风险口：奥体西路与解放东路路口\n- 时段：周一晚高峰 17:00–19:00\n\n## 问题\n问题路段排队接近蓄车边界（专家排队 270m / 蓄车 ≈368m），存在向上游解放东路口溢出的风险。\n\n## 策略\n需求未超过供给时，采用相位协调而非截流：\n1. 经十路优先放行，消散北向南排队\n2. 解放东路口错峰放行，避免继续加压\n3. 监测上游排队比，触及 0.9 回滚\n"
+      },
+      {
+        "path": "reference.md",
+        "language": "markdown",
+        "content": "# 诊断依据与策略重点回顾\n\n### 用户原始诉求\n晚高峰奥体西北向南排队外溢风险，优先消散且不加重上游解放东。\n\n## 策略原则\n- 需求未超供给时优先相位协调\n- 上游排队比 ≥ 0.9 立即回滚\n- 经十东西向通勤保障不削弱\n\n## 推荐做法\n1. 经十优先放行消散\n2. 解放东错峰放行\n3. 试运行 5 周期监测上游排队比\n\n| 指标 | 基线 | 试运行终点目标 |\n|---|---|---|\n| 排队长度 | 270 m | ≈176 m（比≈0.48） |\n| 路段速度 | 7.2 km/h | ≈22 km/h |\n| 拥堵延时指数 | 5.28 | ≈2.1 |\n| 上游排队比 | 0.22 | < 0.9 回滚线 |\n"
+      },
+      {
+        "path": "scripts/fetch_traffic_data.sql",
+        "language": "sql",
+        "content": "-- 奥体西问题路段晚高峰指标（示例，17:00-19:00 → step 204-227）\nSELECT link_id, day_of_week, step_index,\n       avg_speed_kmh, delay_index\nFROM xianchang.dws_link_index_5min_mm\nWHERE link_id = '12wwe28fmwwe28ct01'\n  AND day_of_week = 1\n  AND step_index BETWEEN 204 AND 227\n  AND COALESCE(is_deleted,0)=0\nORDER BY step_index;\n"
+      },
+      {
+        "path": "skill.meta.json",
+        "language": "json",
+        "content": "{\n  \"skill_id\": \"aotixi-n2s-phase-coord-evening\",\n  \"intersection_id\": \"011wwe28ctu00001\",\n  \"upstream_intersection_id\": \"011wwe28fmc00001\",\n  \"link_id\": \"12wwe28fmwwe28ct01\",\n  \"period\": \"EVENING_PEAK\",\n  \"strategy\": \"phase_coordination\",\n  \"queue_length_m_expert\": 270\n}"
+      }
+    ]
+  },
+  "result_meta": {
+    "skillId": "aotixi-n2s-phase-coord-evening",
+    "skillDir": "skills/aotixi-n2s-phase-coord-evening",
+    "downloadUrl": "",
+    "intersection": "奥体西路与经十路路口",
+    "timePeriodLabel": "周一晚高峰 17:00-19:00",
+    "action": "created"
+  },
   "db_supported": false
 }
