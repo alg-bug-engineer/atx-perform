@@ -1,0 +1,164 @@
+{
+  "meta": {
+    "scene_index": 2,
+    "name": "分析成因-上游流量溯源",
+    "approaches": ["北进口", "东进口", "西进口"],
+    "skip_approaches": ["南进口"],
+    "target_approaches": ["北进口"]
+  },
+  "trace_direction": "upstream",
+  "business_direction": "incoming",
+  "title": "坤顺/解放东北东西进口 → 经十路–奥体西北进口",
+  "trace_hint": "正在进行问题路段流量溯源",
+  "allowed_approaches": ["N", "E", "W"],
+  "target_approach_dirs": ["N"],
+  "source": {
+    "id": "011wwe28fty00001",
+    "name": "坤顺路与奥体西路路口",
+    "lng": 117.11126,
+    "lat": 36.665179
+  },
+  "via": {
+    "id": "011wwe28fmc00001",
+    "name": "奥体西路与解放东路路口",
+    "lng": 117.111368,
+    "lat": 36.663092
+  },
+  "target": {
+    "id": "011wwe28ctu00001",
+    "name": "奥体西路与经十路路口",
+    "lng": 117.111376,
+    "lat": 36.659469,
+    "direction": "北向南",
+    "movement": "直行"
+  },
+  "source_approaches": [
+    { "dir": "N", "label": "北进口", "from_name": "安成街与奥体西路路口" },
+    { "dir": "E", "label": "东进口", "from_name": "坤顺路与礼耕路路口" },
+    { "dir": "W", "label": "西进口", "from_name": "坤顺路与无名道路路口" }
+  ],
+  "via_approaches": [
+    { "dir": "N", "label": "北进口", "from_name": "坤顺路与奥体西路路口" },
+    { "dir": "E", "label": "东进口", "from_name": "礼耕路与解放东路路口" },
+    { "dir": "W", "label": "西进口", "from_name": "解放东路与齐川路路口" }
+  ],
+  "target_approaches": [
+    { "dir": "N", "label": "北进口", "from_name": "奥体西路与解放东路路口" }
+  ],
+  "problem_link": {
+    "link_id": "12wwe28fmwwe28ct01",
+    "road_name": "奥体西路:解放东路-经十路(北向南)",
+    "from_name": "奥体西路与解放东路路口",
+    "to_name": "奥体西路与经十路路口"
+  },
+  "demand_supply": {
+    "step_index": 208,
+    "step_label": "17:20-17:25",
+    "day_of_week": 1,
+    "inflow_vph": 429,
+    "outflow_vph": 824,
+    "supply_vph": 824,
+    "supply_formula": "max(解放东汇入, 经十汇出)",
+    "demand_vph": 1285.6,
+    "demand_formula": "北进口车道通行能力求和（缺右转车道）",
+    "demand_lanes": [
+      { "lane_no": 1, "turn": "left", "cap": 286.4 },
+      { "lane_no": 2, "turn": "left", "cap": 286.4 },
+      { "lane_no": 3, "turn": "through", "cap": 356.4 },
+      { "lane_no": 4, "turn": "through", "cap": 356.4 }
+    ],
+    "supply_gt_demand": false,
+    "has_receiving_capacity": true,
+    "title": "上游需求流量分析",
+    "conclusion": "供给小于需求，当前路段有承接能力",
+    "table_rows": [
+      { "label": "供给流量", "value": "824 vph" },
+      { "label": "需求流量", "value": "1285.6 vph" }
+    ]
+  },
+  "road_labels": [
+    { "name": "经十路", "at": "target", "dx": -20, "dy": 6 },
+    { "name": "奥体西", "at": "problem_mid", "dx": -12, "dy": 0 },
+    { "name": "解放东", "at": "via", "dx": 18, "dy": 7 },
+    { "name": "坤顺路", "at": "source", "dx": 18, "dy": 7 }
+  ],
+  "downstream_constraint": {
+    "hold_ms": 2800,
+    "clear_ms": 600,
+    "frame_ms": 900,
+    "ew_flow_ms": 3200,
+    "signal_ms": 2800,
+    "overflow_ms": 3600,
+    "keep_road_labels": ["经十路", "奥体西"],
+    "metrics": {
+      "east_through_flow_vph": 1230,
+      "east_through_saturation": 0.76,
+      "west_through_flow_vph": 1180,
+      "west_through_saturation": 0.73,
+      "west_mock": true,
+      "north_through_flow_vph": 824,
+      "north_through_saturation": 1.28,
+      "intersection_saturation_max": 1.29,
+      "intersection_los": "F"
+    },
+    "approach_cards": [
+      {
+        "role": "东进口",
+        "name": "经十路",
+        "saturation": 0.76,
+        "flow_vph": 1230
+      },
+      {
+        "role": "西进口",
+        "name": "经十路",
+        "saturation": 0.73,
+        "flow_vph": 1180
+      }
+    ],
+    "gaps": ["GAP-WEST-SAT"],
+    "title": "下游约束研判",
+    "hint": "成因不在路段供给不足，而在下游主干道优先保障下的绿灯约束。",
+    "copy": [
+      {
+        "id": "arterial",
+        "narration_id": "s2_ew_arterial",
+        "text": "经十路为通勤主干道，保障东西方向流量。"
+      },
+      {
+        "id": "priority",
+        "narration_id": "s2_ew_priority",
+        "text": "经十路主干道优先，周期内无可用绿灯时间分配给北向南直行。"
+      },
+      {
+        "id": "overflow",
+        "narration_id": "s2_ew_overflow",
+        "text": "经十路和奥体西路北进口车流在短时间内无法快速消散。"
+      }
+    ]
+  },
+  "map_beats": {
+    "trace": {
+      "caption": "正在进行问题路段流量溯源"
+    },
+    "supply": {
+      "ms": 2800,
+      "caption": "供给小于需求，路段有承接能力"
+    },
+    "arterial": {
+      "ms": 3200,
+      "caption": "经十路为通勤主干道，保障东西方向流量"
+    },
+    "signal": {
+      "ms": 2800,
+      "caption": "经十路主干道优先，周期内无可用绿灯分配给北向南直行",
+      "schematic": true,
+      "gap": "相位环非库内绿秒"
+    },
+    "overflow": {
+      "ms": 3600,
+      "caption": "经十路和奥体西路北进口车流在短时间内无法快速消散",
+      "queue_m": 270,
+      "gaps": ["GAP-QUEUE-TABLE"]
+    }
+  }
+}
