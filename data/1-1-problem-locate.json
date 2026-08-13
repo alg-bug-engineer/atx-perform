@@ -139,6 +139,52 @@
       "GAP-JIEFANG-SAT"
     ]
   },
+  "jingshi_ew_turn_flow": {
+    "inter_id": "011wwe28ctu00001",
+    "source": "xianchang.dws_inter_link_turn_flow_5min_mm",
+    "metric": "turn_flow_veh_h",
+    "metric_unit": "veh_h",
+    "east_entrance": {
+      "direction": "E2W",
+      "from_dir": "E",
+      "to_dir": "W",
+      "through_link_id": "12wwe291ewwe28ct01",
+      "turn_flow_veh_h": {
+        "left": null,
+        "through": 1230.0,
+        "right": null,
+        "sum": 1230.0
+      },
+      "through_saturation": 0.76,
+      "note": "直行有值；左/右转绝对流量库内缺值"
+    },
+    "west_entrance": {
+      "direction": "W2E",
+      "from_dir": "W",
+      "to_dir": "E",
+      "through_link_id": "12wwe289qwwe28ct01",
+      "turn_flow_veh_h": {
+        "left": null,
+        "through": null,
+        "right": null,
+        "sum": null
+      },
+      "through_saturation": 0.0,
+      "gaps": [
+        "GAP-WEST-SAT"
+      ],
+      "note": "西进口全向流量/饱和度库内为 0，改用速度+拥堵延时指数降级"
+    },
+    "impact_prediction": {
+      "note": "南北向配时调整对东西向车流影响（派生估算，非库内直读）",
+      "source": "derived_from_saturation_and_delay",
+      "intersection_saturation_max": 1.2865916666666668,
+      "intersection_los": "F",
+      "through_impact": "南北加绿将压缩东西直行绿灯，东进口直行饱和度 0.76 已偏高",
+      "turn_impact": "东西向转向流量库内缺值，影响待补数评估",
+      "delay_scope": "东进口延误指数 5.81 / 西进口 3.41，压缩绿灯后预计上升；波及转山西路·奥体东路方向 1–2 跳"
+    }
+  },
   "traffic_color_links": [
     {
       "link_id": "12wwe289qwwe28ct01",

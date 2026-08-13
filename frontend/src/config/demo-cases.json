@@ -1,0 +1,71 @@
+{
+  "version": 2,
+  "description": "Live 演示入口（点/线典型）。Case A 走奥体西固定取数。点=本口溢流+下游有空间；线=本口溢流+下游无空间。",
+  "default_case_id": "case_aotixi",
+  "cases": [
+    {
+      "id": "case_aotixi",
+      "code": "A",
+      "label": "奥体西路×经十路",
+      "display_name": "点优化 · 奥体西路×经十路北直→经十路东西向",
+      "inter_id": "011wwe28ctu00001",
+      "intersection_name": "奥体西路与经十路路口",
+      "opt_type": "TYPE1_POINT",
+      "fixture": "aotixi_fixture.json",
+      "live_validation": "aotixi-jingshi-north-through.json",
+      "query": "奥体西路与经十路路口，晚高峰五点半到六点半，北进口直行经常排队外溢。下游经十路东西向饱和度很高，北向南排队溢出到解放东路路口。帮忙看看配时怎么调，别加重下游拥堵。"
+    },
+    {
+      "id": "case_b",
+      "code": "B",
+      "label": "解放东路×奥体中路",
+      "display_name": "线优化 · 解放东路×奥体中路南直→坤顺×奥体中",
+      "inter_id": "011wwe294k300001",
+      "intersection_name": "解放东路与奥体中路路口",
+      "opt_type": "TYPE2_LINE",
+      "metric_profile_id": "line_jiefangdong_aotizhong_south_through",
+      "fixture": "case_b_fixture.json",
+      "live_validation": "jiefangdong-aotizhong-south-through-line.json",
+      "query": "解放东路与奥体中路路口，晚高峰五点到七点，南口直行高峰经常排得很满，下游坤顺路和奥体中路那个口接不住，帮忙看看要不要做干线协调，别光本口加绿。"
+    },
+    {
+      "id": "case_c",
+      "code": "C",
+      "label": "草山岭中路×草山岭南路",
+      "display_name": "线治理 · 草山岭中路×草山岭南路北进口直行",
+      "inter_id": "011wwe293wd00001",
+      "intersection_name": "草山岭中路与草山岭南路路口",
+      "opt_type": "TYPE2_LINE",
+      "metric_profile_id": "line_caoshanling_north_through",
+      "fixture": "case_c_caoshanling-north-through_fixture.json",
+      "live_validation": "caoshanling-zhong-nan-north-through.json",
+      "query": "草山岭中路与草山岭南路路口，晚高峰五点到七点，北进口直行经常排队外溢，帮忙看看配时怎么调，并核验直接下游是否接得住。"
+    },
+    {
+      "id": "case_e",
+      "code": "E",
+      "label": "会展路×奥体中路",
+      "display_name": "点治理 · 会展路×奥体中路西进口直行",
+      "inter_id": "011wwe29jbf00001",
+      "intersection_name": "会展路与奥体中路路口",
+      "opt_type": "TYPE1_POINT",
+      "metric_profile_id": "point_huizhan_aotizhong_west_through",
+      "fixture": "case_e_huizhan-aotizhong-west-through_fixture.json",
+      "live_validation": "huizhan-aotizhong-west-through.json",
+      "query": "会展路与奥体中路路口，晚高峰五点到七点，西进口直行经常排队外溢，帮忙看看配时怎么调，并核验直接下游是否接得住。"
+    },
+    {
+      "id": "case_f",
+      "code": "F",
+      "label": "旅游路×转山西路",
+      "display_name": "线治理 · 旅游路×转山西路东进口直行",
+      "inter_id": "011wwe22xn400001",
+      "intersection_name": "旅游路与转山西路路口",
+      "opt_type": "TYPE2_LINE",
+      "metric_profile_id": "line_lvyou_zhuanshanxi_east_through",
+      "fixture": "case_f_lvyou-zhuanshanxi-east-through_fixture.json",
+      "live_validation": "lvyou-zhuanshanxi-east-through.json",
+      "query": "旅游路与转山西路路口，晚高峰五点到七点，东进口直行经常排队外溢，帮忙看看配时怎么调，并核验直接下游是否接得住。"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "skill_id": "skill-011wwe28fmc00001-早高峰",
+  "skill_dir": "data/skills/skill-011wwe28fmc00001-早高峰",
+  "created_at": "2026-08-07T06:34:30.579724+00:00",
+  "updated_at": "2026-08-07T06:34:30.579724+00:00",
+  "intersection": "奥体西路与解放东路路口",
+  "inter_id": "011wwe28fmc00001",
+  "problem_type": "溢出",
+  "time_period_label": "07:00–09:00",
+  "tags": {
+    "match": {
+      "intersection": "奥体西路与解放东路路口",
+      "inter_id": "011wwe28fmc00001",
+      "time_period": "早高峰",
+      "problem_type": "溢出",
+      "directions": [
+        "北向南"
+      ],
+      "match_keywords": [
+        "奥体西路与解放东路路口",
+        "溢出",
+        "早高峰",
+        "北向南",
+        "直行"
+      ]
+    },
+    "content": {
+      "has_user_constraints": true,
+      "constraint_intent": "缓解北口直行溢出且不影响下游通行"
+    },
+    "meta": {
+      "experience_source": "plan_accept",
+      "version": "0.1.0",
+      "source_utterance_summary": "早高峰那两小时，北口直行老往外溢；看看本口配时还能不能抠点绿；别这边加绿把拥堵甩下游去"
+    }
+  },
+  "content_signature": "sha256:59bdafc1809734e82c364280d24eacd634447eccf1e93f136b6e25c84fc6508f"
+}

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>流量溯源 · 结果校验</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: rgba(15, 23, 42, 0.94);
+      --border: rgba(148, 163, 184, 0.28);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --danger: #f87171;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(56, 189, 248, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(245, 158, 11, 0.12), transparent 50%),
+        var(--bg);
+      color: var(--text);
+    }
+    #app { display: grid; grid-template-columns: 380px 1fr; height: 100vh; }
+    aside {
+      padding: 18px 16px;
+      border-right: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(11, 18, 32, 0.98));
+      overflow-y: auto;
+    }
+    h1 { margin: 0 0 4px; font-size: 20px; letter-spacing: 0.02em; }
+    .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; line-height: 1.5; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, select, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.92);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      background: linear-gradient(135deg, #0284c7, #0ea5e9);
+      border: none;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .radio-group { display: flex; gap: 8px; }
+    .radio-group label {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px; border-radius: 10px; border: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.7); cursor: pointer; font-size: 12px;
+    }
+    .radio-group input { width: auto; margin: 0; }
+    .toggle-group { display: flex; flex-direction: column; gap: 8px; }
+    .toggle-group label {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.7); cursor: pointer; font-size: 13px;
+    }
+    .toggle-group input { width: auto; margin: 0; flex-shrink: 0; }
+    .status { margin-top: 12px; font-size: 12px; color: var(--muted); min-height: 18px; }
+    .status.error { color: var(--danger); }
+    .status.ok { color: var(--ok); }
+    .summary, .validation {
+      margin-top: 14px; padding: 12px; border-radius: 12px;
+      border: 1px solid var(--border); background: rgba(30, 41, 59, 0.55);
+      font-size: 12px; line-height: 1.65;
+    }
+    .summary strong, .validation strong { color: #fff; }
+    .chain { margin-top: 8px; }
+    .chain-item { padding: 6px 0; border-bottom: 1px dashed rgba(148,163,184,0.15); }
+    .chain-item:last-child { border-bottom: none; }
+    .issue { color: var(--warn); }
+    .issue-ok { color: var(--ok); }
+    #map { position: relative; min-height: 100%; }
+    .map-hud {
+      position: absolute; top: 12px; right: 12px; z-index: 10;
+      padding: 10px 12px; border-radius: 10px;
+      background: var(--panel); border: 1px solid var(--border);
+      font-size: 12px; line-height: 1.5; max-width: 300px;
+    }
+    .ft-label {
+      padding: 6px 10px; border-radius: 8px;
+      background: rgba(15, 23, 42, 0.9); color: #fff;
+      border: 1px solid rgba(148,163,184,0.35);
+      font-size: 12px; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .ft-label .name { font-weight: 600; }
+    .ft-label .meta { color: #cbd5e1; margin-top: 2px; }
+    .ft-node {
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff7ed, #f59e0b 55%, #b45309);
+      box-shadow: 0 0 18px rgba(245,166,35,0.65);
+      border: 2px solid rgba(255,255,255,0.85);
+    }
+    .ft-node.is-target {
+      background: radial-gradient(circle at 35% 35%, #ecfccb, #22c55e 55%, #15803d);
+      box-shadow: 0 0 22px rgba(34,197,94,0.7);
+    }
+    .ft-node.is-downstream {
+      background: radial-gradient(circle at 35% 35%, #e0f2fe, #0ea5e9 55%, #0369a1);
+      box-shadow: 0 0 18px rgba(14,165,233,0.65);
+    }
+    @media (max-width: 960px) {
+      #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      aside { max-height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside>
+      <h1>流量溯源校验</h1>
+      <div class="sub">读取后端既有 <code>flow_trace_links_sniff_map</code> 结构体可视化；不改返回字段语义。数据源：日表 ads 流量关联。</div>
+
+      <div class="field">
+        <label for="road">道路关键词</label>
+        <input id="road" type="text" placeholder="如：解放东 / 齐川" value="解放东" />
+      </div>
+      <button id="btnSearch" type="button">搜索路口</button>
+
+      <div class="field" style="margin-top:14px">
+        <label for="interSelect">目标路口</label>
+        <select id="interSelect" disabled><option value="">请先搜索路口</option></select>
+      </div>
+
+      <div class="field">
+        <label for="approachSelect">进口道</label>
+        <select id="approachSelect" disabled><option value="">请选择路口</option></select>
+      </div>
+
+      <div class="field">
+        <label for="turnSelect">转向</label>
+        <select id="turnSelect">
+          <option value="1">左转</option>
+          <option value="2" selected>直行</option>
+          <option value="3">右转</option>
+          <option value="4">掉头</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>溯源方向</label>
+        <div class="radio-group">
+          <label><input type="radio" name="direction" value="upstream" checked /> 来向</label>
+          <label><input type="radio" name="direction" value="downstream" /> 去向</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="periodSelect">时段</label>
+        <select id="periodSelect">
+          <option value="晚高峰" selected>晚高峰</option>
+          <option value="早高峰">早高峰</option>
+          <option value="平峰">平峰</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>显示选项</label>
+        <div class="toggle-group">
+          <label><input id="chkCrossTopo" type="checkbox" /> 十字拓扑（进/出口 link）</label>
+          <label><input id="chkRoadLinks" type="checkbox" checked /> 主走廊连线</label>
+        </div>
+      </div>
+
+      <button id="btnTrace" type="button" disabled>生成溯源可视化</button>
+      <div id="status" class="status"></div>
+      <div id="validation" class="validation" hidden></div>
+      <div id="summary" class="summary" hidden></div>
+    </aside>
+
+    <main id="map">
+      <div class="map-hud" id="mapHud">等待生成溯源…</div>
+    </main>
+  </div>
+
+  <script>
+    const API = '/api/v1/flow-trace';
+    const MIN_PATH_COVERAGE = 10;
+    const TRACE_PALETTE = {
+      upstream: { glow: '#f5a623', core: '#ffcf7a' },
+      downstream: { glow: '#0ea5e9', core: '#38bdf8' },
+    };
+    const SNIFF_PALETTE = {
+      target: { glow: '#22c55e', core: '#86efac' },
+      upstreamMain: { glow: '#f59e0b', core: '#fbbf24' },
+      upstreamOther: { glow: '#3b82f6', core: '#93c5fd' },
+      downstreamMain: { glow: '#a855f7', core: '#d8b4fe' },
+      downstreamOther: { glow: '#06b6d4', core: '#67e8f9' },
+    };
+
+    const els = {
+      road: document.getElementById('road'),
+      btnSearch: document.getElementById('btnSearch'),
+      interSelect: document.getElementById('interSelect'),
+      approachSelect: document.getElementById('approachSelect'),
+      turnSelect: document.getElementById('turnSelect'),
+      periodSelect: document.getElementById('periodSelect'),
+      chkCrossTopo: document.getElementById('chkCrossTopo'),
+      chkRoadLinks: document.getElementById('chkRoadLinks'),
+      btnTrace: document.getElementById('btnTrace'),
+      status: document.getElementById('status'),
+      summary: document.getElementById('summary'),
+      validation: document.getElementById('validation'),
+      mapHud: document.getElementById('mapHud'),
+    };
+
+    let amapKey = '';
+    let map = null;
+    let overlays = [];
+    let intersections = [];
+    let lastScene = null;
+
+    function renderOptions() {
+      return {
+        showCrossTopo: Boolean(els.chkCrossTopo?.checked),
+        showRoadLinks: Boolean(els.chkRoadLinks?.checked),
+      };
+    }
+
+    function setStatus(text, kind = '') {
+      els.status.textContent = text || '';
+      els.status.className = 'status' + (kind ? ` ${kind}` : '');
+    }
+
+    function selectedDirection() {
+      return document.querySelector('input[name="direction"]:checked')?.value || 'upstream';
+    }
+
+    function edgeWeight(pct) {
+      const v = Math.max(0, Math.min(100, Number(pct) || 0));
+      return 2.8 + Math.sqrt(v / 100) * 5.7;
+    }
+
+    function sniffCoverage(node) {
+      if (node.path_coverage == null || node.path_coverage === '') return null;
+      const v = Number(node.path_coverage);
+      return Number.isFinite(v) ? v : null;
+    }
+
+    function shouldRenderNode(node) {
+      if (node.role === 'target') return true;
+      if (node.in_main_corridor || node.is_topo_anchor) return true;
+      const cov = sniffCoverage(node);
+      if (cov == null) return false;
+      return cov >= MIN_PATH_COVERAGE;
+    }
+
+    function stripSuffix(name) {
+      return String(name || '').replace(/路口\s*$/u, '').trim() || name;
+    }
+
+    function buildLabelHtml(node) {
+      const name = stripSuffix(node.name || node.inter_id || '路口');
+      const cov = sniffCoverage(node);
+      const covText = cov == null ? '拓扑' : `${cov.toFixed(1)}%`;
+      const corridor = node.role === 'target' ? '目标' : (node.in_main_corridor ? '主走廊' : '旁支');
+      const hop = node.corridor_hop ? ` · 第${node.corridor_hop}跳` : '';
+      return `<div class="ft-label"><div class="name">${name}</div><div class="meta">${corridor}${hop} · ${covText}</div></div>`;
+    }
+
+    function paletteForNode(node, traceDir) {
+      if (node.role === 'target') return SNIFF_PALETTE.target;
+      if (traceDir === 'downstream') {
+        return node.in_main_corridor ? SNIFF_PALETTE.downstreamMain : SNIFF_PALETTE.downstreamOther;
+      }
+      return node.in_main_corridor ? SNIFF_PALETTE.upstreamMain : SNIFF_PALETTE.upstreamOther;
+    }
+
+    function clearMap() {
+      overlays.forEach((o) => o.setMap && o.setMap(null));
+      overlays = [];
+    }
+
+    function corridorChainNodes(nodes, traceDir) {
+      const target = nodes.find((n) => n.role === 'target');
+      const peers = nodes
+        .filter((n) => n.role !== 'target' && n.in_main_corridor && n.center?.length === 2)
+        .sort((a, b) => (a.corridor_hop || 999) - (b.corridor_hop || 999));
+      if (!target?.center) return peers;
+      if (traceDir === 'upstream') return [...peers.slice().reverse(), target];
+      return [target, ...peers];
+    }
+
+    function renderCorridorLinks(nodes, traceDir) {
+      const chain = corridorChainNodes(nodes, traceDir);
+      const colors = TRACE_PALETTE[traceDir];
+      for (let i = 0; i < chain.length - 1; i += 1) {
+        const from = chain[i];
+        const to = chain[i + 1];
+        const path = [from.center, to.center];
+        const cov = sniffCoverage(from.role === 'target' ? to : from);
+        const weight = edgeWeight(cov);
+        const glow = new AMap.Polyline({
+          path, strokeColor: colors.glow, strokeWeight: weight * 2.4,
+          strokeOpacity: 0.22, lineJoin: 'round', lineCap: 'round', zIndex: 88,
+        });
+        const core = new AMap.Polyline({
+          path, strokeColor: colors.core, strokeWeight: weight,
+          strokeOpacity: 0.92, lineJoin: 'round', lineCap: 'round', showDir: true, zIndex: 92,
+        });
+        glow.setMap(map); core.setMap(map);
+        overlays.push(glow, core);
+      }
+    }
+
+    function renderScene(scene, opts = renderOptions()) {
+      if (!map || !window.AMap) return;
+      clearMap();
+      const traceDir = scene.trace_direction === 'downstream' ? 'downstream' : 'upstream';
+      const nodes = (scene.intersections || []).filter(shouldRenderNode);
+      const fitOverlays = [];
+
+      nodes.forEach((node, idx) => {
+        const center = node.center;
+        const palette = paletteForNode(node, traceDir);
+        const nodeSize = node.role === 'target' ? 18 : 14;
+        if (center && center.length === 2) {
+          const marker = new AMap.Marker({
+            position: center, anchor: 'center',
+            zIndex: node.role === 'target' ? 120 : 110,
+            content: `<div class="ft-node ${node.role === 'target' ? 'is-target' : ''} ${traceDir === 'downstream' && node.role !== 'target' ? 'is-downstream' : ''}" style="width:${nodeSize}px;height:${nodeSize}px"></div>`,
+          });
+          marker.setMap(map); overlays.push(marker); fitOverlays.push(marker);
+
+          const label = new AMap.Marker({
+            position: center, anchor: 'bottom-center', offset: new AMap.Pixel(0, -18),
+            zIndex: 130, content: buildLabelHtml(node),
+          });
+          label.setMap(map); overlays.push(label);
+        }
+
+        if (!opts.showCrossTopo) return;
+        (node.links || []).forEach((link) => {
+          const path = link.path || [];
+          if (path.length < 2) return;
+          const cov = sniffCoverage(node);
+          const weight = edgeWeight(cov);
+          const colors = node.role === 'target' ? palette : (node.in_main_corridor ? TRACE_PALETTE[traceDir] : palette);
+          const glow = new AMap.Polyline({
+            path, strokeColor: colors.glow, strokeWeight: weight * 2.8,
+            strokeOpacity: node.role === 'target' ? 0.22 : 0.18,
+            lineJoin: 'round', lineCap: 'round', zIndex: 60 + idx,
+          });
+          const core = new AMap.Polyline({
+            path, strokeColor: colors.core, strokeWeight: weight,
+            strokeOpacity: node.role === 'target' ? 0.95 : 0.82,
+            lineJoin: 'round', lineCap: 'round', showDir: true, zIndex: 70 + idx,
+          });
+          glow.setMap(map); core.setMap(map);
+          overlays.push(glow, core); fitOverlays.push(glow, core);
+        });
+      });
+
+      if (opts.showRoadLinks) renderCorridorLinks(nodes, traceDir);
+      if (fitOverlays.length) map.setFitView(fitOverlays, false, [80, 80, 80, 380]);
+    }
+
+    function renderValidation(scene) {
+      const v = scene.validation || {};
+      const issues = v.issues || [];
+      const issueHtml = issues.length
+        ? issues.map((x) => `<div class="issue">· ${x}</div>`).join('')
+        : '<div class="issue-ok">· 校验通过：目标 / 主走廊 / 占比完整</div>';
+      els.validation.innerHTML = `
+        <div><strong>完整性校验</strong> · ${v.ok ? '通过' : '需关注'}</div>
+        <div>原始关联行 ${v.raw_correlate_rows ?? 0} · 主走廊 ${v.main_corridor_count ?? 0} · 节点 ${v.peer_count ?? 0}</div>
+        ${issueHtml}
+      `;
+      els.validation.hidden = false;
+    }
+
+    function renderSummary(scene) {
+      const sel = scene.selection || {};
+      const chain = scene.main_corridor_chain || [];
+      const stats = scene.stats || {};
+      const chainHtml = chain.map((item) =>
+        `<div class="chain-item">第${item.hop}跳 · <strong>${stripSuffix(item.name || '')}</strong> · ${item.coverage == null ? '拓扑' : item.coverage + '%'}</div>`
+      ).join('');
+      els.summary.innerHTML = `
+        <div><strong>${scene.title || ''}</strong></div>
+        <div>路口：${sel.inter_name || ''}</div>
+        <div>组合：${sel.approach || ''} · ${sel.direction_label || ''} · ${sel.period || ''}</div>
+        <div>表：${sel.flow_correlate_table || '—'}</div>
+        <div>渲染：${stats.rendered || 0} 路口 · 主走廊 ${stats.main_corridor || 0} · 原始行 ${stats.raw_rows || 0}</div>
+        <div class="chain">${chainHtml || '<div class="chain-item">无主走廊链</div>'}</div>
+      `;
+      els.summary.hidden = false;
+      els.mapHud.textContent = scene.title || '溯源地图';
+    }
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || res.statusText || '请求失败');
+      return data;
+    }
+
+    async function loadConfig() {
+      const cfg = await api(`${API}/config`);
+      amapKey = cfg.amap_key || '';
+      if (!amapKey) setStatus('未配置 VITE_AMAP_KEY / AMAP_JS_KEY，地图可能无法加载', 'error');
+      if (!cfg.pg_configured) setStatus('后端未配置 PG_DSN', 'error');
+    }
+
+    function loadAmap() {
+      return new Promise((resolve, reject) => {
+        if (window.AMap) return resolve(window.AMap);
+        if (!amapKey) return reject(new Error('缺少高德地图 Key'));
+        const script = document.createElement('script');
+        script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(amapKey)}`;
+        script.onload = () => resolve(window.AMap);
+        script.onerror = () => reject(new Error('高德地图脚本加载失败'));
+        document.head.appendChild(script);
+      });
+    }
+
+    async function ensureMap(center) {
+      const AMap = await loadAmap();
+      if (!map) {
+        map = new AMap.Map('map', {
+          zoom: 15,
+          center: center || [117.1084, 36.663],
+          viewMode: '2D',
+          mapStyle: 'amap://styles/dark',
+        });
+      } else if (center) {
+        map.setCenter(center);
+      }
+      return map;
+    }
+
+    async function searchIntersections() {
+      const road = els.road.value.trim();
+      if (!road) { setStatus('请输入道路关键词', 'error'); return; }
+      setStatus('搜索中…');
+      els.btnSearch.disabled = true;
+      try {
+        const data = await api(`${API}/intersections/search?road=${encodeURIComponent(road)}`);
+        intersections = data.items || [];
+        els.interSelect.innerHTML = intersections.length
+          ? intersections.map((it) => `<option value="${it.inter_id}">${it.inter_name}</option>`).join('')
+          : '<option value="">未找到匹配路口</option>';
+        els.interSelect.disabled = !intersections.length;
+        els.approachSelect.innerHTML = '<option value="">请选择路口</option>';
+        els.approachSelect.disabled = true;
+        els.btnTrace.disabled = true;
+        setStatus(intersections.length ? `找到 ${intersections.length} 个路口` : '未找到匹配路口', intersections.length ? 'ok' : 'error');
+        if (intersections.length) els.interSelect.dispatchEvent(new Event('change'));
+      } catch (err) {
+        setStatus(err.message, 'error');
+      } finally {
+        els.btnSearch.disabled = false;
+      }
+    }
+
+    async function loadApproaches(interId) {
+      if (!interId) return;
+      setStatus('加载进口道…');
+      try {
+        const data = await api(`${API}/intersections/${encodeURIComponent(interId)}/approaches`);
+        const approaches = data.approaches || [];
+        els.approachSelect.innerHTML = approaches.length
+          ? approaches.map((a) => `<option value="${a.dir8_code}">${a.label}</option>`).join('')
+          : '<option value="">无进口道数据</option>';
+        els.approachSelect.disabled = !approaches.length;
+        els.btnTrace.disabled = !approaches.length;
+        // Case A 默认北进口
+        if (approaches.some((a) => Number(a.dir8_code) === 0)) {
+          els.approachSelect.value = '0';
+        }
+        setStatus(approaches.length ? `已加载 ${approaches.length} 个进口道` : '该路口无进口道数据', approaches.length ? 'ok' : 'error');
+      } catch (err) {
+        setStatus(err.message, 'error');
+        els.approachSelect.disabled = true;
+        els.btnTrace.disabled = true;
+      }
+    }
+
+    async function buildTrace() {
+      const interId = els.interSelect.value;
+      const dir8 = els.approachSelect.value;
+      const turn = els.turnSelect.value;
+      const direction = selectedDirection();
+      const period = els.periodSelect.value;
+      const interName = els.interSelect.selectedOptions[0]?.textContent || '';
+      if (!interId || dir8 === '') {
+        setStatus('请先完成路口与进口道选择', 'error');
+        return;
+      }
+      setStatus('生成溯源中…');
+      els.btnTrace.disabled = true;
+      try {
+        const qs = new URLSearchParams({
+          inter_id: interId,
+          dir8,
+          turn,
+          direction,
+          period,
+          inter_name: interName,
+          day_of_week: '1',
+        });
+        const scene = await api(`${API}/scene?${qs.toString()}`);
+        if (!scene.available) {
+          setStatus(`场景不可用：${scene.reason || 'unknown'}`, 'error');
+          renderValidation(scene);
+          return;
+        }
+        const target = (scene.intersections || []).find((n) => n.role === 'target');
+        await ensureMap(target?.center || null);
+        lastScene = scene;
+        renderScene(scene);
+        renderValidation(scene);
+        renderSummary(scene);
+        setStatus('溯源可视化已生成', 'ok');
+      } catch (err) {
+        setStatus(err.message, 'error');
+      } finally {
+        els.btnTrace.disabled = false;
+      }
+    }
+
+    els.btnSearch.addEventListener('click', searchIntersections);
+    els.interSelect.addEventListener('change', () => loadApproaches(els.interSelect.value));
+    els.btnTrace.addEventListener('click', buildTrace);
+    els.road.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchIntersections(); });
+    [els.chkCrossTopo, els.chkRoadLinks].forEach((el) => {
+      el?.addEventListener('change', () => { if (lastScene) renderScene(lastScene); });
+    });
+
+    (async function init() {
+      try {
+        await loadConfig();
+      } catch (err) {
+        setStatus(err.message, 'error');
+      }
+      try {
+        await ensureMap();
+      } catch (err) {
+        // 地图失败不阻断路口搜索 / 溯源 API 校验
+        setStatus(err.message || '地图暂不可用，仍可搜索路口并校验接口', 'error');
+      }
+      try {
+        await searchIntersections();
+      } catch (err) {
+        setStatus(err.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

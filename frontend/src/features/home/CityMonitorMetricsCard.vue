@@ -8,6 +8,7 @@ import {
   statusLabel,
 } from '../../services/cityMonitorDemo.js';
 import { cityMonitorSelection } from '../../shared/home-idle-state.js';
+import { narrativeActive, resetNarrativeToHome } from '../../shared/narrative-state.js';
 
 const demo = ref(null);
 
@@ -47,6 +48,12 @@ const showOptimize = computed(() => {
   const sel = cityMonitorSelection.value;
   return sel?.type === 'corridor' && sel?.id === HOME_FOCUS_CORRIDOR_ID;
 });
+
+/** 点击「立即优化」：重置叙事 → 进入第一幕（幕舞台挂载后自动开始问题理解与定位） */
+function onOptimize() {
+  resetNarrativeToHome();
+  narrativeActive.value = true;
+}
 </script>
 
 <template>
@@ -65,7 +72,7 @@ const showOptimize = computed(() => {
       </div>
     </div>
     <div v-if="showOptimize" class="metrics-footer">
-      <button type="button" class="optimize-btn">
+      <button type="button" class="optimize-btn" @click="onOptimize">
         立即优化
       </button>
     </div>

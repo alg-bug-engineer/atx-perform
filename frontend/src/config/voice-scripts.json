@@ -1,0 +1,126 @@
+{
+  "_meta": {
+    "description": "处置闭环口播。文案宜短：幕间必须等播完再切幕，靠精简句数/句长控节奏，禁止跳幕打断。结论词槽跟运行时数据。",
+    "slot_gate": "模板内任一 {词槽} 未就绪则挂起等待，齐了再播；禁止半句。固定句可立即播。",
+    "slots": [
+      "intersection_name",
+      "direction",
+      "movement",
+      "period",
+      "problem_type",
+      "approach",
+      "ew_road",
+      "ns_road",
+      "queue_ratio",
+      "queue_length",
+      "storage_length",
+      "downstream_verdict",
+      "mechanism",
+      "overflow_conclusion",
+      "branch_conclusion",
+      "upstream_role",
+      "coordination_line",
+      "metering_line",
+      "arterial_verdict",
+      "primary_cause",
+      "strategy_hint",
+      "strategy_name",
+      "plan_name",
+      "timing_summary",
+      "plan_conclusion",
+      "conclusion"
+    ],
+    "deps_by_act": {
+      "a1": {
+        "a1.intersection": ["intersection_name"],
+        "a1.time": ["period"],
+        "a1.direction": ["direction", "movement"],
+        "a1.problem": ["problem_type"],
+        "a1.ticket_ready": ["intersection_name"]
+      },
+      "a2": {
+        "a2.channelization": ["approach"],
+        "a2.arms": ["intersection_name", "ew_road", "ns_road"],
+        "a2.handoff": ["approach"]
+      },
+      "a3": {
+        "a3.storage": ["storage_length"],
+        "a3.queue": ["queue_length"],
+        "a3.video_evidence": [],
+        "a3.verdict": ["overflow_conclusion"]
+      },
+      "a4": {
+        "a4.compare": ["downstream_verdict"],
+        "a4.branch": ["mechanism"],
+        "a4.small_step_ok": ["branch_conclusion"]
+      },
+      "a5": {
+        "a5.north_expand": ["upstream_role"],
+        "a5.handoff": ["arterial_verdict"]
+      },
+      "a6": {
+        "a6.primary_pin": ["primary_cause"],
+        "a6.handoff": ["primary_cause"]
+      },
+      "a7": {
+        "a7.recommend": ["strategy_name"],
+        "a7.handoff": ["strategy_name"]
+      },
+      "a8": {
+        "a8.recommend": ["plan_name"],
+        "a8.timing": ["timing_summary"]
+      }
+    }
+  },
+
+  "agent_planning": "开始梳理本轮要点。",
+  "agent_analyzing": "对照指标核对依据。",
+  "agent_searching": "检索相似案例。",
+  "agent_done": "本段结束。",
+
+  "a1.input": "请说明问题路口、流向与时段。",
+  "a1.parse": "正在解析路口、流向与时段。",
+  "a1.intersection": "目标路口确定为{intersection_name}。",
+  "a1.time": "诊断时段为{period}。",
+  "a1.direction": "问题流向为{direction}{movement}。",
+  "a1.problem": "问题类型为{problem_type}。",
+  "a1.ticket_ready": "工单已形成，下一步路网定位。",
+
+  "a2.fly_in": "将问题落到真实路网对象。",
+  "a2.channelization": "目标进口为{approach}。",
+  "a2.arms": "{intersection_name}，东西向{ew_road}，南北向{ns_road}。",
+  "a2.handoff": "路网定位完成，下一步证据核验。",
+
+  "a3.storage": "蓄车约{storage_length}米。",
+  "a3.queue": "排队约{queue_length}米。",
+  "a3.video_evidence": "已获取现场视频证据，现已呈现。",
+  "a3.verdict": "{overflow_conclusion}",
+
+  "a4.trace_on": "区分本口放行与下游回堵。",
+  "a4.compare": "{downstream_verdict}",
+  "a4.branch": "{mechanism}",
+  "a4.small_step_ok": "{branch_conclusion}",
+
+  "a5.spread_on": "沿干线向上游溯源来流。",
+  "a5.north_expand": "{upstream_role}",
+  "a5.handoff": "{arterial_verdict}",
+
+  "a6.primary_pin": "主因{primary_cause}。",
+  "a6.cases": "正在检索历史经验库，匹配相似案例。",
+  "a6.view_cases": "查看相似案例。",
+  "a6.handoff": "案例校验完成，主因{primary_cause}。",
+
+  "a7.planning": "结合成因结论，开始策略规划。",
+  "a7.scope": "划定控制范围：目标路口、上游观测与下游监测。",
+  "a7.recommend": "推荐策略包：{strategy_name}。",
+  "a7.handoff": "策略定调：{strategy_name}。下一步生成配时方案。",
+
+  "a8.planning": "方案生成中。",
+  "a8.complete": "方案生成完成。",
+  "a8.recommend": "推荐方案：{plan_name}。",
+  "a8.timing": "配时：{timing_summary}。",
+  "a8.handoff": "方案已就绪，进入反馈沉淀。",
+  "effect.trial_queue": "试运行效果观察进行中。",
+
+  "conclusion": "{conclusion}"
+}

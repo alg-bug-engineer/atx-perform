@@ -1,0 +1,129 @@
+/**
+ * 幕 2 · 流量溯源（成因分析）— 状态机
+ *
+ * 阶段：idle → tracing → done → handoff
+ *
+ * 地图节拍（flowTraceMapBeat，供地图运行时消费）：
+ *   null | 'trace' | 'supply' | 'arterial' | 'signal' | 'overflow' | 'clear'
+ *   - 'trace'     地图播放上游→汇点流量溯源动画
+ *   - 'supply'    供需分析（上游需求流量）
+ *   - 'arterial'  本口（经十路东西向进口流量）
+ *   - 'signal'    绿灯约束
+ *   - 'overflow'  溢流风险
+ */
+import {
+  flowTraceMapBeat,
+  flowTracePhase,
+  narrativeState,
+  setAct,
+  setBeat,
+  setFlowTraceMapBeat,
+  setLayerFlags,
+  taskBarLabel,
+  taskBarVisible,
+} from '../../../shared/narrative-state.js';
+
+export const FLOW_TRACE_ACT_ID = 2;
+export const FLOW_TRACE_ACT_KEY = 'flow-trace';
+export const FLOW_TRACE_ACT_NAME = '流量溯源';
+
+/**
+ * 幕内就绪信号（Stage 订阅）：
+ * revealed —— 地图流量溯源动画完成（markFlowTraceRevealed 触发）
+ */
+export const flowTraceRevealed = {
+  _ready: false,
+  _listeners: new Set(),
+  get ready() {
+    return this._ready;
+  },
+  set ready(v) {
+    this._ready = v;
+    if (v) this._listeners.forEach((fn) => fn());
+  },
+  reset() {
+    this._ready = false;
+  },
+  once(fn) {
+    if (this._ready) {
+      fn();
+      return;
+    }
+    this._listeners.add(fn);
+  },
+  clear() {
+    this._listeners.clear();
+  },
+};
+
+/** 进入幕 2（流量溯源 / 成因分析） */
+export function enterFlowTrace(prevState = null) {
+  setAct(FLOW_TRACE_ACT_ID);
+  setBeat('a2f.trace');
+  flowTracePhase.value = 'tracing';
+  flowTraceMapBeat.value = null;
+  taskBarVisible.value = true;
+  taskBarLabel.value = '执行中：流量溯源';
+  // 隐去渠化，只看上游→汇点流量溯源
+  setLayerFlags({
+    channelization: false,
+    mainPath: false,
+    upstreamNodes: true,
+    downstreamNodes: false,
+    focusTrace: true,
+    congestionSpread: false,
+  });
+
+  if (prevState?.ticket) narrativeState.ticket = prevState.ticket;
+  if (prevState?.spatial) narrativeState.spatial = prevState.spatial;
+  if (prevState?.camera) narrativeState.camera = { ...prevState.camera };
+
+  flowTraceRevealed.reset();
+  flowTraceRevealed.clear();
+
+  return {
+    act: FLOW_TRACE_ACT_ID,
+    beatId: 'a2f.trace',
+    ticket: narrativeState.ticket,
+    spatial: narrativeState.spatial,
+    camera: narrativeState.camera,
+    layers: { ...narrativeState.layers },
+  };
+}
+
+/** 地图流量溯源动画完成（由地图运行时回调） */
+export function markFlowTraceRevealed() {
+  flowTraceRevealed.ready = true;
+}
+
+/** 溯源收束 */
+export function completeFlowTrace() {
+  flowTracePhase.value = 'done';
+  taskBarLabel.value = '流量溯源完成';
+}
+
+/** 退出幕 2 */
+export function exitFlowTrace(nextHint = {}) {
+  flowTracePhase.value = 'handoff';
+  taskBarLabel.value = '流量溯源完成，准备进入下一幕';
+  setFlowTraceMapBeat('clear');
+  setBeat('a2f.done');
+
+  return {
+    act: FLOW_TRACE_ACT_ID,
+    beatId: 'a2f.done',
+    ticket: narrativeState.ticket,
+    spatial: narrativeState.spatial,
+    camera: narrativeState.camera,
+    layers: { ...narrativeState.layers },
+    nextAct: nextHint.nextAct ?? 3,
+  };
+}
+
+export default {
+  actId: FLOW_TRACE_ACT_ID,
+  enter: enterFlowTrace,
+  exit: exitFlowTrace,
+  markFlowTraceRevealed,
+  completeFlowTrace,
+};

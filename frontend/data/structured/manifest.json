@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-08-11T09:12:54.136438+00:00",
+  "sources": {
+    "industry": {
+      "path": "/Users/chenyuxiang/Desktop/Agent/agent-loop-project/data/knowledge_qa.jsonl",
+      "exists": false,
+      "mtime_ns": 0,
+      "size": 0,
+      "sha16": ""
+    },
+    "feedback": {
+      "path": "/Users/chenyuxiang/Desktop/Agent/agent-loop-project/data/plan_feedback.jsonl",
+      "exists": true,
+      "mtime_ns": 1786084467735452165,
+      "size": 80155,
+      "sha16": "61ba78eeff8f432e"
+    },
+    "experience": {
+      "path": "/Users/chenyuxiang/Desktop/Agent/agent-loop-project/data/user_experience.jsonl",
+      "exists": true,
+      "mtime_ns": 1786439352953775928,
+      "size": 49320,
+      "sha16": "d337cdbed4558d82"
+    }
+  },
+  "counts": {
+    "industry_cases": 0,
+    "intersection_cases": 2,
+    "experiences": 23
+  },
+  "files": {
+    "industry_cases": "industry_cases.jsonl",
+    "intersection_cases": "intersection_cases.jsonl",
+    "experiences": "experiences.jsonl"
+  }
+}

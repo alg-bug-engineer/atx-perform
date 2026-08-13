@@ -1,0 +1,119 @@
+{
+  "trace_id": "aotixi-act1",
+  "completed": true,
+  "pipeline_complete": false,
+  "healthy": true,
+  "completion_status": "act1_problem_locate",
+  "diagnosis_ticket": {
+    "object_type": "intersection",
+    "intersection_name": "奥体西路与经十路路口",
+    "intersection_name_candidates": [
+      "奥体西路与经十路路口",
+      "经十路与奥体西路路口"
+    ],
+    "time_range": "17:30-18:30",
+    "period": "晚高峰",
+    "direction": "北向南",
+    "movement": "直行",
+    "problem_type": "排队外溢",
+    "constraints": [
+      "避免加重下游拥堵"
+    ],
+    "diagnosis_scope": [
+      "奥体西路与经十路路口",
+      "奥体西路与解放东路路口"
+    ],
+    "governance_goal": "配时优化",
+    "user_experiences": [
+      {
+        "experience_type": "cognitive",
+        "content": "晚高峰奥体西路北向南排队溢出至解放东路路口",
+        "source_span": "奥体西路北向南，解放东路→经十路路段存在排队溢出到上游路口",
+        "tags": {
+          "problem_type": "排队外溢",
+          "time_period": "晚高峰",
+          "direction": "北向南",
+          "movement": "直行"
+        }
+      }
+    ],
+    "inter_id": "011wwe28ctu00001",
+    "lng": 117.111376,
+    "lat": 36.659469,
+    "match_confidence": 1.0
+  },
+  "phases": {
+    "intent": {
+      "diagnosis_ticket": {
+        "object_type": "intersection",
+        "intersection_name": "奥体西路与经十路路口",
+        "time_range": "17:30-18:30",
+        "period": "晚高峰",
+        "direction": "北向南",
+        "movement": "直行",
+        "problem_type": "排队外溢",
+        "constraints": ["避免加重下游拥堵"],
+        "diagnosis_scope": ["奥体西路与经十路路口", "奥体西路与解放东路路口"],
+        "governance_goal": "配时优化",
+        "inter_id": "011wwe28ctu00001",
+        "lng": 117.111376,
+        "lat": 36.659469
+      },
+      "spatial_objects": {
+        "target_intersection": "奥体西路与经十路路口",
+        "target_direction": "北向南",
+        "target_movement": "直行",
+        "upstream_scope": "奥体西路北向南来车来源路段与相邻路口",
+        "downstream_scope": "奥体西路北向南出口路段与下游信控节点",
+        "main_path": "解放东路路口 → 问题路段 → 经十路路口"
+      },
+      "spatial_scene": {
+        "available": true,
+        "recognition_steps": [
+          { "step": "intersection_match", "status": "done", "label": "路口匹配完成" },
+          { "step": "approach_direction", "status": "done", "label": "进口方向识别完成" },
+          { "step": "turn_relation", "status": "done", "label": "转向关系识别完成" },
+          { "step": "topology", "status": "done", "label": "上下游拓扑识别完成" },
+          { "step": "arterial_path", "status": "done", "label": "干线路径识别完成" }
+        ],
+        "target": {
+          "inter_id": "011wwe28ctu00001",
+          "inter_name": "奥体西路与经十路路口",
+          "lng": 117.111376,
+          "lat": 36.659469,
+          "direction": "北向南",
+          "movement": "直行"
+        },
+        "highlight_path": [[117.111376, 36.659469]],
+        "upstream_nodes": [
+          {
+            "inter_id": "011wwe28fmc00001",
+            "inter_name": "奥体西路与解放东路路口",
+            "lng": 117.111368,
+            "lat": 36.663092,
+            "role": "upstream",
+            "distance_m": 367.89
+          }
+        ],
+        "downstream_nodes": [
+          {
+            "inter_id": "011wwe28cnj00001",
+            "inter_name": "奥体西路与无名道路路口",
+            "lng": 117.111833,
+            "lat": 36.656908,
+            "role": "downstream",
+            "distance_m": 264.42
+          }
+        ],
+        "main_path": "奥体西路与解放东路路口 → 奥体西路与经十路路口 → 南向",
+        "axis_roads": {
+          "ew_road": "经十路",
+          "ns_road": "奥体西路",
+          "road_pair": ["经十路", "奥体西路"],
+          "available": true,
+          "source": "road_topology"
+        }
+      }
+    }
+  }
+}

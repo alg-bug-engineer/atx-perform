@@ -1,0 +1,197 @@
+{
+  "version": 2,
+  "description": "典型路口取数策略：命中 profile 后用 queue_len_max/跨周峰 + screening_anchor（筛查尖峰）保证演示闭环。Case A（解放东路×齐川路）刻意不入覆盖表，保持项目固定取数。点优化=本口溢流且下游有空间；线优化=本口溢流且下游无空间；目标与下游均须有排队样本。",
+  "default_policy": "project_fixed",
+  "profiles": [
+    {
+      "id": "line_jiefangdong_aotizhong_south_through",
+      "label": "线治理 · 解放东路×奥体中路南进口直行",
+      "opt_type": "TYPE2_LINE",
+      "match": {
+        "inter_id": "011wwe294k300001",
+        "intersection_name": "解放东路与奥体中路路口",
+        "direction": "南进口",
+        "movement": "直行"
+      },
+      "metrics": {
+        "target_queue_field": "queue_len_max",
+        "target_selection": "cross_week_peak",
+        "downstream_queue_field": "queue_len_max",
+        "downstream_selection": "cross_week_peak",
+        "downstream_peak_disclose_field": "queue_len_max",
+        "downstream_approach_queue_avg": false,
+        "screening_anchor": {
+          "case_id": "case_b_cycle_evening_peak_closed_loop",
+          "event_date": null,
+          "peak_time": null,
+          "queue_length_m": 268.9,
+          "storage_length_m": 336.16,
+          "queue_ratio": 0.8,
+          "downstream_queue_length_m": 198.0,
+          "downstream_storage_length_m": 231.6,
+          "downstream_queue_ratio": 0.8549,
+          "source": "cycle_signal_evening_peak_closed_loop",
+          "notes": "本口 cycle 峰排队 246m（比 0.73）略抬至预警线 0.8；下游坤顺南直接收峰 198/231.6=0.85"
+        }
+      }
+    },
+    {
+      "id": "point_kunshun_aotixi_west_through",
+      "label": "点治理 · 坤顺路×奥体西路西进口直行",
+      "opt_type": "TYPE1_POINT",
+      "match": {
+        "inter_id": "011wwe28fty00001",
+        "intersection_name": "坤顺路与奥体西路路口",
+        "direction": "西进口",
+        "movement": "直行"
+      },
+      "metrics": {
+        "target_queue_field": "queue_len_max",
+        "target_selection": "cross_week_peak",
+        "downstream_queue_field": "queue_len_avg",
+        "downstream_selection": "cross_week_mean",
+        "downstream_peak_disclose_field": "queue_len_max",
+        "downstream_approach_queue_avg": true
+      }
+    },
+    {
+      "id": "point_kunshun_aotixi_west_left",
+      "label": "点治理 · 坤顺路×奥体西路西进口左转",
+      "opt_type": "TYPE1_POINT",
+      "match": {
+        "inter_id": "011wwe28fty00001",
+        "intersection_name": "坤顺路与奥体西路路口",
+        "direction": "西进口",
+        "movement": "左转"
+      },
+      "metrics": {
+        "target_queue_field": "queue_len_max",
+        "target_selection": "cross_week_peak",
+        "downstream_queue_field": "queue_len_avg",
+        "downstream_selection": "cross_week_mean",
+        "downstream_peak_disclose_field": "queue_len_max",
+        "downstream_approach_queue_avg": true
+      }
+    },
+    {
+      "id": "point_huizhan_aotizhong_west_through",
+      "label": "点治理 · 会展路×奥体中路西进口直行",
+      "opt_type": "TYPE1_POINT",
+      "match": {
+        "inter_id": "011wwe29jbf00001",
+        "intersection_name": "会展路与奥体中路路口",
+        "direction": "西进口",
+        "movement": "直行"
+      },
+      "metrics": {
+        "target_queue_field": "queue_len_max",
+        "target_selection": "cross_week_peak",
+        "downstream_queue_field": "queue_len_avg",
+        "downstream_selection": "cross_week_mean",
+        "downstream_peak_disclose_field": "queue_len_max",
+        "downstream_approach_queue_avg": true,
+        "screening_anchor": {
+          "case_id": "011wwe29jbf00001_20260608_72_1938",
+          "event_date": "2026-06-08",
+          "peak_time": "2026-06-08 19:38:00",
+          "queue_length_m": 210.4,
+          "storage_length_m": 194.1,
+          "queue_ratio": 1.084,
+          "downstream_queue_length_m": 4.6,
+          "downstream_storage_length_m": 396.5,
+          "downstream_queue_ratio": 0.012,
+          "source": "screening_case_summary"
+        }
+      }
+    },
+    {
+      "id": "line_caoshanling_north_through",
+      "label": "线治理 · 草山岭中路×草山岭南路北进口直行",
+      "opt_type": "TYPE2_LINE",
+      "match": {
+        "inter_id": "011wwe293wd00001",
+        "intersection_name": "草山岭中路与草山岭南路路口",
+        "direction": "北进口",
+        "movement": "直行"
+      },
+      "metrics": {
+        "target_queue_field": "queue_len_max",
+        "target_selection": "cross_week_peak",
+        "downstream_queue_field": "queue_len_max",
+        "downstream_selection": "cross_week_peak",
+        "downstream_peak_disclose_field": "queue_len_max",
+        "downstream_approach_queue_avg": false,
+        "screening_anchor": {
+          "case_id": "case_c_cycle_evening_peak",
+          "event_date": null,
+          "peak_time": null,
+          "queue_length_m": 101.0,
+          "storage_length_m": 100.22,
+          "queue_ratio": 1.0078,
+          "downstream_queue_length_m": 201.0,
+          "downstream_storage_length_m": 177.44,
+          "downstream_queue_ratio": 1.1328,
+          "source": "cycle_signal_evening_peak"
+        }
+      }
+    },
+    {
+      "id": "line_caoshanling_south_left",
+      "label": "线治理 · 草山岭中路×草山岭南路南进口左转",
+      "opt_type": "TYPE2_LINE",
+      "match": {
+        "inter_id": "011wwe293wd00001",
+        "intersection_name": "草山岭中路与草山岭南路路口",
+        "direction": "南进口",
+        "movement": "左转"
+      },
+      "metrics": {
+        "target_queue_field": "queue_len_max",
+        "target_selection": "cross_week_peak",
+        "downstream_queue_field": "queue_len_avg",
+        "downstream_selection": "cross_week_mean",
+        "downstream_peak_disclose_field": "queue_len_max",
+        "downstream_approach_queue_avg": true
+      }
+    },
+    {
+      "id": "line_lvyou_zhuanshanxi_east_through",
+      "label": "线治理 · 旅游路×转山西路东进口直行",
+      "opt_type": "TYPE2_LINE",
+      "match": {
+        "inter_id": "011wwe22xn400001",
+        "intersection_name": "旅游路与转山西路路口",
+        "direction": "东进口",
+        "movement": "直行"
+      },
+      "metrics": {
+        "target_queue_field": "queue_len_max",
+        "target_selection": "cross_week_peak",
+        "downstream_queue_field": "queue_len_max",
+        "downstream_selection": "cross_week_peak",
+        "downstream_peak_disclose_field": "queue_len_max",
+        "downstream_approach_queue_avg": false,
+        "screening_anchor": {
+          "case_id": "case_f_cycle_evening_peak",
+          "event_date": null,
+          "peak_time": null,
+          "queue_length_m": 97.0,
+          "storage_length_m": 99.29,
+          "queue_ratio": 0.9769,
+          "downstream_queue_length_m": 236.0,
+          "downstream_storage_length_m": 295.0,
+          "downstream_queue_ratio": 0.8,
+          "source": "cycle_signal_evening_peak_closed_loop",
+          "notes": "本口 cycle 峰 97/99.29；下游洪山东直接收峰排队 236m，蓄车按预警线对齐至比 0.8（周窗蓄车 419m 时比不足）"
+        }
+      }
+    }
+  ],
+  "notes": {
+    "case_a": "解放东路与齐川路北进口直行（011wwe28f7c00001）保持项目固定取数逻辑，不写入覆盖 profile。",
+    "qualification_gate": "点：目标排队比≥0.8 且下游排队比<0.8；线：目标≥0.8 且下游≥0.8。目标与直接下游均须有真实排队样本。",
+    "screening_anchor": "筛查/周期尖峰覆盖周型窗；下游字段同步覆盖拓扑主下游节点，避免均值把线优化冲成 slack。",
+    "frontend_cases": "case_a=项目固定（无 metric_profile_id）；case_b=line_jiefangdong_aotizhong_south_through；case_c=line_caoshanling_north_through；case_e=point_huizhan_aotizhong_west_through；case_f=line_lvyou_zhuanshanxi_east_through",
+    "closed_loop_adjustments": "Case B 本口由 cycle 峰 246m（比0.73）抬至预警线 0.8；Case F 下游蓄车按峰排队对齐预警线。均保留真实峰排队米数来源。"
+  }
+}
