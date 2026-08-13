@@ -3,10 +3,11 @@ import TrialEffectPanel from './TrialEffectPanel.vue'
 
 defineProps({
   payload: { type: Object, required: true },
+  optimization: { type: Object, default: null },
   open: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['finish'])
+const emit = defineEmits(['finish', 'home'])
 </script>
 
 <template>
@@ -16,7 +17,12 @@ const emit = defineEmits(['finish'])
       class="effect-drawer"
       data-testid="trial-effect-drawer"
     >
-      <TrialEffectPanel :payload="payload" @finish="emit('finish')" />
+      <TrialEffectPanel
+        :payload="payload"
+        :optimization="optimization"
+        @finish="emit('finish')"
+        @home="emit('home')"
+      />
     </aside>
   </Transition>
 </template>

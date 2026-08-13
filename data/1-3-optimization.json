@@ -3,11 +3,16 @@
     "scene_index": 3,
     "name": "优化方案",
     "strategy": "相位协调（轻微截流不致上游溢出）",
+    "time_window": {
+      "label": "周一晚高峰 17:00-19:00",
+      "day_of_week": 1,
+      "day_of_week_label": "周一"
+    },
     "implementation_ref": {
       "project": "references/agent-loop-project",
       "branch": "main",
       "note": "逻辑对齐agent-loop main 方案生成幕；UI/配色对齐 references/baseline / 本项目",
-      "assets": "assets/"
+      "assets": "assets/路口渠化与信号实时状态.png"
     },
     "ui_theme": "baseline_atx_perform"
   },
@@ -154,28 +159,675 @@
   },
   "optimized_signal_plans": {
     "db_supported": false,
-    "status": "missing",
-    "placeholder": "待填入优化后 plan/offset/阶段绿时"
-  },
-  "demo_script": {
-    "left_before": [
-      "初始排队",
-      "解放东先亮绿",
-      "车流汇入",
-      "排队增长至溢出"
+    "source": "expert_proposal",
+    "status": "proposed",
+    "measure": "phase_coordination",
+    "summary": "保持两路口 220s 共同周期与各相位绿时不变，仅调整解放东路口放行时机，使北向南车流在经十路北进口绿灯启动、队列开始消散后再汇入。",
+    "release_timing_vs_downstream_green_sec": {
+      "before": -110,
+      "after": 30,
+      "unit": "s",
+      "note": "解放东路口向本路段放行的时刻，相对经十路北进口直行绿灯启动时刻的差值；负值为提前放行"
+    },
+    "unchanged": [
+      "共同周期 220s",
+      "经十路东西向绿时",
+      "各路口相位顺序"
     ],
-    "right_after": [
-      "初始排队",
-      "经十路先亮绿消散",
-      "解放东再亮绿",
-      "汇入不溢出"
-    ]
+    "placeholder": "优化后 plan/offset 尚未在库内落库，展示值为专家建议值"
   },
-  "queue_curve": {
-    "db_supported": false,
-    "unit": "m",
-    "before": [],
-    "after": [],
-    "note": "待仿真或离线序列补齐"
+  "corridor_demo": {
+    "cycle_len_sec": 220,
+    "playback": {
+      "default_speed": 12,
+      "speed_options": [
+        4,
+        8,
+        12,
+        20
+      ]
+    },
+    "link": {
+      "link_id": "12wwe28fmwwe28ct01",
+      "road_name": "奥体西路：解放东路 → 经十路（北向南）",
+      "length_m": 367.89,
+      "length_source": "dim_link_info.length_m",
+      "storage_length_m": 367.89,
+      "warning_length_m": 300,
+      "lanes": [
+        {
+          "index": 1,
+          "turn": "left",
+          "label": "左转"
+        },
+        {
+          "index": 2,
+          "turn": "left",
+          "label": "左转"
+        },
+        {
+          "index": 3,
+          "turn": "through",
+          "label": "直行"
+        },
+        {
+          "index": 4,
+          "turn": "through",
+          "label": "直行"
+        },
+        {
+          "index": 5,
+          "turn": "right",
+          "label": "右转"
+        }
+      ],
+      "lane_source": "dwd_tfc_rltn_wide_inter_ft_link.lane_info=B|B|C|C|D"
+    },
+    "upstream": {
+      "inter_id": "011wwe28fmc00001",
+      "inter_name": "奥体西路与解放东路路口",
+      "cross_road": "解放东路",
+      "release_label": "解放东路口 → 本路段放行",
+      "link_storage_m": 215.68,
+      "link_note": "奥体西路：无名道路-解放东路（北向南）蓄车长度"
+    },
+    "downstream": {
+      "inter_id": "011wwe28ctu00001",
+      "inter_name": "奥体西路与经十路路口",
+      "cross_road": "经十路",
+      "release_label": "经十路口 北进口直行",
+      "north_through_saturation": 0.843
+    },
+    "variants": [
+      {
+        "key": "before",
+        "title": "现状配时",
+        "subtitle": "解放东在经十红灯期汇入，车流堆成静止排队",
+        "tone": "danger"
+      },
+      {
+        "key": "after",
+        "title": "相位协调",
+        "subtitle": "经十先放行消散，解放东等队列跑起来再汇入",
+        "tone": "ok"
+      }
+    ],
+    "kpis": [
+      {
+        "key": "peak_queue",
+        "label": "排队峰值",
+        "unit": "m",
+        "before": 368,
+        "after": 201,
+        "better": "lower",
+        "source": "走廊微观仿真（单周期）"
+      },
+      {
+        "key": "spill_duration",
+        "label": "路口溢出时长",
+        "unit": "s",
+        "before": 16,
+        "after": 0,
+        "better": "lower",
+        "source": "走廊微观仿真（单周期）"
+      },
+      {
+        "key": "cycle_end_queue",
+        "label": "周期末残余排队",
+        "unit": "m",
+        "before": 368,
+        "after": 201,
+        "better": "lower",
+        "source": "走廊微观仿真（单周期）"
+      },
+      {
+        "key": "blocked_veh",
+        "label": "解放东路口滞留",
+        "unit": "辆",
+        "before": 9,
+        "after": 3,
+        "better": "lower",
+        "note": "队尾压回上游、当前周期进不了本路段的车辆峰值"
+      }
+    ],
+    "data_note": "排队推演由走廊微观仿真给出：几何取库内路段长度与现场渠化，配时取库内方案，汇入量按上游各相位放行能力设定并用现场观测的排队剖面标定（见 simulation.demand）。实测排队长度以专家调研值 270 m 为准。",
+    "simulation": {
+      "note": "微观仿真配置：车道渠化按现场观测，阶段顺序与绿时取自信号机方案库，相位对齐按现场放行先后标定",
+      "cycle_len_sec": 220,
+      "step_sec": 0.5,
+      "warmup_cycles": 4,
+      "seed": 20260812,
+      "display_anchor": {
+        "intersection": "jingshi",
+        "movement": "north_through",
+        "lead_in_sec": 4,
+        "note": "时间轴 0 秒锚定在经十路口南北直行绿灯亮起前 6 s，按观测叙事顺序播放一个周期"
+      },
+      "geometry": {
+        "length_m": 367.89,
+        "widen_len_m": 100,
+        "taper_len_m": 26,
+        "widen_side": "east",
+        "upstream_lanes": [
+          {
+            "index": 1,
+            "side": "east",
+            "label": "左转",
+            "group": "left"
+          },
+          {
+            "index": 2,
+            "side": "mid",
+            "label": "直行",
+            "group": "through"
+          },
+          {
+            "index": 3,
+            "side": "west",
+            "label": "公交专用道",
+            "group": "right"
+          }
+        ],
+        "downstream_lanes": [
+          {
+            "index": 1,
+            "label": "左转+掉头",
+            "group": "left",
+            "from_upstream": 1
+          },
+          {
+            "index": 2,
+            "label": "左转",
+            "group": "left",
+            "from_upstream": 1
+          },
+          {
+            "index": 3,
+            "label": "直行",
+            "group": "through",
+            "from_upstream": 2
+          },
+          {
+            "index": 4,
+            "label": "直行",
+            "group": "through",
+            "from_upstream": 2
+          },
+          {
+            "index": 5,
+            "label": "右转借道 / 公交专用道",
+            "group": "right",
+            "from_upstream": 3
+          }
+        ],
+        "field_note": "现场观测（东→西）：上游 左转·直行·公交专用道；展宽段 左转+掉头·左转·直行·直行·右转借道+公交专用道"
+      },
+      "vehicle": {
+        "space_m": 7,
+        "free_speed_mps": 11.1,
+        "reaction_sec": 1.5,
+        "accel_mps2": 2.3,
+        "stopped_speed_mps": 1.2,
+        "enter_speed_mps": 7.5,
+        "left_lane_through_mix": 0.1,
+        "capacity_note": "停止线饱和车头时距：本路段进口 2.6 s/车道（≈1385 pcu/h/车道，展宽只有 100 m、换道摩擦与右转借用公交道压低了饱和流率），上游解放东路口进口取常规 2.2 s/车道；跟驰另用 Newell 三角基本图，起动波速 = 车头间距 ÷ 反应时 ≈ 4.7 m/s",
+        "startup_loss_sec": 2.5,
+        "saturation_headway_sec": 2.6,
+        "source_headway_sec": 2.2,
+        "right_yield_factor": 2.2,
+        "right_yield_note": "右转借道 + 公交道常放，但南北直行相位外需让行冲突流，放行车头时距按此系数放大"
+      },
+      "turn_split": {
+        "left": 0.24,
+        "through": 0.6,
+        "right": 0.16,
+        "source": "dws_inter_link_turn_flow_5min_mm（经十路口 011wwe28ctu00001，周一 17:00-19:00）",
+        "db_supported": false,
+        "note": "北进口只有直行有记录 545.8 pcu/h、饱和度 0.87，左转/右转记录为 0（无检测，GAP）。直行为主流向与幕 1/2 的问题定位一致；左/右按展宽段车道功能（2 条左转 + 1 条右转借道）给保守占比"
+      },
+      "sources": [
+        {
+          "key": "north_through",
+          "label": "北进口直行",
+          "dir8": 0,
+          "turn": 2,
+          "veh_per_cycle": 36,
+          "spread": "green",
+          "note": "解放东路口北进口直行，走廊主流向；进口 3 车道，单周期放行量受绿时与饱和流率约束",
+          "lanes": 3,
+          "demand_note": "晚高峰上游进口持续排队，按「绿时 × 车道数 ÷ 饱和车头时距」放满；放不完的压在解放东进口等下一个绿灯",
+          "lanes_source": "dws_inter_link_turn_flow_5min_mm.lane_count（解放东路口 011wwe28fmc00001）"
+        },
+        {
+          "key": "east_left",
+          "label": "东进口左转",
+          "dir8": 2,
+          "turn": 1,
+          "veh_per_cycle": 31,
+          "spread": "green",
+          "note": "东进口左转汇入北向南；进口 2 车道，单周期放行量受绿时与饱和流率约束",
+          "lanes": 2,
+          "demand_note": "晚高峰上游进口持续排队，按「绿时 × 车道数 ÷ 饱和车头时距」放满；放不完的压在解放东进口等下一个绿灯",
+          "lanes_source": "dws_inter_link_turn_flow_5min_mm.lane_count（解放东路口 011wwe28fmc00001）"
+        },
+        {
+          "key": "west_right",
+          "label": "西进口右转",
+          "concurrent_dir8": 6,
+          "concurrent_turn": 2,
+          "veh_per_cycle": 19,
+          "red_per_cycle": 7,
+          "spread": "green",
+          "note": "西进口右转与西直同放；红灯期间可右转，按低流率溢出；进口 1 车道，单周期放行量受绿时与饱和流率约束",
+          "lanes": 1,
+          "demand_note": "晚高峰上游进口持续排队，按「绿时 × 车道数 ÷ 饱和车头时距」放满；放不完的压在解放东进口等下一个绿灯",
+          "lanes_source": "dws_inter_link_turn_flow_5min_mm.lane_count（解放东路口 011wwe28fmc00001）"
+        }
+      ],
+      "alignment": {
+        "jingshi": {
+          "stage1_start_s": 200,
+          "source": "plan_cfg.offset_sec"
+        },
+        "jiefang": {
+          "stage1_start_before_s": 83,
+          "stage1_start_after_s": 139,
+          "source": "field_calibrated",
+          "note": "库内 offset_sec=195 但 coord_stage_no=0（未记录锚定阶段），无法确定绝对对齐；现状按现场观测的放行先后（经十绿灯 → 西进口右转 → 东进口左转 → 北进口直行）标定为 83 s，优化后 139 s，调整量 +56 s"
+        }
+      },
+      "observation": {
+        "residual_after_jingshi_green_m": 170,
+        "fill_after_jiefang_inflow": "西进口右转 + 东进口左转放完，北向南路段基本无剩余蓄车空间",
+        "spill_trigger": "北进口直行绿灯亮起，车流无处可去，直接压在解放东路口内",
+        "release_ratio": 0.5,
+        "source": "现场观测（晚高峰 17:00-19:00）",
+        "db_supported": false,
+        "residual_note": "指经十路口南北向放行（直行 57 s + 左转 47 s）全部结束时的剩余排队，仿真复现约 180 m",
+        "phase_note": "经十路口南北向先直行后左转；右转借道 + 公交道常放，南北直行相位外按 right_yield_factor 让行折减。解放东路口按现场观测的放行先后：西进口右转 → 东进口左转 → 北进口直行"
+      },
+      "demand": {
+        "measured": {
+          "north_through_vph": 545.8,
+          "north_left_vph": 0,
+          "north_right_vph": 0,
+          "source": "dws_inter_link_turn_flow_5min_mm inter_id=011wwe28ctu00001 dir8=0，周一 17:00-19:00 均值"
+        },
+        "saturation": {
+          "north_through": 0.87,
+          "source": "dws_turn_saturation_5min_mm"
+        },
+        "proxy": {
+          "left_vph": 625,
+          "right_vph": 330.3,
+          "source": "对向南进口（dir8=4）实测转向流量，用于补北进口左/右转的检测缺口"
+        },
+        "db_supported": false,
+        "note": "北进口左转/右转库内记录为 0（无检测，GAP）；且过饱和时段检测流量只反映已放行量，低于真实需求。仿真按上游各相位放行能力设定汇入量，并用现场观测的排队剖面校核",
+        "field_factor": 0.85,
+        "field_factor_note": "各汇入相位实际放行量 / 该相位理论放行能力，按现场观测的排队剖面反标定为 0.85"
+      }
+    }
+  },
+  "signal_plan_board": {
+    "reference_inter_key": "jingshi",
+    "reference_offset_s": 200,
+    "source": {
+      "stage_timing": "xianchang.dwd_ctl_inter_plan_stage_timing",
+      "stage_movements": "xianchang.dwd_ctl_inter_plan_lane_phase_mapping",
+      "plan_config": "xianchang.dwd_ctl_inter_plan_cfg"
+    },
+    "db_supported": {
+      "current_plan": true,
+      "optimized_plan": false
+    },
+    "optimized_note": "优化后绿时与相位差为专家建议值，尚未落库，需现场验证后下发",
+    "dir8_label": {
+      "0": "北进口",
+      "2": "东进口",
+      "4": "南进口",
+      "6": "西进口"
+    },
+    "turn_label": {
+      "1": "左转",
+      "2": "直行",
+      "3": "右转"
+    },
+    "intersections": [
+      {
+        "key": "jingshi",
+        "inter_id": "011wwe28ctu00001",
+        "inter_name": "奥体西路与经十路路口",
+        "role": "下游 · 主干保障",
+        "plan_no": 13,
+        "cycle_len_sec": 220,
+        "offset_before_s": 200,
+        "offset_after_s": 200,
+        "offset_delta_s": 0,
+        "note": "东西向通勤绿时与相位顺序全部维持不变",
+        "stages": [
+          {
+            "stage_seq_no": 1,
+            "stage_no": 1,
+            "green_before_s": 57,
+            "green_after_s": 57,
+            "green_delta_s": 0,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 60,
+            "total_after_s": 60,
+            "movements": [
+              {
+                "dir8": 2,
+                "turn": 2,
+                "label": "东直"
+              },
+              {
+                "dir8": 6,
+                "turn": 2,
+                "label": "西直"
+              }
+            ],
+            "role": "东西向直行 · 通勤主保障",
+            "feeds_problem_link": false,
+            "note": ""
+          },
+          {
+            "stage_seq_no": 2,
+            "stage_no": 5,
+            "green_before_s": 12,
+            "green_after_s": 12,
+            "green_delta_s": 0,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 15,
+            "total_after_s": 15,
+            "movements": [
+              {
+                "dir8": 6,
+                "turn": 1,
+                "label": "西左"
+              },
+              {
+                "dir8": 6,
+                "turn": 2,
+                "label": "西直"
+              }
+            ],
+            "role": "西进口单放",
+            "feeds_problem_link": false,
+            "note": ""
+          },
+          {
+            "stage_seq_no": 3,
+            "stage_no": 2,
+            "green_before_s": 27,
+            "green_after_s": 27,
+            "green_delta_s": 0,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 7,
+            "max_green_sec": 60,
+            "total_before_s": 30,
+            "total_after_s": 30,
+            "movements": [
+              {
+                "dir8": 2,
+                "turn": 1,
+                "label": "东左"
+              },
+              {
+                "dir8": 6,
+                "turn": 1,
+                "label": "西左"
+              }
+            ],
+            "role": "东西向左转",
+            "feeds_problem_link": false,
+            "note": ""
+          },
+          {
+            "stage_seq_no": 4,
+            "stage_no": 3,
+            "green_before_s": 57,
+            "green_after_s": 57,
+            "green_delta_s": 0,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 60,
+            "total_after_s": 60,
+            "movements": [
+              {
+                "dir8": 0,
+                "turn": 2,
+                "label": "北直"
+              },
+              {
+                "dir8": 4,
+                "turn": 2,
+                "label": "南直"
+              }
+            ],
+            "role": "南北向直行 · 问题路段放行",
+            "feeds_problem_link": true,
+            "note": "问题路段唯一放行窗口，绿时保持 57 s 不动"
+          },
+          {
+            "stage_seq_no": 5,
+            "stage_no": 9,
+            "green_before_s": 0,
+            "green_after_s": 0,
+            "green_delta_s": 0,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 3,
+            "total_after_s": 3,
+            "movements": [],
+            "role": "相位过渡",
+            "feeds_problem_link": false,
+            "note": ""
+          },
+          {
+            "stage_seq_no": 6,
+            "stage_no": 4,
+            "green_before_s": 47,
+            "green_after_s": 47,
+            "green_delta_s": 0,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 7,
+            "max_green_sec": 60,
+            "total_before_s": 50,
+            "total_after_s": 50,
+            "movements": [
+              {
+                "dir8": 0,
+                "turn": 1,
+                "label": "北左"
+              },
+              {
+                "dir8": 4,
+                "turn": 1,
+                "label": "南左"
+              }
+            ],
+            "role": "南北向左转",
+            "feeds_problem_link": false,
+            "note": ""
+          },
+          {
+            "stage_seq_no": 7,
+            "stage_no": 11,
+            "green_before_s": 2,
+            "green_after_s": 2,
+            "green_delta_s": 0,
+            "yellow_sec": 0,
+            "all_red_sec": 0,
+            "min_green_sec": 2,
+            "max_green_sec": 60,
+            "total_before_s": 2,
+            "total_after_s": 2,
+            "movements": [],
+            "role": "相位过渡",
+            "feeds_problem_link": false,
+            "note": ""
+          }
+        ]
+      },
+      {
+        "key": "jiefang",
+        "inter_id": "011wwe28fmc00001",
+        "inter_name": "奥体西路与解放东路路口",
+        "role": "上游 · 协调放行",
+        "plan_no": 23,
+        "cycle_len_sec": 220,
+        "offset_before_s": 83,
+        "offset_after_s": 139,
+        "offset_delta_s": 56,
+        "note": "相位差调整 56 s：北进口直行放行窗口移进经十路南北直行绿灯，两个汇入相位各截流 6 s",
+        "stages": [
+          {
+            "stage_seq_no": 1,
+            "stage_no": 8,
+            "green_before_s": 59,
+            "green_after_s": 60,
+            "green_delta_s": 1,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 62,
+            "total_after_s": 63,
+            "movements": [],
+            "role": "行人与相位过渡",
+            "feeds_problem_link": false,
+            "note": "回补绿时，不进入问题路段"
+          },
+          {
+            "stage_seq_no": 2,
+            "stage_no": 9,
+            "green_before_s": 36,
+            "green_after_s": 41,
+            "green_delta_s": 5,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 39,
+            "total_after_s": 44,
+            "movements": [
+              {
+                "dir8": 2,
+                "turn": 2,
+                "label": "东直"
+              },
+              {
+                "dir8": 6,
+                "turn": 2,
+                "label": "西直"
+              }
+            ],
+            "role": "东西向直行",
+            "feeds_problem_link": false,
+            "note": "回补绿时，不进入问题路段"
+          },
+          {
+            "stage_seq_no": 3,
+            "stage_no": 10,
+            "green_before_s": 34,
+            "green_after_s": 28,
+            "green_delta_s": -6,
+            "yellow_sec": 6,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 40,
+            "total_after_s": 34,
+            "movements": [
+              {
+                "dir8": 2,
+                "turn": 1,
+                "label": "东左"
+              },
+              {
+                "dir8": 6,
+                "turn": 1,
+                "label": "西左"
+              }
+            ],
+            "role": "东西向左转 · 次要汇入",
+            "feeds_problem_link": false,
+            "note": "轻微截流东进口左转，减少压入问题路段的车流"
+          },
+          {
+            "stage_seq_no": 4,
+            "stage_no": 11,
+            "green_before_s": 49,
+            "green_after_s": 55,
+            "green_delta_s": 6,
+            "yellow_sec": 6,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 55,
+            "total_after_s": 61,
+            "movements": [
+              {
+                "dir8": 4,
+                "turn": 1,
+                "label": "南左"
+              },
+              {
+                "dir8": 4,
+                "turn": 2,
+                "label": "南直"
+              }
+            ],
+            "role": "南进口放行",
+            "feeds_problem_link": false,
+            "note": "回补绿时，不进入问题路段"
+          },
+          {
+            "stage_seq_no": 5,
+            "stage_no": 12,
+            "green_before_s": 21,
+            "green_after_s": 15,
+            "green_delta_s": -6,
+            "yellow_sec": 3,
+            "all_red_sec": 0,
+            "min_green_sec": 14,
+            "max_green_sec": 60,
+            "total_before_s": 24,
+            "total_after_s": 18,
+            "movements": [
+              {
+                "dir8": 0,
+                "turn": 2,
+                "label": "北直"
+              },
+              {
+                "dir8": 4,
+                "turn": 2,
+                "label": "南直"
+              }
+            ],
+            "role": "北进口直行 · 汇入问题路段",
+            "feeds_problem_link": true,
+            "note": "轻微截流北进口直行，避开经十路红灯期的集中到达"
+          }
+        ],
+        "offset_note": "库内 offset_sec=195，但 coord_stage_no=0 未记录锚定阶段；现状相位差按现场观测放行先后标定为 83 s"
+      }
+    ],
+    "danger_window_s": 30,
+    "coord_target_note": "协调对象为解放东路口北进口直行（奥体西路走廊主流向，晚高峰 520 veh/h）"
   }
 }

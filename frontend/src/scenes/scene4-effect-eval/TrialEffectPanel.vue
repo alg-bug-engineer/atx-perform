@@ -1,30 +1,29 @@
 <script setup>
 /**
- * 试运行 N 周期治理效果面板（移植自 agent-loop TrialEffectPanel，配色 baseline）
+ * 效果评估大屏：一条结论 + 一个主视觉（蓄车占用）+ 三类互补图形
+ * （容量条 / 单周期面积图 / 治理画像雷达 / 护栏半环），不再堆折线。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import TrialEffectCharts from './TrialEffectCharts.vue'
-import {
-  buildTrialEffectSeries,
-  fmtDeltaS,
-  fmtMeters,
-  fmtPct,
-  fmtRatio2,
-} from './trialEffectSeries.js'
+import CycleQueueChart from './CycleQueueChart.vue'
+import GovernanceRadar from './GovernanceRadar.vue'
+import QueueCapacityHero from './QueueCapacityHero.vue'
+import TrialGuardRail from './TrialGuardRail.vue'
+import { buildTrialEffectSeries } from './trialEffectSeries.js'
 
 const props = defineProps({
   payload: { type: Object, required: true },
+  optimization: { type: Object, default: null },
 })
 
-const emit = defineEmits(['finish'])
+const emit = defineEmits(['finish', 'home'])
 
 const series = computed(() => buildTrialEffectSeries(props.payload))
 const revealed = ref(0)
 let timer = null
 
 const instant = (() => {
-  const reduced = typeof window !== 'undefined'
-    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const reduced =
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   const automation = typeof navigator !== 'undefined' && navigator.webdriver === true
   return reduced || automation
 })()
@@ -44,189 +43,204 @@ onMounted(() => {
       clearInterval(timer)
       timer = null
     }
-  }, 520)
+  }, 620)
 })
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
 })
 
-const activeCycle = computed(() => {
-  const idx = Math.max(0, revealed.value - 1)
-  return series.value.cycles[idx] || null
+const activeCycle = computed(() => series.value.cycles[Math.max(0, revealed.value - 1)] || null)
+const allRevealed = computed(() => revealed.value >= series.value.cyclesCount)
+const progress = computed(() => revealed.value / series.value.cyclesCount)
+const started = computed(() => revealed.value > 0)
+
+const corridor = computed(() => props.optimization?.corridor_demo || null)
+const storageM = computed(
+  () => corridor.value?.link?.storage_length_m ?? series.value.baseline.storage_length_m,
+)
+const peaks = computed(() => {
+  const kpi = (corridor.value?.kpis || []).find((k) => k.key === 'peak_queue')
+  return kpi ? { before: kpi.before, after: kpi.after } : null
 })
 
-const allRevealed = computed(() => revealed.value >= series.value.cyclesCount)
+const headline = computed(() => {
+  const c = activeCycle.value
+  if (!c) return '试运行观察中…'
+  const cut = Math.round(series.value.baseline.queue_length_m - c.queue_length_m)
+  const noSpill = peaks.value && peaks.value.after <= storageM.value
+  return `排队缩短 ${cut} 米，速度回到 ${c.avg_speed_kmh} km/h${noSpill ? '，路口不再溢出' : ''}`
+})
 
-const warningRatio = computed(() => series.value.thresholds.queue_ratio_warning)
-const greenLow = computed(() => series.value.thresholds.green_utilization_low)
-
-function cycleStatus(index) {
-  if (revealed.value >= series.value.cyclesCount) {
-    return index <= revealed.value ? 'done' : 'pending'
+const capacityRows = computed(() => {
+  const c = activeCycle.value
+  const p = peaks.value
+  const rows = []
+  if (p) {
+    rows.push(
+      { key: 'peak-before', group: '单周期推演峰值', groupStart: true, label: '优化前', value: p.before, tone: 'bad' },
+      { key: 'peak-after', label: '优化后', value: p.after, tone: 'good' },
+    )
   }
-  if (index < revealed.value) return 'done'
-  if (index === revealed.value) return 'active'
-  return 'pending'
-}
+  rows.push(
+    { key: 'obs-base', group: '试运行实测排队', groupStart: true, label: '基线', value: series.value.baseline.queue_length_m, tone: 'warn' },
+    {
+      key: 'obs-now',
+      label: `第 ${Math.max(revealed.value, 1)} 周期`,
+      value: c ? c.queue_length_m : series.value.baseline.queue_length_m,
+      tone: 'good',
+    },
+  )
+  return rows
+})
+
+/** 雷达五维统一成「越大越好」，便于领导横向看一眼 */
+const radarAxes = computed(() => {
+  const b = series.value.baseline
+  const c = activeCycle.value || b
+  const clamp = (v) => Math.max(0, Math.min(1, v))
+  const speedRef = 30
+  const delayNorm = (d) => clamp(1 - (d - 1) / 5)
+  return [
+    {
+      name: '排队控制',
+      base: clamp(1 - b.queue_ratio),
+      now: clamp(1 - c.queue_ratio),
+      text: c.queue_ratio.toFixed(2),
+    },
+    {
+      name: '路段速度',
+      base: clamp(b.avg_speed_kmh / speedRef),
+      now: clamp(c.avg_speed_kmh / speedRef),
+      text: `${c.avg_speed_kmh} km/h`,
+    },
+    {
+      name: '通行延误',
+      base: delayNorm(b.delay_index),
+      now: delayNorm(c.delay_index),
+      text: c.delay_index.toFixed(2),
+    },
+    {
+      name: '绿灯利用',
+      base: clamp(b.green_utilization),
+      now: clamp(c.green_utilization),
+      text: `${Math.round(c.green_utilization * 100)}%`,
+    },
+    {
+      name: '上游安全',
+      base: clamp(1 - b.downstream_queue_ratio / series.value.rollbackThreshold),
+      now: clamp(1 - c.downstream_queue_ratio / series.value.rollbackThreshold),
+      text: c.downstream_queue_ratio.toFixed(2),
+    },
+  ]
+})
+
+/** 结论横幅下的三个核心数字，只留最该被记住的 */
+const headlineStats = computed(() => {
+  const b = series.value.baseline
+  const c = activeCycle.value
+  if (!c) return []
+  return [
+    { key: 'queue', label: '排队长度', from: `${b.queue_length_m} m`, to: `${c.queue_length_m} m`, delta: `${Math.round(((c.queue_length_m - b.queue_length_m) / b.queue_length_m) * 100)}%` },
+    { key: 'speed', label: '路段速度', from: `${b.avg_speed_kmh}`, to: `${c.avg_speed_kmh} km/h`, delta: `+${Math.round(((c.avg_speed_kmh - b.avg_speed_kmh) / b.avg_speed_kmh) * 100)}%` },
+    { key: 'delay', label: '拥堵延时指数', from: b.delay_index.toFixed(2), to: c.delay_index.toFixed(2), delta: `${Math.round(((c.delay_index - b.delay_index) / b.delay_index) * 100)}%` },
+  ]
+})
 </script>
 
 <template>
   <section class="effect" data-testid="trial-effect-panel">
-    <header class="effect-hd">
-      <div>
-        <span class="effect-eyebrow">效果优化</span>
-        <h2>{{ series.intersection || series.planName }}</h2>
-        <p class="effect-sub">
-          试运行 {{ series.cyclesCount }} 周期 · 监测上游 {{ series.downstreamName }}
+    <header class="banner">
+      <div class="banner-main">
+        <p class="eyebrow">效果评估 · 相位协调试运行</p>
+        <h2>{{ headline }}</h2>
+        <p class="lede">
+          {{ series.intersection }} · 监测上游 {{ series.downstreamName }}
           <template v-if="series.timePeriodLabel"> · {{ series.timePeriodLabel }}</template>
         </p>
       </div>
-      <div class="progress-card">
-        <span>{{ allRevealed ? '观察完成' : '试运行中' }}</span>
-        <strong data-testid="effect-progress">
-          {{ revealed }}/{{ series.cyclesCount }}
-        </strong>
+
+      <div class="stats" data-testid="effect-kpis">
+        <div v-for="s in headlineStats" :key="s.key" class="stat">
+          <span class="stat-k">{{ s.label }}</span>
+          <div class="stat-v">
+            <s>{{ s.from }}</s>
+            <strong>{{ s.to }}</strong>
+          </div>
+          <span class="stat-d">{{ s.delta }}</span>
+        </div>
+      </div>
+
+      <div class="banner-side">
+        <div class="verdict-badge" :class="{ ok: allRevealed && !series.rolledBack }">
+          {{ allRevealed ? (series.rolledBack ? '已回滚' : '达标 · 建议固化') : '试运行观察中' }}
+        </div>
+        <div class="progress">
+          <svg viewBox="0 0 64 64" class="ring">
+            <circle class="ring-bg" cx="32" cy="32" r="27" />
+            <circle class="ring-fg" cx="32" cy="32" r="27" :stroke-dasharray="`${progress * 169.6} 169.6`" />
+          </svg>
+          <div class="progress-num">
+            <strong data-testid="effect-progress">{{ revealed }}</strong>
+            <small>/ {{ series.cyclesCount }} 周期</small>
+          </div>
+        </div>
       </div>
     </header>
 
-    <div class="timing-bar" data-testid="effect-timing">
-      <span class="chip">{{ series.targetLabel }} {{ fmtDeltaS(series.timing.targetGreenDeltaS) }}</span>
-      <span class="chip mute">{{ series.timing.jingshiNote || '经十优先消散' }}</span>
-      <span class="chip mute">{{ series.timing.jiefangNote || '解放东错峰' }}</span>
-      <span class="chip mute">方案 · {{ series.planName }}</span>
-      <span class="chip mute">蓄车 {{ fmtMeters(series.baseline.storage_length_m) }}</span>
+    <div class="board">
+      <QueueCapacityHero
+        class="cell"
+        :storage-m="storageM"
+        :rows="capacityRows"
+        :revealed="started"
+      />
+      <CycleQueueChart class="cell" :optimization="optimization" />
+      <GovernanceRadar class="cell" :axes="radarAxes" :revealed="allRevealed" />
     </div>
 
-    <div class="workbench">
-      <aside class="timeline" aria-label="试运行周期">
-        <h3>周期</h3>
-        <div
-          v-for="c in series.cycles"
-          :key="c.index"
-          class="timeline-item"
-          :class="`is-${cycleStatus(c.index)}`"
-        >
-          <span class="timeline-dot" aria-hidden="true" />
-          <span class="timeline-label">{{ c.label }}</span>
-          <small class="timeline-pct">
-            {{ cycleStatus(c.index) === 'done' ? '完成' : cycleStatus(c.index) === 'active' ? '监测' : '待观察' }}
-          </small>
-        </div>
-      </aside>
+    <footer class="foot">
+      <TrialGuardRail
+        class="cell guard-cell"
+        :cycles="series.cycles"
+        :revealed="revealed"
+        :current="activeCycle?.downstream_queue_ratio ?? series.baseline.downstream_queue_ratio"
+        :warning="series.thresholds.queue_ratio_warning"
+        :rollback="series.rollbackThreshold"
+      />
 
-      <section class="main-pane" aria-label="治理效果">
-        <div class="kpi-row" data-testid="effect-kpis">
-          <div class="kpi">
-            <span class="kpi-k">目标排队</span>
-            <strong class="kpi-v">{{ fmtMeters(activeCycle?.queue_length_m) }}</strong>
-            <em class="kpi-base">基线 {{ fmtMeters(series.baseline.queue_length_m) }}</em>
-          </div>
-          <div class="kpi">
-            <span class="kpi-k">排队比</span>
-            <strong class="kpi-v down">{{ fmtRatio2(activeCycle?.queue_ratio) }}</strong>
-            <em class="kpi-base">基线 {{ fmtRatio2(series.baseline.queue_ratio) }} · 预警 {{ warningRatio }}</em>
-          </div>
-          <div class="kpi">
-            <span class="kpi-k">绿灯利用率</span>
-            <strong class="kpi-v up">{{ fmtPct(activeCycle?.green_utilization) }}</strong>
-            <em class="kpi-base">基线 {{ fmtPct(series.baseline.green_utilization) }} · 低利用 {{ greenLow }}</em>
-          </div>
-          <div class="kpi">
-            <span class="kpi-k">上游排队比</span>
-            <strong class="kpi-v">{{ fmtRatio2(activeCycle?.downstream_queue_ratio) }}</strong>
-            <em class="kpi-base">回滚线 {{ series.rollbackThreshold }}</em>
-          </div>
+      <div class="foot-right">
+        <div class="outcomes" data-testid="effect-outcomes">
+          <span
+            v-for="item in series.outcomeHighlights"
+            :key="item.id"
+            class="outcome"
+            :class="{ ok: item.ok }"
+          >
+            <i>{{ item.ok ? '达成' : '待核' }}</i>
+            {{ item.title }}
+          </span>
         </div>
-
-        <TrialEffectCharts
-          :cycles="series.cycles"
-          :revealed="revealed"
-          :warning-ratio="warningRatio"
-          :green-low="greenLow"
-        />
-
-        <div class="table-wrap">
-          <table class="cycle-table" data-testid="effect-cycle-table">
-            <thead>
-              <tr>
-                <th>周期</th>
-                <th>排队长度</th>
-                <th>排队比</th>
-                <th>绿灯利用率</th>
-                <th>上游排队比</th>
-                <th>状态</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="c in series.cycles"
-                :key="`row-${c.index}`"
-                :class="{
-                  dim: c.index > revealed,
-                  current: c.index === revealed,
-                }"
-              >
-                <td>{{ c.label }}</td>
-                <td class="mono">{{ c.index <= revealed ? fmtMeters(c.queue_length_m) : '—' }}</td>
-                <td class="mono">{{ c.index <= revealed ? fmtRatio2(c.queue_ratio) : '—' }}</td>
-                <td class="mono">{{ c.index <= revealed ? fmtPct(c.green_utilization) : '—' }}</td>
-                <td class="mono">{{ c.index <= revealed ? fmtRatio2(c.downstream_queue_ratio) : '—' }}</td>
-                <td>
-                  <span v-if="c.index > revealed" class="tag mute">待观察</span>
-                  <span v-else-if="c.rolled_back" class="tag warn">回滚</span>
-                  <span v-else class="tag ok">正常</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="acts">
+          <button
+            type="button"
+            class="btn ghost"
+            :disabled="!allRevealed"
+            data-testid="effect-home"
+            @click="emit('home')"
+          >
+            返回主页
+          </button>
+          <button
+            type="button"
+            class="btn"
+            :disabled="!allRevealed"
+            data-testid="effect-finish"
+            @click="emit('finish')"
+          >
+            {{ allRevealed ? '固化为可复用技能' : '试运行中…' }}
+          </button>
         </div>
-
-        <div v-if="allRevealed" class="verdict" data-testid="effect-verdict">
-          <div class="verdict-banner">
-            <span class="verdict-eyebrow">治理结论</span>
-            <b>{{ series.verdict }}</b>
-            <p>{{ series.successText }}</p>
-          </div>
-          <div class="outcome-grid" data-testid="effect-outcomes">
-            <article
-              v-for="item in series.outcomeHighlights"
-              :key="item.id"
-              class="outcome-card"
-              :class="{ ok: item.ok, bad: !item.ok }"
-            >
-              <span class="outcome-badge">{{ item.ok ? '达成' : '待核' }}</span>
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.detail }}</p>
-            </article>
-          </div>
-          <ul v-if="series.successConditions.length" class="cond-list">
-            <li v-for="(s, i) in series.successConditions.slice(0, 4)" :key="`sc-${i}`">{{ s }}</li>
-          </ul>
-        </div>
-      </section>
-    </div>
-
-    <footer class="effect-ft" data-testid="effect-footer">
-      <div class="meta-card">
-        <div class="meta-row">
-          <span class="meta-k">监测对象</span>
-          <span class="meta-v">{{ series.targetLabel }} → 上游 {{ series.downstreamName }}</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-k">回滚</span>
-          <span class="meta-v">{{ series.rolledBack ? '已触发' : '未触发' }}</span>
-        </div>
-      </div>
-      <div class="effect-actions">
-        <button
-          type="button"
-          class="btn btn-primary"
-          data-testid="effect-finish"
-          @click="emit('finish')"
-        >
-          进入技能固化
-        </button>
       </div>
     </footer>
   </section>
@@ -234,330 +248,159 @@ function cycleStatus(index) {
 
 <style scoped>
 .effect {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(240px, 1fr) auto;
+  gap: 12px;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
 }
-.effect-hd {
+
+.banner {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-.effect-eyebrow {
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--cyan-dim);
-}
-.effect-hd h2 {
-  margin: 2px 0;
-  font-size: 16px;
-  color: var(--text);
-}
-.effect-sub {
-  margin: 0;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.progress-card {
-  text-align: right;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.progress-card strong {
-  display: block;
-  font-size: 22px;
-  color: var(--ok);
-}
-.timing-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-.chip {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 2px;
-  border: 1px solid rgba(51, 204, 136, 0.35);
-  color: var(--ok);
-  background: rgba(51, 204, 136, 0.08);
-}
-.chip.mute {
-  border-color: var(--cyan-border);
-  color: var(--text-muted);
-  background: rgba(0, 0, 0, 0.18);
-}
-.workbench {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 128px minmax(0, 1fr);
-  gap: 12px;
-}
-.timeline h3 {
-  margin: 0 0 8px;
-  font-size: 11px;
-  color: var(--cyan-dim);
-}
-.timeline-item {
-  display: grid;
-  grid-template-columns: 10px 1fr auto;
-  gap: 6px;
   align-items: center;
-  font-size: 11px;
-  color: rgba(160, 200, 220, 0.45);
-  margin-bottom: 6px;
+  gap: 26px;
 }
-.timeline-item.is-active,
-.timeline-item.is-done {
+.banner-main { min-width: 0; }
+.eyebrow { margin: 0 0 4px; font-size: 11px; letter-spacing: 4px; color: var(--cyan-dim); }
+h2 {
+  margin: 0 0 5px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 1px;
   color: var(--text);
 }
-.timeline-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(160, 200, 220, 0.35);
-}
-.timeline-item.is-active .timeline-dot {
-  background: var(--cyan);
-  box-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
-}
-.timeline-item.is-done .timeline-dot {
-  background: var(--ok);
-}
-.timeline-pct {
-  color: rgba(160, 200, 220, 0.45);
-}
-.main-pane {
+.lede { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+.stats { display: flex; gap: 10px; margin-left: auto; }
+.stat {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  gap: 10px;
-  overflow: auto;
-}
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  flex-shrink: 0;
-}
-.kpi {
-  padding: 8px 10px;
+  gap: 2px;
+  padding: 8px 14px;
   border: 1px solid var(--cyan-border);
-  border-radius: 2px;
-  background: rgba(0, 0, 0, 0.28);
+  border-left: 2px solid var(--ok);
+  border-radius: 3px;
+  background: rgba(0, 20, 34, 0.55);
 }
-.kpi-k {
-  display: block;
-  font-size: 10px;
-  color: var(--cyan-dim);
-  margin-bottom: 4px;
-}
-.kpi-v {
-  display: block;
-  font-size: 16px;
-  color: var(--text);
-  font-weight: 700;
-}
-.kpi-v.up { color: var(--ok); }
-.kpi-v.down { color: #7ee8f5; }
-.kpi-base {
-  display: block;
-  margin-top: 2px;
-  font-size: 10px;
-  font-style: normal;
-  color: rgba(160, 200, 220, 0.45);
-}
-.table-wrap {
+.stat-k { font-size: 11px; color: var(--text-muted); }
+.stat-v { display: flex; align-items: baseline; gap: 6px; }
+.stat-v s { font-size: 12px; color: rgba(160, 200, 220, 0.45); }
+.stat-v strong { font-size: 22px; font-weight: 500; color: var(--ok); line-height: 1.1; }
+.stat-d { font-size: 11px; color: var(--ok); }
+
+.banner-side { display: flex; align-items: center; gap: 14px; }
+.verdict-badge {
+  padding: 8px 14px;
   border: 1px solid var(--cyan-border);
-  border-radius: 2px;
-  overflow: auto;
-  background: rgba(0, 0, 0, 0.22);
+  border-radius: 3px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: rgba(0, 20, 34, 0.6);
+  white-space: nowrap;
 }
-.cycle-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-.cycle-table th,
-.cycle-table td {
-  padding: 7px 8px;
-  text-align: left;
-  border-bottom: 1px solid rgba(0, 229, 255, 0.1);
-  color: var(--text);
-}
-.cycle-table th {
-  color: var(--cyan-dim);
-  font-weight: 600;
-  background: rgba(0, 229, 255, 0.04);
-}
-.cycle-table tr.dim td {
-  color: rgba(160, 200, 220, 0.35);
-}
-.cycle-table tr.current td {
-  background: rgba(0, 229, 255, 0.06);
-}
-.mono {
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-.tag {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 2px;
-}
-.tag.ok {
+.verdict-badge.ok {
+  border-color: rgba(51, 204, 136, 0.55);
   color: var(--ok);
   background: rgba(51, 204, 136, 0.12);
 }
-.tag.warn {
-  color: var(--danger);
-  background: rgba(255, 68, 68, 0.12);
+.progress { position: relative; width: 70px; height: 70px; flex: none; }
+.ring { width: 70px; height: 70px; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: rgba(0, 229, 255, 0.14); stroke-width: 4; }
+.ring-fg {
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s ease;
 }
-.tag.mute {
-  color: var(--text-muted);
-  background: rgba(160, 200, 220, 0.1);
+.progress-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
 }
-.verdict {
-  padding: 12px 14px;
-  border: 1px solid rgba(51, 204, 136, 0.35);
-  border-radius: 4px;
-  background: linear-gradient(
-    135deg,
-    rgba(51, 204, 136, 0.12) 0%,
-    rgba(0, 229, 255, 0.06) 55%,
-    rgba(4, 12, 30, 0.2) 100%
-  );
-}
-.verdict-banner {
-  margin-bottom: 10px;
-}
-.verdict-eyebrow {
-  display: inline-block;
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--ok);
-  margin-bottom: 4px;
-}
-.verdict b {
-  display: block;
-  font-size: 15px;
-  line-height: 1.35;
-  color: var(--ok);
-  margin-bottom: 4px;
-}
-.verdict p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text);
-}
-.outcome-grid {
+.progress-num strong { font-size: 21px; color: var(--ok); font-weight: 500; }
+.progress-num small { font-size: 9px; color: var(--text-muted); }
+
+.board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 8px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 0.82fr);
+  gap: 14px;
+  min-height: 0;
 }
-.outcome-card {
-  padding: 10px 10px 8px;
-  border-radius: 2px;
+.cell {
+  padding: 12px 14px;
   border: 1px solid var(--cyan-border);
-  background: rgba(0, 0, 0, 0.28);
+  border-radius: 4px;
+  background: rgba(2, 12, 26, 0.55);
 }
-.outcome-card.ok {
-  border-color: rgba(51, 204, 136, 0.4);
-  background: rgba(51, 204, 136, 0.08);
+
+.foot {
+  display: grid;
+  grid-template-columns: minmax(380px, 33%) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
 }
-.outcome-card.bad {
-  border-color: rgba(255, 68, 68, 0.35);
+.guard-cell { padding: 8px 14px; height: 112px; }
+.foot-right { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.outcomes { display: flex; gap: 10px; flex-wrap: wrap; }
+.outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: 1px solid var(--cyan-border);
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: rgba(0, 20, 34, 0.5);
 }
-.outcome-badge {
-  display: inline-block;
+.outcome i {
+  font-style: normal;
   font-size: 10px;
-  font-weight: 700;
   padding: 1px 6px;
   border-radius: 2px;
-  margin-bottom: 4px;
   color: var(--text-muted);
   background: rgba(160, 200, 220, 0.12);
 }
-.outcome-card.ok .outcome-badge {
-  color: #041016;
-  background: var(--ok);
-}
-.outcome-card strong {
-  display: block;
-  font-size: 13px;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.outcome-card p {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--text-muted);
-}
-.cond-list {
-  margin: 0;
-  padding-left: 16px;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.effect-ft {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(0, 229, 255, 0.15);
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.meta-card {
-  display: grid;
-  gap: 4px;
-  font-size: 11px;
-}
-.meta-row {
-  display: flex;
-  gap: 8px;
-}
-.meta-k {
-  color: var(--cyan-dim);
-  min-width: 48px;
-}
-.meta-v {
-  color: var(--text);
-}
+.outcome.ok { border-color: rgba(51, 204, 136, 0.4); color: var(--text); }
+.outcome.ok i { color: rgba(4, 16, 32, 0.95); background: var(--ok); }
+
 .btn {
-  padding: 8px 18px;
-  border-radius: 2px;
+  padding: 12px 28px;
+  border-radius: 3px;
   border: 1px solid var(--cyan-border-strong);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
-.btn-primary {
   background: rgba(0, 229, 255, 0.92);
   color: rgba(4, 12, 22, 0.95);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.btn-primary:hover {
-  background: var(--cyan);
+.btn:hover:not(:disabled) { background: var(--cyan); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.acts { display: flex; gap: 10px; align-items: center; }
+.btn.ghost {
+  background: transparent;
+  border-color: var(--cyan-border);
+  color: var(--text-muted);
+  font-weight: 400;
+  padding: 12px 22px;
 }
-@media (max-width: 1100px) {
-  .outcome-grid {
-    grid-template-columns: 1fr;
-  }
+.btn.ghost:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.08);
+  border-color: var(--cyan-border-strong);
+  color: var(--cyan);
 }
-@media (max-width: 900px) {
-  .kpi-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .workbench {
-    grid-template-columns: 1fr;
-  }
+
+@media (max-width: 1500px) {
+  .board { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .board > :nth-child(3) { grid-column: 1 / -1; }
 }
 </style>

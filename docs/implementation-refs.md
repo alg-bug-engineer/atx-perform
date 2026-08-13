@@ -4,9 +4,9 @@
 
 | 本项目幕 | agent-loop 参考（main） | 本项目数据/资产 |
 |----------|-------------------------|-----------------|
-| 3 优化方案 | `src/features/acts/act-08/`：`Act8Stage.vue`、`PlanPanel.vue`、`PlanDrawer.vue`、`planVisualization.js`、`StageMovementCanvas.vue`、`StageCards.vue`、`act8MapFx.js` | `data/1-3-optimization.json`、`assets/信控方案可视化图.png` |
-| 4 效果评估 | `TrialEffectPanel.vue`、`TrialEffectDrawer.vue`、`TrialEffectCharts.vue`、`trialEffectSeries.js` | `data/1-4-effect-eval.json`、`assets/效果评估.png` |
-| 5 技能固化 | `SkillSolidifyOverlay.vue`、`SkillBuildPanel.vue`、`SkillBuildDrawer.vue`、`composables/useSkillBuildProcess.js`、`services/planFeedbackService.js` | `data/1-5-skill-solidify.json`、`assets/技能固化.png` |
+| 3 优化方案 | `src/features/acts/act-08/`：`Act8Stage.vue`、`PlanPanel.vue`、`PlanDrawer.vue`、`planVisualization.js`、`StageMovementCanvas.vue`、`StageCards.vue`、`act8MapFx.js`（阶段渠化改写为本项目 SVG 版 `StageChannelization.vue`，补齐路面/车道虚线/停止线/斑马线标线） | `data/1-3-optimization.json`、`assets/信控方案可视化图.png` |
+| 4 效果评估 | `TrialEffectPanel.vue`、`TrialEffectDrawer.vue`、`trialEffectSeries.js`（图表改为本项目大屏组合：主视觉 `QueueCapacityHero.vue` 蓄车占用条 + `CycleQueueChart.vue` 单周期面积图 + `GovernanceRadar.vue` 治理画像 + `TrialGuardRail.vue` 回滚护栏半环） | `data/1-4-effect-eval.json`、`assets/效果评估.png` |
+| 5 技能固化 | `SkillForgeBackdrop.vue`、`ExperienceAbsorptionPanel.vue`、`SkillBuildPanel.vue`、`SkillBuildDrawer.vue`、`composables/useSkillBuildProcess.js`、`services/skillSolidifyApi.js` | `data/1-5-skill-solidify.json`、`assets/技能固化.png` |
 
 ## 数据决策（已确认）
 

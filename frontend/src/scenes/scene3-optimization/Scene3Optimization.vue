@@ -1,110 +1,113 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import SceneScaffold from '../../shared/components/SceneScaffold.vue'
-import { SCENE_META, loadScene3Data } from './index.js'
+import { onMounted, ref } from 'vue'
+import { useSceneRoute } from '../../shared/useSceneRoute.js'
+import { loadScene3Data } from './index.js'
+import PlanComparePanel from './PlanComparePanel.vue'
+
+const { setScene } = useSceneRoute()
 
 const loading = ref(true)
 const error = ref('')
-const data = ref(null)
+const payload = ref(null)
 
 onMounted(async () => {
   try {
-    data.value = (await loadScene3Data()).optimization
+    payload.value = (await loadScene3Data()).optimization
   } catch (e) {
     error.value = e?.message || String(e)
   } finally {
     loading.value = false
   }
 })
-
-const baseline = computed(() => data.value?.baseline_signal_plans)
-const demo = computed(() => data.value?.demo_script)
 </script>
 
 <template>
-  <SceneScaffold
-    :title="SCENE_META.name"
-    subtitle="相位协调：经十优先消散，解放东错峰放行"
-    :loading="loading"
-    :error="error"
-  >
-    <template #stage>
-      <div class="split">
-        <div class="pane">
-          <span>优化前</span>
-          <small>解放东先绿 → 汇入 → 溢出风险</small>
-        </div>
-        <div class="pane after">
-          <span>优化后</span>
-          <small>经十先绿消散 → 解放东再放行</small>
-        </div>
-      </div>
-    </template>
-
-    <ul v-if="demo" class="list">
-      <li>优化前：{{ demo.left_before?.join(' → ') }}</li>
-      <li>优化后：{{ demo.right_after?.join(' → ') }}</li>
-    </ul>
-    <div v-if="baseline" class="cards">
-      <div class="card">
-        <span>经十现状方案</span>
-        <strong>#{{ baseline.jingshi?.period?.plan_no }}</strong>
-      </div>
-      <div class="card">
-        <span>解放东现状方案</span>
-        <strong>#{{ baseline.jiefang?.period?.plan_no }}</strong>
-      </div>
+  <div class="scene3" data-testid="scene3-optimization">
+    <div class="map-plane" aria-hidden="true">
+      <div class="grid" />
     </div>
-  </SceneScaffold>
+
+    <div v-if="loading" class="state-banner">加载中…</div>
+    <div v-else-if="error" class="state-banner error">{{ error }}</div>
+
+    <aside v-else-if="payload" class="plan-drawer">
+      <PlanComparePanel :payload="payload" />
+      <div class="drawer-foot">
+        <button type="button" class="next" @click="setScene('4')">试点后看效果评估</button>
+      </div>
+    </aside>
+  </div>
 </template>
 
 <style scoped>
-.split {
+.scene3 {
   position: absolute;
-  inset: 24px 400px 24px 24px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  inset: 0;
+  pointer-events: none;
 }
-.pane {
-  border: 1px solid var(--cyan-border);
-  background: rgba(0, 20, 32, 0.55);
+.map-plane {
+  position: absolute;
+  inset: 0;
+}
+.grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+}
+.state-banner {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  color: var(--text-muted);
+  z-index: 40;
+}
+.state-banner.error {
+  color: var(--danger);
+}
+
+.plan-drawer {
+  position: absolute;
+  top: 12px;
+  bottom: 24px;
+  left: 16px;
+  right: 16px;
+  z-index: 46;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--cyan-dim);
+  gap: 10px;
+  overflow: hidden;
+  padding: 14px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--cyan-border-strong);
+  background: rgba(4, 12, 30, 0.96);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
 }
-.pane.after {
-  border-color: rgba(51, 204, 136, 0.45);
-  color: var(--ok);
+.plan-drawer > :deep(.plan-compare) {
+  flex: 1;
+  min-height: 0;
 }
-.pane span {
-  letter-spacing: 3px;
-  font-size: 14px;
-}
-.pane small {
-  font-size: 11px;
-  opacity: 0.8;
-  text-align: center;
-  padding: 0 12px;
-}
-.list {
-  margin: 0 0 12px;
-  padding-left: 18px;
-  color: var(--text-muted);
-}
-.cards {
-  display: grid;
-  gap: 8px;
-}
-.card {
-  border: 1px solid var(--cyan-border);
-  padding: 10px 12px;
+.drawer-foot {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
+  flex: none;
 }
-.card span { color: var(--text-muted); }
-.card strong { color: var(--cyan); font-weight: 500; }
+.next {
+  padding: 8px 22px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: #041020;
+  background: var(--cyan);
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.next:hover {
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.6);
+}
 </style>

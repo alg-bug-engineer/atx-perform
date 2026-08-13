@@ -9,10 +9,13 @@ const { setScene } = useSceneRoute()
 const loading = ref(true)
 const error = ref('')
 const payload = ref(null)
+const optimization = ref(null)
 
 onMounted(async () => {
   try {
-    payload.value = (await loadScene4Data()).effect
+    const bundle = await loadScene4Data()
+    payload.value = bundle.effect
+    optimization.value = bundle.optimization
   } catch (e) {
     error.value = e?.message || String(e)
   } finally {
@@ -22,6 +25,10 @@ onMounted(async () => {
 
 function goSkill() {
   setScene('5')
+}
+
+function goHome() {
+  setScene('0')
 }
 </script>
 
@@ -36,7 +43,9 @@ function goSkill() {
     <TrialEffectDrawer
       v-else-if="payload"
       :payload="payload"
+      :optimization="optimization"
       @finish="goSkill"
+      @home="goHome"
     />
   </div>
 </template>

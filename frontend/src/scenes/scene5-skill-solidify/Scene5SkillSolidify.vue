@@ -1,12 +1,12 @@
 <script setup>
 /**
- * 确认弹窗 → 右侧经验吸收（保持不收起）+ 左侧技能抽屉 → 落盘 → 返回主页
+ * 幕 4 点「固化」直接进来：右侧经验吸收（保持不收起）+ 左侧技能抽屉 → 落盘 → 返回主页
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
 import { solidifySkillToProject } from '../../services/skillSolidifyApi.js'
 import { loadScene5Data } from './index.js'
-import SkillSolidifyOverlay from './SkillSolidifyOverlay.vue'
+import SkillForgeBackdrop from './SkillForgeBackdrop.vue'
 import ExperienceAbsorptionPanel from './ExperienceAbsorptionPanel.vue'
 import SkillBuildDrawer from './SkillBuildDrawer.vue'
 import { useSkillBuildProcess } from './composables/useSkillBuildProcess.js'
@@ -19,8 +19,8 @@ const absorption = useExperienceAbsorption()
 const loading = ref(true)
 const error = ref('')
 const payload = ref(null)
-/** prompt | absorbing | building | declined */
-const phase = ref('prompt')
+/** absorbing | building */
+const phase = ref('absorbing')
 const absorptionStarted = ref(false)
 const buildStarted = ref(false)
 const writeResult = ref(null)
@@ -33,8 +33,6 @@ const instant = (() => {
   return reduced || automation
 })()
 
-const promptTitle = computed(() => payload.value?.prompt?.title || '技能固化')
-const promptBody = computed(() => payload.value?.prompt?.body || '')
 /** 吸收完成后仍保留右侧面板，与左侧技能抽屉同屏 */
 const showAbsorption = computed(
   () => phase.value === 'absorbing' || phase.value === 'building',
@@ -44,6 +42,7 @@ const showBuild = computed(() => phase.value === 'building')
 onMounted(async () => {
   try {
     payload.value = (await loadScene5Data()).skill
+    startAbsorbing()
   } catch (e) {
     error.value = e?.message || String(e)
   } finally {
@@ -61,7 +60,7 @@ function returnHome(message) {
   build.reset()
   absorptionStarted.value = false
   buildStarted.value = false
-  phase.value = 'prompt'
+  phase.value = 'absorbing'
   setScene('0')
   if (message && typeof window !== 'undefined') {
     console.info('[skill-solidify]', message)
@@ -110,7 +109,7 @@ function startBuilding() {
   })
 }
 
-function confirmSolidify() {
+function startAbsorbing() {
   if (!payload.value || absorptionStarted.value) return
   absorptionStarted.value = true
   phase.value = 'absorbing'
@@ -120,10 +119,6 @@ function confirmSolidify() {
     intersection: payload.value.result_meta?.intersection,
     onDone: () => startBuilding(),
   })
-}
-
-function declineSolidify() {
-  returnHome('方案已跳过固化，已返回主页。')
 }
 
 function onBuildFinish() {
@@ -139,22 +134,20 @@ function onBuildFinish() {
 
 <template>
   <div class="scene5" data-testid="scene5-skill-solidify">
-    <div class="map-plane" aria-hidden="true">
-      <div class="grid" />
-    </div>
+    <SkillForgeBackdrop
+      :progress="absorption.state.progress"
+      :stage="absorption.state.currentStage"
+      :skill-id="payload?.result_meta?.skillId || ''"
+      :intersection="payload?.result_meta?.intersection || ''"
+      :period="payload?.result_meta?.timePeriodLabel || ''"
+      :files="payload?.build?.files || []"
+      :forging="phase === 'building'"
+    />
 
     <div v-if="loading" class="state-banner">加载中…</div>
     <div v-else-if="error" class="state-banner error">{{ error }}</div>
 
     <template v-else>
-      <SkillSolidifyOverlay
-        :open="phase === 'prompt'"
-        :title="promptTitle"
-        :body="promptBody"
-        @confirm="confirmSolidify"
-        @decline="declineSolidify"
-      />
-
       <Transition name="dock-fade">
         <aside v-if="showAbsorption" class="absorption-dock">
           <ExperienceAbsorptionPanel :state="absorption.state" />
@@ -170,10 +163,6 @@ function onBuildFinish() {
         @select="build.selectFile($event)"
         @finish="onBuildFinish"
       />
-
-      <div v-if="phase === 'prompt'" class="hint">
-        等待确认是否固化本次处置经验…
-      </div>
     </template>
   </div>
 </template>
@@ -183,20 +172,6 @@ function onBuildFinish() {
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-.map-plane {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.grid {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
 }
 .absorption-dock {
   position: absolute;
@@ -215,8 +190,7 @@ function onBuildFinish() {
   /* 为右侧经验吸收留空 */
   width: min(980px, calc(100% - 360px - 48px));
 }
-.state-banner,
-.hint {
+.state-banner {
   position: absolute;
   left: 50%;
   top: 40%;
