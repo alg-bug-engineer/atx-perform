@@ -138,16 +138,19 @@ const measureChips = computed(() => {
       </div>
     </div>
 
-    <SignalTimingRibbon :model="model" :t="t" />
+    <div class="compare-body">
+      <SignalTimingRibbon :model="model" :t="t" />
 
-    <div class="stages">
-      <CorridorStage
-        v-for="v in model.variants"
-        :key="v.key"
-        :model="model"
-        :variant="v"
-        :sample="samples[v.key]"
-      />
+      <div class="stages">
+        <CorridorStage
+          v-for="v in model.variants"
+          :key="v.key"
+          :model="model"
+          :variant="v"
+          :sample="samples[v.key]"
+          :ghost-queue-m="v.key === 'after' ? samples.before?.queueM ?? 0 : 0"
+        />
+      </div>
     </div>
   </section>
 </template>
@@ -155,7 +158,7 @@ const measureChips = computed(() => {
 <style scoped>
 .plan-compare {
   display: grid;
-  grid-template-rows: auto auto auto minmax(250px, 1fr);
+  grid-template-rows: auto auto minmax(250px, 1fr);
   gap: 10px;
   min-height: 0;
   height: 100%;
@@ -256,6 +259,14 @@ h2 {
 }
 .clock { font-size: 12px; color: var(--cyan-dim); min-width: 84px; text-align: right; }
 .speeds { display: flex; gap: 4px; }
+
+/* 配时轴固定在最左，竖向贯穿现状 / 协调后两幅 */
+.compare-body {
+  display: grid;
+  grid-template-columns: 172px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+}
 
 /* 上下排列：两个方案共用同一条横向里程轴，排队长度可直接比长短 */
 .stages {

@@ -5,6 +5,8 @@ const props = defineProps({
   model: { type: Object, required: true },
   variant: { type: Object, required: true },
   sample: { type: Object, default: null },
+  /** 对照方案此刻的排队长度：>0 时在本幅画出参考队尾与差值，供上下两幅对读 */
+  ghostQueueM: { type: Number, default: 0 },
 })
 
 /**
@@ -117,6 +119,17 @@ const occTone = computed(() => {
   return ratio >= 0.95 ? 'danger' : ratio >= 0.8 ? 'warn' : 'calm'
 })
 const tailX = computed(() => mx(Math.max(0, lengthM.value - queueM.value)))
+
+/** 对照方案的队尾（现状），画在本幅上直接量出缩短了多少 */
+const ghost = computed(() => {
+  const g = props.ghostQueueM
+  if (!g || g <= queueM.value + 1) return null
+  return {
+    x: mx(Math.max(0, lengthM.value - g)),
+    queueM: g,
+    deltaM: Math.round(g - queueM.value),
+  }
+})
 const occX = computed(() => mx(Math.max(0, lengthM.value - occupiedM.value)))
 const warnX = computed(() => mx(Math.max(0, lengthM.value - props.model.warningM)))
 
@@ -379,6 +392,18 @@ const inflowArrows = computed(() => {
           </text>
         </g>
 
+        <!-- 与上一幅对读：现状队尾位置 + 缩短量 -->
+        <g v-if="ghost" class="ghost">
+          <line :x1="ghost.x" :y1="GEO.oppTop - 8" :x2="ghost.x" :y2="GEO.roadBottom + 8" />
+          <text :x="ghost.x - 6" :y="GEO.oppTop - 10" text-anchor="end">
+            现状队尾 {{ Math.round(ghost.queueM) }} m
+          </text>
+          <line class="span" :x1="ghost.x" :y1="GEO.oppTop - 2" :x2="tailX" :y2="GEO.oppTop - 2" />
+          <text class="span-text" :x="(ghost.x + tailX) / 2" :y="GEO.oppTop - 6" text-anchor="middle">
+            缩短 {{ ghost.deltaM }} m
+          </text>
+        </g>
+
         <!-- 标尺 -->
         <g class="ruler">
           <line :x1="GEO.jiefangR" :y1="GEO.roadBottom + 16" :x2="GEO.jingshiL" :y2="GEO.roadBottom + 16" />
@@ -532,6 +557,26 @@ const inflowArrows = computed(() => {
 .widen-tick { stroke: rgba(0, 229, 255, 0.4); stroke-width: 1; stroke-dasharray: 3 3; }
 .widen-label { font-size: 10px; fill: rgba(0, 229, 255, 0.62); letter-spacing: 0.5px; }
 .widen-label.dim { fill: rgba(150, 190, 212, 0.5); }
+
+.ghost line {
+  stroke: rgba(255, 68, 68, 0.55);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 4;
+}
+.ghost .span {
+  stroke: rgba(51, 204, 136, 0.85);
+  stroke-dasharray: none;
+  stroke-width: 1.4;
+}
+.ghost text {
+  font-size: 10px;
+  fill: rgba(255, 130, 130, 0.9);
+  font-family: var(--font-mono);
+}
+.ghost .span-text {
+  fill: var(--ok);
+  font-size: 11px;
+}
 
 .ref { stroke-dasharray: 5 4; }
 .ref.warn { stroke: rgba(255, 204, 0, 0.4); stroke-width: 1.2; }
