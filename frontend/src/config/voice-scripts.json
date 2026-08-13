@@ -36,12 +36,20 @@
         "a1.time": ["period"],
         "a1.direction": ["direction", "movement"],
         "a1.problem": ["problem_type"],
-        "a1.ticket_ready": ["intersection_name"]
+        "a1.ticket_ready": []
       },
       "a2": {
         "a2.channelization": ["approach"],
         "a2.arms": ["intersection_name", "ew_road", "ns_road"],
-        "a2.handoff": ["approach"]
+        "a2.handoff": []
+      },
+      "a2f": {
+        "a2f.trace": [],
+        "a2f.supply": [],
+        "a2f.arterial": [],
+        "a2f.signal": [],
+        "a2f.overflow": [],
+        "a2f.done": []
       },
       "a3": {
         "a3.storage": ["storage_length"],
@@ -78,18 +86,24 @@
   "agent_searching": "检索相似案例。",
   "agent_done": "本段结束。",
 
-  "a1.input": "请说明问题路口、流向与时段。",
-  "a1.parse": "正在解析路口、流向与时段。",
+  "a1.parse": "正在理解问题路段，锁定诊断对象。",
   "a1.intersection": "目标路口确定为{intersection_name}。",
   "a1.time": "诊断时段为{period}。",
   "a1.direction": "问题流向为{direction}{movement}。",
   "a1.problem": "问题类型为{problem_type}。",
-  "a1.ticket_ready": "工单已形成，下一步路网定位。",
+  "a1.ticket_ready": "诊断工单已形成，开始路网定位。",
 
-  "a2.fly_in": "将问题落到真实路网对象。",
+  "a2.fly_in": "正在定位问题路段。",
   "a2.channelization": "目标进口为{approach}。",
   "a2.arms": "{intersection_name}，东西向{ew_road}，南北向{ns_road}。",
-  "a2.handoff": "路网定位完成，下一步证据核验。",
+  "a2.handoff": "问题定位完成，开始流量溯源。",
+
+  "a2f.trace": "正在追溯上游来流，锁定问题路段的流量构成。",
+  "a2f.supply": "上游需求略大于供给，问题路段具备承接能力。",
+  "a2f.arterial": "经十路为通勤主干道，保障东西方向流量。",
+  "a2f.signal": "经十路主干道优先，周期内无可用绿灯分配给北向南直行。",
+  "a2f.overflow": "经十路与奥体西路北进口车流短时间无法消散，溢流风险成立。",
+  "a2f.done": "成因分析完成。",
 
   "a3.storage": "蓄车约{storage_length}米。",
   "a3.queue": "排队约{queue_length}米。",

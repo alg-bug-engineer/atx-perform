@@ -29,7 +29,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="scene-3d" data-testid="scene0-opening">
-    <MapRuntime initial-scene="idle" route-mode @enter-scene2="setScene('2')" />
+    <MapRuntime route-mode />
 
     <p class="caption">{{ caption }}</p>
 

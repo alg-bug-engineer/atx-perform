@@ -3,6 +3,7 @@ import { computed, defineAsyncComponent, watch } from 'vue'
 import { sceneRegistry, getSceneByKey } from '../shared/scene-registry.js'
 import { useSceneRoute } from '../shared/useSceneRoute.js'
 import { playSceneNarration } from '../shared/sceneNarration.js'
+import { broadcastSilent } from '../shared/broadcast-bus.js'
 import DigitalAvatar from '../shared/components/DigitalAvatar.vue'
 import AppChrome from './AppChrome.vue'
 
@@ -34,7 +35,8 @@ watch(activeSceneKey, (key) => {
       />
     </main>
 
-    <DigitalAvatar />
+    <!-- 数字人 / 口播字幕：默认关闭，避免卡住面板揭示顺序；VITE_TTS_ENABLED=true 时再挂上 -->
+    <DigitalAvatar v-if="!broadcastSilent" />
   </div>
 </template>
 

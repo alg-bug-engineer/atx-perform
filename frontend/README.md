@@ -24,7 +24,7 @@ npm run dev
 |-----|-----|------|
 | `?scene=0` | 开幕 | 3D · 城市扫描 → 问题路段标红闪烁 → 拉近镜头 |
 | `?scene=1` | 问题定位 | 3D · 走廊揭示 + 高德式路况 + 指标卡 + 双路口渠化 |
-| `?scene=2` 或 `?scene=cause` | 分析成因 | 3D · 上游 3 跳流量溯源 → 供需 → 绿灯约束 → 溢流 |
+| `?scene=2` 或 `?scene=cause` | 分析成因 | 3D 原生幕 · 上游 3 跳流量溯源 → 供需 → 绿灯约束 → 溢流 |
 | `?scene=3` 或 `?scene=plan` | 优化方案 | 面板 |
 | `?scene=3b` 或 `?scene=signal` | 信控方案调节 | 面板 |
 | `?scene=4` 或 `?scene=effect` | 效果评估 | 面板 |
@@ -36,9 +36,9 @@ npm run dev
 
 ```text
 src/app/AppChrome.vue              # 大字报标题 + 步骤栏 + 执行状态
-src/scenes/scene0-opening/         # 挂 MapRuntime（idle）
+src/scenes/scene0-opening/         # 挂 MapRuntime（idle 开幕）
 src/scenes/scene1-problem-locate/  # 挂 TrafficOriginScene + act-01，另补双路口渠化
-src/scenes/scene2-cause-analysis/  # 挂 MapRuntime（scene2 流量溯源）
+src/scenes/scene2-cause-analysis/  # 挂 TrafficOriginScene + act-02（原生流量溯源）
 src/scenes/scene3-optimization/    # 对齐 agent-loop act-08 方案生成
 src/scenes/scene3b-signal-plan/    # 干线协调配时 / 绿波时距图
 src/scenes/scene4-effect-eval/     # 对齐 TrialEffect*
@@ -63,6 +63,15 @@ src/features/**  src/layers/**  src/mesh/**  src/geo/**   # 3D 运行时（幕 0
 `act1.html` 是另一套实现的旧独立入口，不参与本应用构建（`vite.config.js` 只从 `index.html` 扫描）。
 
 配色见 `src/styles/theme.css`（baseline 青/夜景）。实现映射见仓库 `docs/implementation-refs.md`。
+
+## 口播 / 字幕
+
+默认关闭（`broadcastSilent`）：开发阶段只做地图与面板动作，避免播报卡住面板揭示顺序。
+需要幕 3/3b/4/5 的预合成讲解与数字人字幕时，在 `frontend/.env.local` 里设 `VITE_TTS_ENABLED=true`。
+
+## 幕间流转
+
+幕 1 演绎结束自动交棒到幕 2，幕 2 溢流揭示后交棒到幕 3；其余幕停在原地，用步骤栏切换。
 
 ## 自动化截图
 

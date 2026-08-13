@@ -62,6 +62,8 @@ import {
   act1MapBeat,
   act2Phase,
   act2MapBeat,
+  flowTraceMapBeat,
+  flowTraceReplaySeq,
   act3Phase,
   act3MapBeat,
   act4Phase,
@@ -101,6 +103,9 @@ const METERS_PER_UNIT = 10;
 const DEFAULT_INTER_ID = '6f9d6a722f3651';
 const FOCUS_RADIUS_UNITS = 400; // 2km = 200 Three.js单位
 
+/** 地图（含各幕地图特效工厂）初始化完成 */
+const emit = defineEmits(['ready']);
+
 // ── Refs ──────────────────────────────────────────────────────────────────────
 const containerRef = ref(null);
 const canvasRef    = ref(null);
@@ -121,6 +126,7 @@ let currentFocusLayer = null;
 let odZoneGroup = null;
 let act1Fx = null;
 let act2Fx = null;
+let flowTraceFx = null;
 let act3Fx = null;
 let act4Fx = null;
 let act4Congestion = null;
@@ -278,7 +284,21 @@ const _camAnim = {
   posTarget:  new THREE.Vector3(),
   lookTarget: new THREE.Vector3(),
   alpha: 0,
+  lerp: 0.05,
 };
+
+/** 通用镜头缓动（对齐 MapRuntime.animateCamera，供幕 2 流量溯源特效工厂消费） */
+function animateCamera({ posTarget, lookTarget, lerp = 0.035 }) {
+  if (!camera || !controls) return;
+  _camAnim.posTarget.set(posTarget.x, posTarget.y, posTarget.z);
+  _camAnim.lookTarget.set(lookTarget.x, lookTarget.y, lookTarget.z);
+  _camAnim.lerp = lerp;
+  _camAnim.active = true;
+  controls.minDistance = 40;
+  controls.maxDistance = Math.max(4500, Math.hypot(posTarget.x, posTarget.z) + posTarget.y + 800);
+  camera.far = Math.max(camera.far || 3000, controls.maxDistance + 500);
+  camera.updateProjectionMatrix();
+}
 
 // 射线拾取（复用，避免每次 new）
 const _raycaster  = new THREE.Raycaster();
@@ -757,6 +777,8 @@ async function init() {
     loadingText.value = `路网加载失败：${err instanceof Error ? err.message : String(err)}`;
   } finally {
     loading.value = false;
+    // 分幕独立调试时，幕舞台要等地图特效工厂就位再发节拍，否则首拍会被丢掉
+    emit('ready');
   }
 }
 
@@ -827,6 +849,31 @@ async function initInner() {
     }
   }
 
+  // 幕 2 流量溯源图层（原生幕：成因分析完整演绎，HUD 经 flowTraceHud 桥接舞台）
+  {
+    const { createAct2FlowMapFx } = getActFxCompat();
+    if (createAct2FlowMapFx) {
+      flowTraceFx = await createAct2FlowMapFx(
+        { scene, camera, controls, animateCamera },
+        {
+          roads: allRoads,
+          intersections: allIntersections,
+          topology,
+          getResolution: () => new THREE.Vector2(
+            containerRef.value?.clientWidth || window.innerWidth,
+            containerRef.value?.clientHeight || window.innerHeight,
+          ),
+        },
+        {
+          onComplete: () => {
+            getActCompatExports().markFlowTraceRevealed?.();
+            getActCompatExports().completeFlowTrace?.();
+          },
+        },
+      );
+    }
+  }
+
   // 对齐参考项目：Live 无推演数据时不上业务图层；Mock 有 fixture 可预建。
   // Act3–8 进幕 watch 会 dispose+create，此处 Live 跳过避免 null.toFixed 崩冷启动。
   if (!isLiveStrictMode()) {
@@ -873,6 +920,7 @@ function animate() {
   if (currentFocusLayer) currentFocusLayer.mesh.update?.(t);
   act1Fx?.update(t);
   act2Fx?.update(t);
+  flowTraceFx?.update?.(t);
   act3Fx?.update(t);
   act4Fx?.update(t);
   act5Fx?.update(t);
@@ -904,9 +952,9 @@ function animate() {
   } else if (_act1Cam.mode !== 'idle' && camera && controls) {
     updateAct1Camera(t);
   } else if (_camAnim.active && camera && controls) {
-    // 相机飞行动画（每帧 lerp 5%，类似 ease-out）
-    camera.position.lerp(_camAnim.posTarget, 0.05);
-    controls.target.lerp(_camAnim.lookTarget, 0.05);
+    // 相机飞行动画（每帧按目标 lerp，类似 ease-out）
+    camera.position.lerp(_camAnim.posTarget, _camAnim.lerp || 0.05);
+    controls.target.lerp(_camAnim.lookTarget, _camAnim.lerp || 0.05);
     if (camera.position.distanceTo(_camAnim.posTarget) < 3) {
       camera.position.copy(_camAnim.posTarget);
       controls.target.copy(_camAnim.lookTarget);
@@ -970,6 +1018,7 @@ function onResize() {
   }
   act4Congestion?.setResolution?.(W, H);
   act5FlowTrace?.setResolution?.(W, H);
+  flowTraceFx?.setResolution?.(W, H);
 }
 
 // 监听全局扫描触发 → 播放页面扫描视觉特效
@@ -2075,6 +2124,8 @@ function resetNarrativeMapToHome() {
   act1Fx?.play('clear', t);
   act2Fx?.play('clear', t, { scene });
   act2Fx?.removeChannelization?.();
+  flowTraceFx?.stop?.();
+  flowTraceFx?.clear?.();
   act3Fx?.play('clear', t);
   act4Fx?.play('clear', t);
   act5Fx?.play('clear', t);
@@ -2225,6 +2276,35 @@ watch(act2MapBeat, (beat) => {
       finishAct2Hold({ allowDrift: false });
     }
   }
+});
+
+// 幕 2 流量溯源节拍 → 原生地图演绎（成因分析：溯源→供需→本口→绿灯→溢流）
+watch(flowTraceMapBeat, (beat) => {
+  if (!beat || beat === 'clear') {
+    flowTraceFx?.stop?.();
+    flowTraceFx?.clear?.();
+    return;
+  }
+  if (beat === 'trace') {
+    const t = performance.now() / 1000;
+    // 释放幕 1 镜头占用，清理搜索/定位图层，避免抢戏
+    stopAct1Camera();
+    _act2Cam.mode = 'idle';
+    _act2Cam.onComplete = null;
+    _act2Cam.pendingSweep = false;
+    act1Fx?.play('clear', t);
+    act2Fx?.play('clear', t, { scene });
+    act2Fx?.removeChannelization?.();
+    if (act1Fx?.group) act1Fx.group.visible = false;
+    if (act2Fx?.group) act2Fx.group.visible = false;
+    flowTraceFx?.play?.();
+  }
+});
+
+// 幕 2 重播请求 → 重新播放流量溯源演绎
+watch(flowTraceReplaySeq, (seq) => {
+  if (!flowTraceFx || seq === 0) return;
+  flowTraceFx.replay?.();
 });
 
 // Act3 地图节拍 → 北进口缓推 + 蓄车/排队线

@@ -13,14 +13,13 @@ export const broadcastMuted = ref(false);
 
 /**
  * 叙事演示静默：true 时不入队。
- * 默认跟随 VITE_TTS_ENABLED（未设则看 TTS_ENABLED）；均为 true/未设时开启口播。
+ * 默认关闭口播/字幕（开发阶段只做地图与面板动作）；
+ * 仅当 VITE_TTS_ENABLED / TTS_ENABLED 为 true 时开启。
  */
 function resolveSilentDefault() {
   const raw = import.meta.env.VITE_TTS_ENABLED ?? import.meta.env.TTS_ENABLED;
-  if (raw === '0' || raw === 'false' || raw === 'False') return true;
   if (raw === '1' || raw === 'true' || raw === 'True') return false;
-  // 未配置时默认开启（与 .env.example TTS_ENABLED=true 一致）
-  return false;
+  return true;
 }
 
 export const broadcastSilent = ref(resolveSilentDefault());

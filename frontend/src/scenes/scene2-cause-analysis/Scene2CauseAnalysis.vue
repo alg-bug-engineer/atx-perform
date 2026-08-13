@@ -1,23 +1,35 @@
 <script setup>
 /**
- * 幕 2 · 分析成因（3D）：MapRuntime 直接进入流量溯源演绎。
- * 节拍 trace → supply → ew_clear → arterial → signal → overflow 由 scene2-cause.js 驱动，
- * 数据读本地 data/1-2-flow-trace.json（vite serveRepoData 把仓库 data/ 挂到 /data/）。
+ * 幕 2 · 分析成因（3D 原生幕）：TrafficOriginScene 走廊 + act-02 流量溯源舞台。
+ * 地图演绎由 flowTraceMapFx 在走廊里直接播放（trace → supply → ew_clear →
+ * arterial → signal → overflow），不再切回首页重载。
+ * 节拍文案与指标读本地 data/1-2-flow-trace.json。
  */
-import { onBeforeUnmount } from 'vue'
-import MapRuntime from '../../features/scenes/MapRuntime.vue'
-import { enterIdle } from '../../shared/home-idle-state.js'
+import { onBeforeUnmount, ref } from 'vue'
+// 副作用注册 act-02：TrafficOriginScene init 时要从注册表取 createAct2FlowMapFx
+import '../../features/acts/act-02-flow-trace/index.js'
+import TrafficOriginScene from '../../features/scenes/traffic-origin/TrafficOriginScene.vue'
+import Act2FlowStage from '../../features/acts/act-02-flow-trace/Act2FlowStage.vue'
+import { narrativeActive } from '../../shared/narrative-state.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
 import { SCENE_META } from './index.js'
 
 const { setScene } = useSceneRoute()
 
-onBeforeUnmount(() => enterIdle())
+/** 等地图与 flowTraceFx 就位再挂舞台，否则首拍 trace 会被丢掉 */
+const mapReady = ref(false)
+
+narrativeActive.value = true
+
+onBeforeUnmount(() => {
+  narrativeActive.value = false
+})
 </script>
 
 <template>
   <div class="scene-3d" data-testid="scene2-cause-analysis">
-    <MapRuntime initial-scene="scene2" route-mode />
+    <TrafficOriginScene @ready="mapReady = true" />
+    <Act2FlowStage v-if="mapReady" @exit="setScene('3')" />
 
     <div class="scene-actions">
       <span class="scene-tag">{{ SCENE_META.name }}</span>
@@ -33,12 +45,20 @@ onBeforeUnmount(() => enterIdle())
   inset: 0;
 }
 
+/* 走廊铺满本幕视口（运行时默认写死 100vw/100vh，会顶穿步骤栏） */
+.scene-3d :deep(.map-root) {
+  width: 100%;
+  height: 100%;
+}
+
+/* 顶部大字报与时钟由 AppChrome 统一出，隐去运行时自带的一套 */
 .scene-3d :deep(.hud),
 .scene-3d :deep(.timestamp) {
   display: none;
 }
 
 /* 运行时原本给自带 HUD 留的顶距，这里由步骤栏承担，收回给内容 */
+.scene-3d :deep(.act-dock),
 .scene-3d :deep(.scene2-dock) {
   top: 12px;
   max-height: calc(100% - 100px);

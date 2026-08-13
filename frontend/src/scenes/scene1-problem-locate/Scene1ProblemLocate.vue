@@ -21,6 +21,8 @@ const channelization = ref(null)
 const locate = ref(null)
 const objects = ref(null)
 const showChan = ref(true)
+/** 等地图与 act-01 特效工厂就位再挂舞台，否则搜索态首拍会被丢掉 */
+const mapReady = ref(false)
 
 narrativeActive.value = true
 
@@ -47,8 +49,8 @@ function satText() {
 
 <template>
   <div class="scene-3d" data-testid="scene1-problem-locate">
-    <TrafficOriginScene />
-    <ProblemLocateStage @exit="setScene('2')" />
+    <TrafficOriginScene @ready="mapReady = true" />
+    <ProblemLocateStage v-if="mapReady" @exit="setScene('2')" />
 
     <section v-if="channelization" class="chan-dock" :class="{ folded: !showChan }">
       <header class="chan-dock-hd">

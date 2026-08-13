@@ -106,6 +106,7 @@ export function getActFxCompat() {
   const keys = [
     'createAct1MapFx',
     'createAct2MapFx',
+    'createAct2FlowMapFx',
     'createAct3MapFx',
     'createAct4MapFx',
     'createAct5MapFx',

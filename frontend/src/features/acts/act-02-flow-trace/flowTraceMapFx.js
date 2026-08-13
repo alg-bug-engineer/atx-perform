@@ -1,12 +1,20 @@
 /**
- * 幕 2：坤顺/解放东北东西进口 → 经十路–奥体西北进口 流量溯源
- * 视觉对齐 baseline 拥堵蔓延的反向：远端先亮，收束到汇点。
+ * 幕 2 · 流量溯源（成因分析）— 地图特效工厂（原生幕）
+ *
+ * 由 scene2-cause.js（首页分析成因场景）移植而来，供 TrafficOriginScene
+ * 在叙事幕模式下直接播放，彻底去掉「切回首页再跳转」的中间态。
+ *
+ * 演绎时序：坤顺/解放东北东西进口 → 经十路–奥体西北进口 流量溯源，
+ * 视觉对齐 baseline 拥堵蔓延的反向（远端先亮，收束到汇点）；
  * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 示意相位环 → 270m 排队溢流。
+ *
+ * HUD 状态经 setFlowTraceHud 桥接给幕 2 舞台组件（Act2FlowStage）渲染。
  */
-import { createInflowTraceLayer } from '../../layers/inflowTraceLayer.js';
-import { createJingshiEwFlowLayer } from '../../layers/jingshiEwFlowLayer.js';
-import { createRoadNameLabelLayer } from '../../layers/roadNameLabels.js';
-import { createScene2MapAnnot } from '../../layers/scene2MapAnnot.js';
+import { createInflowTraceLayer } from '../../../layers/inflowTraceLayer.js';
+import { createJingshiEwFlowLayer } from '../../../layers/jingshiEwFlowLayer.js';
+import { createRoadNameLabelLayer } from '../../../layers/roadNameLabels.js';
+import { createScene2MapAnnot } from '../../../layers/scene2MapAnnot.js';
+import { setFlowTraceHud } from './state.js';
 
 const APPROACH_ALIAS = {
   N: 'N',
@@ -200,9 +208,15 @@ function heightForJingshiEw(bounds) {
  * @param {{ roads, intersections, topology, getResolution }} mapCtx
  * @param {{ onHud?: Function, onComplete?: Function }} hooks
  */
-export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
+export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
   const flowTrace = await fetchJson('/data/1-2-flow-trace.json');
   const { roads, intersections, topology, getResolution } = mapCtx;
+
+  /** HUD 输出：桥接给舞台组件渲染，同时保留外部 onHud 回调 */
+  function emitHud(state) {
+    setFlowTraceHud(state);
+    hooks.onHud?.(state);
+  }
   const hopApproaches = parseApproaches(
     flowTrace?.allowed_approaches || flowTrace?.meta?.approaches,
     { fallback: ['N', 'E', 'W'] },
@@ -352,11 +366,11 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
     const source = findIntersection(intersections, flowTrace.source);
     const via = findIntersection(intersections, flowTrace.via);
     if (!target) {
-      hooks.onHud?.({ phase: 'error', caption: '未找到经十路–奥体西汇点', text: '未找到经十路–奥体西汇点' });
+      emitHud({ phase: 'error', caption: '未找到经十路–奥体西汇点', text: '未找到经十路–奥体西汇点' });
       return;
     }
     if (!source) {
-      hooks.onHud?.({ phase: 'error', caption: '未找到坤顺–奥体西源点', text: '未找到坤顺–奥体西源点' });
+      emitHud({ phase: 'error', caption: '未找到坤顺–奥体西源点', text: '未找到坤顺–奥体西源点' });
       return;
     }
 
@@ -399,7 +413,6 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
       target,
       problemRoad,
       queueM: beats.overflow?.queue_m || 270,
-      queueRatio: beats.overflow?.queue_ratio ?? 0.8,
       hopTimes,
     });
     runtime.scene.add(annot);
@@ -419,7 +432,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
     }
     layer.play(performance.now() / 1000);
 
-    hooks.onHud?.({
+    emitHud({
       phase: 'trace',
       caption: captionFor(beats, 'trace', flowTrace.trace_hint || '正在进行问题路段流量溯源'),
       text: captionFor(beats, 'trace', flowTrace.trace_hint || '正在进行问题路段流量溯源'),
@@ -433,7 +446,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
       frameProblemLink(via, target);
       annot?.setBeat('supply');
       const ds = flowTrace.demand_supply || {};
-      hooks.onHud?.({
+      emitHud({
         phase: 'supply',
         caption: captionFor(beats, 'supply', '供给小于需求，路段有承接能力'),
         text: captionFor(beats, 'supply', '供给小于需求，路段有承接能力'),
@@ -449,7 +462,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
       after(beatMs(beats, 'supply', dc.hold_ms ?? 2800), () => {
         clearInflowLayer();
         annot?.setBeat('hidden');
-        hooks.onHud?.({
+        emitHud({
           phase: 'ew_clear',
           caption: '',
           text: '',
@@ -471,7 +484,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
             frameJingshiEw(target, problemRoad);
             playPhase = 'arterial';
             annot?.setBeat('arterial');
-            hooks.onHud?.({
+            emitHud({
               phase: 'arterial',
               caption: captionFor(beats, 'arterial', '经十路为通勤主干道，保障东西方向流量'),
               text: captionFor(beats, 'arterial', '经十路为通勤主干道，保障东西方向流量'),
@@ -486,7 +499,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
             after(beatMs(beats, 'arterial', dc.ew_flow_ms ?? 3200), () => {
               playPhase = 'signal';
               annot?.setBeat('signal');
-              hooks.onHud?.({
+              emitHud({
                 phase: 'signal',
                 caption: captionFor(beats, 'signal', '经十路主干道优先，周期内无可用绿灯分配给北向南直行'),
                 text: captionFor(beats, 'signal', '经十路主干道优先，周期内无可用绿灯分配给北向南直行'),
@@ -503,7 +516,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
                 ewLayer?.setOverflowHint?.(true);
                 annot?.setBeat('overflow');
                 frameProblemLink(via, target);
-                hooks.onHud?.({
+                emitHud({
                   phase: 'overflow',
                   caption: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
                   text: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
@@ -511,6 +524,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
                     kind: 'overflow',
                     title: '溢流风险',
                     queue_m: beats.overflow?.queue_m || 270,
+                    note: '专家值',
                     copy: copyText(dc, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散。'),
                   },
                 });
@@ -572,6 +586,11 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
     stop,
     update,
     setResolution,
+    /** 清空图层（保留实例可复用；对应 mapBeat 'clear'） */
+    clear() {
+      stop();
+      clearLayer();
+    },
     dispose,
   };
 }

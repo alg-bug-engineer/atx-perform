@@ -108,7 +108,7 @@ export const DIAGNOSIS_TICKET = {
   link_id: PROBLEM_LINK.linkId,
   link_name: PROBLEM_LINK.roadName,
   intersection_name: '经十路与奥体西路路口',
-  time_range: '17:30–18:30',
+  time_range: '17:00–19:00',
   period: '晚高峰',
   direction: '北向南',
   movement: '直行',

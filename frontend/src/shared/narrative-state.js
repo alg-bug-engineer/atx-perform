@@ -146,6 +146,9 @@ export function setFlowTraceMapBeat(beat) {
   flowTraceMapBeat.value = beat;
 }
 
+/** 幕 2 流量溯源重播请求（递增信号，TrafficOriginScene watch 消费） */
+export const flowTraceReplaySeq = ref(0);
+
 /** 底部任务栏文案 */
 export const taskBarLabel = ref('');
 

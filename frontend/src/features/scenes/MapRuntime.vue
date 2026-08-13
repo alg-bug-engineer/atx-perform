@@ -20,20 +20,17 @@ import {
   enterIdle,
   enterScene2,
   resetHomeIdleState,
-  scene2EnterRequest,
 } from '../../shared/home-idle-state.js';
 
 /**
- * 分幕调试下由外层指定进入哪一幕：
- * initialScene='idle' → 幕 0 开幕；'scene2' → 幕 2 流量溯源（跳过开幕演绎）
- * routeMode=true 时不在内部切幕，改抛事件交给 ?scene= 路由
+ * 分幕调试：本运行时只承担幕 0 开幕（幕 2 已原生化到 act-02）。
+ * routeMode=true 时不提供内部切幕入口，切幕交给 ?scene= 路由。
  */
 const props = defineProps({
-  initialScene: { type: String, default: 'idle' },
   routeMode: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['enter-scene2', 'ready']);
+const emit = defineEmits(['ready']);
 
 const hostRef = ref(null);
 const loadingText = ref('加载地图…');
@@ -165,19 +162,7 @@ watch(cityMonitorSelection, (sel) => {
   scene0.focusSelection(sel.type, sel.id);
 });
 
-// 从叙事幕跳转：请求进入「分析成因」（scene2）——幕 2 暂用跳转方式复用本页
-let handledScene2Request = 0;
-function startScene2WhenReady() {
-  const req = scene2EnterRequest.value;
-  if (!req || req === handledScene2Request) return;
-  if (!ready.value) return;
-  handledScene2Request = req;
-  enterScene2();
-  onEnterScene2();
-}
-watch(scene2EnterRequest, () => startScene2WhenReady(), { immediate: true });
-watch(ready, (r) => { if (r) startScene2WhenReady(); });
-
+// 首页内 scene0 → scene2（分析成因）由 HomeIdleStage 的 enter-scene2 事件触发
 async function ensureScene2() {
   if (scene2 || !runtimeApi || !mapCtx) return;
   scene2 = await createScene2Cause(runtimeApi, mapCtx, {
@@ -327,11 +312,6 @@ async function boot() {
   tick();
   emit('ready');
 
-  if (props.initialScene === 'scene2') {
-    enterScene2();
-    await onEnterScene2();
-    return;
-  }
   enterIdle();
   scene0.play();
 }
@@ -374,10 +354,7 @@ defineExpose({ replay: onReplay });
       </div>
     </Transition>
     <SceneChrome v-if="ready" />
-    <HomeIdleStage
-      v-if="showHomeIdle"
-      @enter-scene2="routeMode ? emit('enter-scene2') : onEnterScene2()"
-    />
+    <HomeIdleStage v-if="showHomeIdle" />
 
     <aside v-if="showScene2Ui && dockStack.length" class="scene2-dock">
       <div v-for="item in dockStack" :key="item.kind" class="dock-card">
@@ -425,7 +402,7 @@ defineExpose({ replay: onReplay });
 
         <template v-else-if="item.kind === 'overflow'">
           <div class="dock-hero warn">{{ item.queue_m }} m</div>
-          <div class="dock-lab">排队长度 · {{ item.note }}</div>
+          <div class="dock-lab">排队长度</div>
           <p v-if="item.copy" class="dock-copy">{{ item.copy }}</p>
         </template>
       </div>

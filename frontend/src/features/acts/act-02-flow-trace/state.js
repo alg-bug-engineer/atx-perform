@@ -11,9 +11,11 @@
  *   - 'signal'    绿灯约束
  *   - 'overflow'  溢流风险
  */
+import { ref } from 'vue';
 import {
   flowTraceMapBeat,
   flowTracePhase,
+  flowTraceReplaySeq,
   narrativeState,
   setAct,
   setBeat,
@@ -22,6 +24,39 @@ import {
   taskBarLabel,
   taskBarVisible,
 } from '../../../shared/narrative-state.js';
+
+/** 幕 2 地图节拍 → 口播 beat（跟随演绎 phase 播报） */
+const VOICE_BEAT_BY_PHASE = {
+  trace: 'a2f.trace',
+  supply: 'a2f.supply',
+  arterial: 'a2f.arterial',
+  signal: 'a2f.signal',
+  overflow: 'a2f.overflow',
+};
+
+/**
+ * 幕 2 HUD 状态（地图特效工厂 emitHud 输出 → 舞台组件渲染）
+ * @type {import('vue').Ref<{ phase: string, caption: string, text: string, panel: object|null }>}
+ */
+export const flowTraceHud = ref({ phase: '', caption: '', text: '', panel: null });
+
+/** 写入 HUD 状态；phase 变化时同步口播 beat */
+export function setFlowTraceHud(state) {
+  flowTraceHud.value = { ...flowTraceHud.value, ...state };
+  const beat = VOICE_BEAT_BY_PHASE[state?.phase];
+  if (beat) setBeat(beat);
+}
+
+export function resetFlowTraceHud() {
+  flowTraceHud.value = { phase: '', caption: '', text: '', panel: null };
+}
+
+export function requestFlowTraceReplay() {
+  flowTracePhase.value = 'tracing';
+  taskBarLabel.value = '执行中：流量溯源';
+  resetFlowTraceHud();
+  flowTraceReplaySeq.value += 1;
+}
 
 export const FLOW_TRACE_ACT_ID = 2;
 export const FLOW_TRACE_ACT_KEY = 'flow-trace';
@@ -80,6 +115,9 @@ export function enterFlowTrace(prevState = null) {
 
   flowTraceRevealed.reset();
   flowTraceRevealed.clear();
+  resetFlowTraceHud();
+  // 原生幕：直接在地图运行时触发流量溯源演绎（TrafficOriginScene watch 消费）
+  setFlowTraceMapBeat('trace');
 
   return {
     act: FLOW_TRACE_ACT_ID,
@@ -126,4 +164,5 @@ export default {
   exit: exitFlowTrace,
   markFlowTraceRevealed,
   completeFlowTrace,
+  requestFlowTraceReplay,
 };
