@@ -57,13 +57,25 @@ const activeCycle = computed(() => shown.value[shown.value.length - 1] || null)
 const allRevealed = computed(() => revealed.value >= series.value.cyclesCount)
 const baseline = computed(() => series.value.baseline)
 
-/** 结论性大标题：一句话说清这轮试运行换来了什么 */
+/** 结论性大标题：按「指标 由 A 变为 B」的口径写，便于直接进汇报 */
 const headline = computed(() => {
   const c = activeCycle.value
   if (!c) return '试运行观察中…'
-  const cut = Math.round(baseline.value.queue_length_m - c.queue_length_m)
-  const noSpill = peaks.value && peaks.value.after <= storageM.value
-  return `排队缩短 ${cut} 米，速度回到 ${c.avg_speed_kmh} km/h${noSpill ? '，路口不再溢出' : ''}`
+  const b = baseline.value
+  const queueVerb = c.queue_length_m <= b.queue_length_m ? '降至' : '升至'
+  const speedVerb = c.avg_speed_kmh >= b.avg_speed_kmh ? '提升至' : '降至'
+  const parts = [
+    `排队长度由 ${b.queue_length_m} m ${queueVerb} ${c.queue_length_m} m`,
+    `平均速度由 ${b.avg_speed_kmh.toFixed(1)} ${speedVerb} ${c.avg_speed_kmh.toFixed(1)} km/h`,
+  ]
+  if (peaks.value) {
+    parts.push(
+      peaks.value.after > storageM.value
+        ? `峰值排队仍超 ${Math.round(storageM.value)} m 蓄车能力`
+        : `峰值排队未超 ${Math.round(storageM.value)} m 蓄车能力`,
+    )
+  }
+  return parts.join('，')
 })
 
 function cycleState(i) {
