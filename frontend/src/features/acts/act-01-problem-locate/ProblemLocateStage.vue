@@ -136,6 +136,9 @@ function runExitFlow() {
   runExitBarrier({
     later,
     barriers: [leftGate.current, windowsGate.current, confirmGate.current],
+    // 幕 1 结束立即跳转（不等口播）：退出句「开始流量溯源」由数字人在首页继续播，
+    // 避免幕间口播等待拖慢跳转节奏。
+    waitBroadcast: false,
     onExit: () => {
       const nextState = exitProblemLocate({ nextAct: 2 });
       emit('exit', nextState);

@@ -20,7 +20,6 @@ import {
   enterIdle,
   enterScene2,
   resetHomeIdleState,
-  scene2EnterRequest,
 } from '../../shared/home-idle-state.js';
 
 const hostRef = ref(null);
@@ -153,19 +152,7 @@ watch(cityMonitorSelection, (sel) => {
   scene0.focusSelection(sel.type, sel.id);
 });
 
-// 从叙事幕跳转：请求进入「分析成因」（scene2）——幕 2 暂用跳转方式复用本页
-let handledScene2Request = 0;
-function startScene2WhenReady() {
-  const req = scene2EnterRequest.value;
-  if (!req || req === handledScene2Request) return;
-  if (!ready.value) return;
-  handledScene2Request = req;
-  enterScene2();
-  onEnterScene2();
-}
-watch(scene2EnterRequest, () => startScene2WhenReady(), { immediate: true });
-watch(ready, (r) => { if (r) startScene2WhenReady(); });
-
+// 首页内 scene0 → scene2（分析成因）由 HomeIdleStage 的 enter-scene2 事件触发
 async function ensureScene2() {
   if (scene2 || !runtimeApi || !mapCtx) return;
   scene2 = await createScene2Cause(runtimeApi, mapCtx, {
