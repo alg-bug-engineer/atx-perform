@@ -354,7 +354,7 @@ defineExpose({ replay: onReplay });
       </div>
     </Transition>
     <SceneChrome v-if="ready" />
-    <HomeIdleStage v-if="showHomeIdle" @enter-scene2="onEnterScene2" />
+    <HomeIdleStage v-if="showHomeIdle" />
 
     <aside v-if="showScene2Ui && dockStack.length" class="scene2-dock">
       <div v-for="item in dockStack" :key="item.kind" class="dock-card">
@@ -402,7 +402,7 @@ defineExpose({ replay: onReplay });
 
         <template v-else-if="item.kind === 'overflow'">
           <div class="dock-hero warn">{{ item.queue_m }} m</div>
-          <div class="dock-lab">排队长度 · {{ item.note }}</div>
+          <div class="dock-lab">排队长度</div>
           <p v-if="item.copy" class="dock-copy">{{ item.copy }}</p>
         </template>
       </div>
