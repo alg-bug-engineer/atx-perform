@@ -2,8 +2,13 @@
 
 约定：逻辑/交互/时序对齐 `references/agent-loop-project` 的 **main**；视觉配色对齐 `references/baseline` / 本项目夜景科技风。
 
+另一套 three.js 实现（原 main 的 `frontend/src/features/**`、`layers/**`、`mesh/**`、`act1.html`）合并后保留在库内**只作逻辑参考**，不参与本应用构建（`vite.config.js` 只从 `index.html` 扫描）。
+
 | 本项目幕 | agent-loop 参考（main） | 本项目数据/资产 |
 |----------|-------------------------|-----------------|
+| 0 开幕 | `features/scenes/scene0-opening.js` 的 cityScan → 揭示 → 聚焦节拍（本项目改为 SVG `CorridorMap.vue` + `useSceneBeats.js`：scan/alert/fly/settle） | `data/1-0-opening.json`、`data/1-scene-objects.json` |
+| 1 问题定位 | `acts/act-01-problem-locate/`：`LocateReasoningPanel.vue`、`fixture.js` 的 `planningItems/recognitionSteps/CONCLUSIONS`（推理流改写为 `ReasoningStream.vue`，取数全部改读嗅探 JSON）；渠化按库内进口臂逐车道还原 `IntersectionChannelization.vue` | `data/1-1-problem-locate.json`、`data/1-1-channelization.json`、`assets/路口渠化与信号实时状态.png` |
+| 2 分析成因 | `acts/act-02-flow-trace/state.js` 的 `flowTraceMapBeat`（trace/supply/arterial/signal/overflow 同名同序，改由 `1-2-flow-trace.json:map_beats` 驱动）；溯源链路由 `flow_share_ratio` + `cor_lon/cor_lat` 现算 | `data/1-2-cause-analysis.json`、`data/1-2-flow-trace.json` |
 | 3 优化方案 | `src/features/acts/act-08/`：`Act8Stage.vue`、`PlanPanel.vue`、`PlanDrawer.vue`、`planVisualization.js`、`act8MapFx.js`（本项目为走廊微观仿真 `CorridorStage.vue` + `corridorSim.js`） | `data/1-3-optimization.json` |
 | 3b 信控方案调节 | `StageMovementCanvas.vue`、`StageCards.vue`（阶段渠化改写为 SVG 版 `StageChannelization.vue`，补齐路面/车道虚线/停止线/斑马线标线）；时距图 `TimeSpaceDiagram.vue`、配时对比 `StageTimingCompare.vue` 为本项目新增 | `data/1-3-signal-plan.json`、`assets/信控方案可视化图.png` |
 | 4 效果评估 | `TrialEffectPanel.vue`、`TrialEffectDrawer.vue`、`trialEffectSeries.js`（图表改为本项目大屏组合：主视觉 `QueueCapacityHero.vue` 蓄车占用条 + `CycleQueueChart.vue` 单周期面积图 + `GovernanceRadar.vue` 治理画像 + `TrialGuardRail.vue` 回滚护栏半环） | `data/1-4-effect-eval.json`、`assets/效果评估.png` |
@@ -85,5 +90,6 @@ cd frontend && npm install && npm run dev
 
 - `?scene=0..5`（含 `3b`），别名：`plan` / `signal` / `effect` / `skill`
 - 默认 `?scene=3`，便于 3/4/5 分工
-- 模块：`frontend/src/scenes/scene{N}-*/`
+- 顶部步骤栏覆盖全部幕，编号即 `?scene=` 取值；`←` / `→` 切幕
+- 模块：`frontend/src/scenes/scene{N}-*/`；公共外框 `shared/components/SceneStage.vue`、幕头 `SceneHeadline.vue`
 - 说明：`frontend/README.md`

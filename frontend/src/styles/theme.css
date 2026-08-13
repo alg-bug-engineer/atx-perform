@@ -1,6 +1,9 @@
 :root {
   --bg: #040c1e;
   --bg-panel: rgba(0, 10, 18, 0.86);
+  /* 全幕通用抽屉底色：幕 3/3b/4/5 已在用，抽到变量供幕 0/1/2 复用 */
+  --bg-drawer: rgba(4, 12, 30, 0.96);
+  --bg-inset: rgba(0, 22, 38, 0.6);
   --cyan: #00e5ff;
   --cyan-dim: rgba(0, 229, 255, 0.72);
   --cyan-border: rgba(0, 229, 255, 0.28);
@@ -9,7 +12,9 @@
   --text-muted: rgba(160, 200, 220, 0.7);
   --danger: #ff4444;
   --warn: #ffcc00;
+  --amber: #ffc14a;
   --ok: #33cc88;
+  --asphalt: rgba(16, 46, 68, 0.95);
   --font-mono: 'Courier New', ui-monospace, monospace;
   /* 顶部大字报 + 步骤栏 + 状态条占位，内容区从此下沉 */
   --app-chrome-h: 96px;
@@ -32,4 +37,18 @@ body,
 
 button {
   font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.25);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }

@@ -4,6 +4,7 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
+import { prefersInstant } from '../../shared/useSceneBeats.js'
 import { solidifySkillToProject } from '../../services/skillSolidifyApi.js'
 import { loadScene5Data } from './index.js'
 import SkillForgeBackdrop from './SkillForgeBackdrop.vue'
@@ -26,12 +27,7 @@ const buildStarted = ref(false)
 const writeResult = ref(null)
 const writeError = ref('')
 
-const instant = (() => {
-  const reduced = typeof window !== 'undefined'
-    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  const automation = typeof navigator !== 'undefined' && navigator.webdriver === true
-  return reduced || automation
-})()
+const instant = prefersInstant()
 
 /** 吸收完成后仍保留右侧面板，与左侧技能抽屉同屏 */
 const showAbsorption = computed(

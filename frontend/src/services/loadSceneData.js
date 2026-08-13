@@ -7,6 +7,7 @@ const loaders = {
   channelization: () => import('@data/1-1-channelization.json'),
   locate: () => import('@data/1-1-problem-locate.json'),
   cause: () => import('@data/1-2-cause-analysis.json'),
+  flowTrace: () => import('@data/1-2-flow-trace.json'),
   optimization: () => import('@data/1-3-optimization.json'),
   signalPlan: () => import('@data/1-3-signal-plan.json'),
   effect: () => import('@data/1-4-effect-eval.json'),
