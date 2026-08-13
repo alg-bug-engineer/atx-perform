@@ -2,7 +2,7 @@
 
 嗅探与决策更新见 `data/1-sniff-report.json`。连接：`ycx@121.40.233.80:15432/ycx`，schema：`road6` + `xianchang`，路网版本 `20260501`。
 
-分析窗：**周一 17:30–18:30**（`day_of_week=1`, `step_index=210–221`）。
+分析窗：**周一 17:00–19:00**（`day_of_week=1`, `step_index=210–221`）。
 
 ## 1. 已成功解析
 
