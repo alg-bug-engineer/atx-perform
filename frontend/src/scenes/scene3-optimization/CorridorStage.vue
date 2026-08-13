@@ -249,7 +249,8 @@ const inflowArrows = computed(() => {
       <span v-if="spill" class="alarm">路口溢出 · 排队压回解放东</span>
     </figcaption>
 
-    <div class="canvas-wrap">
+    <div class="body">
+      <div class="canvas-wrap">
       <svg class="canvas" :viewBox="`0 0 ${GEO.w} ${GEO.h}`" preserveAspectRatio="xMidYMid meet">
         <defs>
           <marker
@@ -428,9 +429,10 @@ const inflowArrows = computed(() => {
           </g>
         </g>
       </svg>
-    </div>
+      </div>
 
-    <div class="readout">
+      <div class="side">
+        <div class="readout">
       <span class="metric">
         {{ worstLabel }}排队 <strong :class="queueTone">{{ Math.round(queueM) }}</strong> m
       </span>
@@ -443,12 +445,14 @@ const inflowArrows = computed(() => {
       <span class="metric">
         在途车辆 <strong class="calm">{{ sample?.cars?.length ?? 0 }}</strong> 辆
       </span>
-      <span class="metric now">{{ activeSource ? `汇入中 · ${activeSource.label}` : '解放东全红 · 无汇入' }}</span>
-    </div>
+        <span class="metric now">{{ activeSource ? `汇入中 · ${activeSource.label}` : '解放东全红 · 无汇入' }}</span>
+        </div>
 
-    <p class="narration" :class="narration.tone">
-      <span class="step">{{ narration.step }}</span>{{ narration.text }}
-    </p>
+        <p class="narration" :class="narration.tone">
+          <span class="step">{{ narration.step }}</span>{{ narration.text }}
+        </p>
+      </div>
+    </div>
   </figure>
 </template>
 
@@ -491,8 +495,24 @@ const inflowArrows = computed(() => {
 }
 @keyframes blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-.canvas-wrap { position: relative; flex: 1 1 auto; min-height: 158px; }
+/* 上下排列后走廊只按高度铺开，右侧空档给读数与旁白，避免两边留白 */
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 258px);
+  gap: 12px;
+}
+.canvas-wrap { position: relative; min-height: 132px; }
 .canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+}
 
 .cross { fill: #07182a; stroke: rgba(0, 229, 255, 0.2); }
 .cross.trunk { fill: #082137; }
@@ -579,24 +599,35 @@ const inflowArrows = computed(() => {
 
 .readout {
   display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
   flex: none;
-  padding: 5px 10px;
+  padding: 7px 10px;
   border: 1px solid var(--cyan-border);
   background: rgba(0, 20, 34, 0.5);
   font-size: 12px;
   color: var(--text-muted);
 }
+.readout .metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
 .readout strong {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 500;
   color: var(--cyan);
   margin: 0 3px 0 6px;
 }
 .readout strong.warn { color: var(--warn); }
 .readout strong.danger { color: var(--danger); }
-.readout .now { margin-left: auto; align-self: center; color: var(--cyan-dim); }
+.readout .now {
+  margin-top: 3px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--cyan-border);
+  color: var(--cyan-dim);
+}
 
 .narration {
   margin: 0;

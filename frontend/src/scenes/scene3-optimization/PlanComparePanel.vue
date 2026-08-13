@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CorridorStage from './CorridorStage.vue'
+import SignalTimingRibbon from './SignalTimingRibbon.vue'
 import { buildCorridorDemo, sampleVariant } from './corridorDemo.js'
 
 const props = defineProps({
@@ -137,6 +138,8 @@ const measureChips = computed(() => {
       </div>
     </div>
 
+    <SignalTimingRibbon :model="model" :t="t" />
+
     <div class="stages">
       <CorridorStage
         v-for="v in model.variants"
@@ -152,7 +155,7 @@ const measureChips = computed(() => {
 <style scoped>
 .plan-compare {
   display: grid;
-  grid-template-rows: auto auto minmax(250px, 1fr);
+  grid-template-rows: auto auto auto minmax(250px, 1fr);
   gap: 10px;
   min-height: 0;
   height: 100%;
@@ -254,14 +257,11 @@ h2 {
 .clock { font-size: 12px; color: var(--cyan-dim); min-width: 84px; text-align: right; }
 .speeds { display: flex; gap: 4px; }
 
+/* 上下排列：两个方案共用同一条横向里程轴，排队长度可直接比长短 */
 .stages {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
   min-height: 0;
-}
-
-@media (max-width: 1180px) {
-  .stages { grid-template-columns: 1fr; }
 }
 </style>
