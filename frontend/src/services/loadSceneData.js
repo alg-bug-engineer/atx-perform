@@ -8,6 +8,7 @@ const loaders = {
   locate: () => import('@data/1-1-problem-locate.json'),
   cause: () => import('@data/1-2-cause-analysis.json'),
   optimization: () => import('@data/1-3-optimization.json'),
+  signalPlan: () => import('@data/1-3-signal-plan.json'),
   effect: () => import('@data/1-4-effect-eval.json'),
   skill: () => import('@data/1-5-skill-solidify.json'),
   sniff: () => import('@data/1-sniff-report.json'),

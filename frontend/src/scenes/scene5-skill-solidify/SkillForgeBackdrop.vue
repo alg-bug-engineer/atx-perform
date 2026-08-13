@@ -17,8 +17,14 @@ const props = defineProps({
 
 const W = 1600
 const H = 880
-const CX = 690
+/**
+ * 右侧 x>1260 留给经验吸收面板（约占屏宽 19–21%，见 Scene5 的 --dock-w），
+ * 主视觉的思路→核心→技能包三段都压在 1260 以内，避免被面板盖住。
+ */
+const CX = 620
 const CY = 430
+const PACK_X = 872
+const PACK_R = 1252
 
 const SOURCES = [
   { key: 'locate', act: '幕 1', name: '问题定位', desc: '奥体西 N→S 晚高峰排队 270 m' },
@@ -34,7 +40,7 @@ const sources = computed(() =>
       ...s,
       y,
       on: props.progress >= 8 + i * 18,
-      path: `M 320 ${y} C 450 ${y}, 500 ${CY}, ${CX - 156} ${CY}`,
+      path: `M 300 ${y} C 420 ${y}, 460 ${CY}, ${CX - 156} ${CY}`,
       delay: `${i * 0.5}s`,
     }
   }),
@@ -110,7 +116,7 @@ function hex(cx, cy, r) {
         <text class="src-act" x="136" :y="s.y - 12">{{ s.act }}</text>
         <text class="src-name" x="182" :y="s.y - 11">{{ s.name }}</text>
         <text class="src-desc" x="136" :y="s.y + 12">{{ s.desc }}</text>
-        <line class="src-rule" x1="136" :y1="s.y + 24" x2="320" :y2="s.y + 24" />
+        <line class="src-rule" x1="136" :y1="s.y + 24" x2="300" :y2="s.y + 24" />
       </g>
 
       <!-- 锻造核心 -->
@@ -139,30 +145,34 @@ function hex(cx, cy, r) {
       </g>
 
       <!-- 核心 → 技能包 -->
-      <path class="beam" :d="`M ${CX + 112} ${CY} L 960 ${CY}`" stroke="url(#beam)" />
+      <path class="beam" :d="`M ${CX + 112} ${CY} L ${PACK_X} ${CY}`" stroke="url(#beam)" />
       <g class="spark"><circle :cx="CX + 120" :cy="CY" r="5" /></g>
 
       <!-- 技能包 -->
       <g :class="['pack', { sealed }]">
-        <polyline class="pack-frame" points="960,232 1452,232 1452,668 960,668" />
-        <line class="pack-edge" x1="960" y1="232" x2="960" y2="668" />
-        <text class="pack-kicker" x="988" y="272">可复用技能包</text>
-        <text class="pack-id" x="988" y="306">{{ skillId || 'skill-package' }}</text>
+        <polyline
+          class="pack-frame"
+          :points="`${PACK_X},232 ${PACK_R},232 ${PACK_R},668 ${PACK_X},668`"
+        />
+        <line class="pack-edge" :x1="PACK_X" y1="232" :x2="PACK_X" y2="668" />
+        <text class="pack-kicker" x="900" y="272">可复用技能包</text>
+        <text class="pack-id" x="900" y="306">{{ skillId || 'skill-package' }}</text>
 
         <g v-for="f in fileRows" :key="f.key" :class="['file', { on: f.on }]">
-          <rect class="file-chip" x="988" :y="f.y - 15" width="20" height="22" rx="2" />
-          <line class="file-chip-l" x1="993" :y1="f.y - 9" x2="1003" :y2="f.y - 9" />
-          <line class="file-chip-l" x1="993" :y1="f.y - 4" x2="1003" :y2="f.y - 4" />
-          <line class="file-chip-l" x1="993" :y1="f.y + 1" x2="999" :y2="f.y + 1" />
-          <text class="file-name" x="1020" :y="f.y">{{ f.label }}</text>
+          <rect class="file-chip" x="900" :y="f.y - 15" width="20" height="22" rx="2" />
+          <line class="file-chip-l" x1="905" :y1="f.y - 9" x2="915" :y2="f.y - 9" />
+          <line class="file-chip-l" x1="905" :y1="f.y - 4" x2="915" :y2="f.y - 4" />
+          <line class="file-chip-l" x1="905" :y1="f.y + 1" x2="911" :y2="f.y + 1" />
+          <text class="file-name" x="932" :y="f.y">{{ f.label }}</text>
         </g>
 
-        <line class="pack-rule" x1="988" y1="576" x2="1424" y2="576" />
-        <text class="pack-meta" x="988" y="604">{{ intersection }}</text>
-        <text class="pack-meta dim" x="988" y="630">{{ period }} · 同类路口可直接调用</text>
+        <line class="pack-rule" x1="900" y1="576" x2="1224" y2="576" />
+        <text class="pack-meta" x="900" y="604">{{ intersection }}</text>
+        <text class="pack-meta dim" x="900" y="630">{{ period }} · 同类路口可直接调用</text>
       </g>
 
-      <text class="caption" :x="CX" y="792" text-anchor="middle">
+      <!-- 落在核心与技能包之间，左边留给左下角讲解头像的字幕气泡 -->
+      <text class="caption" x="760" y="792" text-anchor="middle">
         一次处置的分析思路，正被拆成可检索字段、写成系统可执行的技能
       </text>
     </svg>
@@ -278,14 +288,14 @@ function hex(cx, cy, r) {
   0% { transform: translateX(0); opacity: 0; }
   12% { opacity: 1; }
   88% { opacity: 1; }
-  100% { transform: translateX(150px); opacity: 0; }
+  100% { transform: translateX(140px); opacity: 0; }
 }
 
 .pack-frame, .pack-edge { fill: none; stroke: rgba(0, 229, 255, 0.22); stroke-width: 1.2; }
 .pack.sealed .pack-frame { stroke: rgba(51, 204, 136, 0.5); }
 .pack-edge { stroke-dasharray: 4 6; }
 .pack-kicker { font-size: 12px; letter-spacing: 6px; fill: rgba(0, 229, 255, 0.55); }
-.pack-id { font-size: 22px; font-family: var(--font-mono); fill: rgba(226, 244, 255, 0.9); }
+.pack-id { font-size: 18px; font-family: var(--font-mono); fill: rgba(226, 244, 255, 0.9); }
 .pack.sealed .pack-id { fill: var(--ok); }
 .pack-rule { stroke: rgba(0, 229, 255, 0.16); }
 .pack-meta { font-size: 14px; fill: rgba(190, 220, 236, 0.72); }
@@ -296,7 +306,7 @@ function hex(cx, cy, r) {
 .file-chip { fill: rgba(0, 229, 255, 0.07); stroke: rgba(0, 229, 255, 0.3); stroke-width: 1; }
 .file.on .file-chip { fill: rgba(0, 229, 255, 0.16); stroke: var(--cyan); }
 .file-chip-l { stroke: rgba(0, 229, 255, 0.45); stroke-width: 1; }
-.file-name { font-size: 15px; font-family: var(--font-mono); fill: rgba(200, 230, 246, 0.8); }
+.file-name { font-size: 14px; font-family: var(--font-mono); fill: rgba(200, 230, 246, 0.8); }
 
 .caption { font-size: 15px; letter-spacing: 3px; fill: rgba(150, 190, 212, 0.5); }
 

@@ -28,6 +28,12 @@ export const sceneRegistry = [
     component: () => import('../scenes/scene3-optimization/Scene3Optimization.vue'),
   },
   {
+    key: '3b',
+    aliases: ['signal', 'timing'],
+    name: '信控方案调节',
+    component: () => import('../scenes/scene3b-signal-plan/Scene3bSignalPlan.vue'),
+  },
+  {
     key: '4',
     aliases: ['effect', 'eval'],
     name: '效果评估',

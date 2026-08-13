@@ -12,7 +12,7 @@
   --ok: #33cc88;
   --font-mono: 'Courier New', ui-monospace, monospace;
   /* 顶部大字报 + 步骤栏 + 状态条占位，内容区从此下沉 */
-  --app-chrome-h: 118px;
+  --app-chrome-h: 96px;
 }
 
 * {

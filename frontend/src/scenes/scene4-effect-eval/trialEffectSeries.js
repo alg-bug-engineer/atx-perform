@@ -55,6 +55,8 @@ export function buildTrialEffectSeries(payload = {}) {
   const green0 = num(baselineIn.green_utilization, 0.62)
   const upRatio0 = num(baselineIn.upstream_queue_ratio, 0.22)
   const upStorage = num(baselineIn.upstream_storage_length_m, 215.7)
+  // 下游吃满时堵在解放东路口内进不来的车，取自幕 3 仿真 KPI；与上游进口排队比是两个口径
+  const upBlocked0 = num(baselineIn.upstream_blocked_veh, null)
 
   const endRatio = num(targets.end_queue_ratio, Math.min(0.55, Math.max(0.4, ratio0 - 0.25)))
   const endQueue = round1(storage * endRatio)
@@ -62,6 +64,7 @@ export function buildTrialEffectSeries(payload = {}) {
   const endDelay = num(targets.end_delay_index, 2.1)
   const endGreen = num(targets.end_green_utilization, 0.72)
   const endUpRatio = num(targets.end_upstream_queue_ratio, 0.35)
+  const endUpBlocked = num(targets.end_upstream_blocked_veh, null)
 
   const cycles = []
   for (let i = 0; i < n; i += 1) {
@@ -74,6 +77,10 @@ export function buildTrialEffectSeries(payload = {}) {
     const greenUtil = round4(lerp(green0, endGreen, ease))
     const upQueueRatio = round4(lerp(upRatio0, endUpRatio, ease))
     const upQueueLength = round1(upStorage * upQueueRatio)
+    const upBlocked =
+      upBlocked0 == null || endUpBlocked == null
+        ? null
+        : Math.round(lerp(upBlocked0, endUpBlocked, ease))
     const prev = i > 0 ? cycles[i - 1] : null
     const rolledBack = upQueueRatio >= thresholds.rollback_queue_ratio
     const spillover = upQueueRatio >= thresholds.queue_ratio_warning
@@ -89,6 +96,7 @@ export function buildTrialEffectSeries(payload = {}) {
       downstream_queue_ratio: upQueueRatio,
       downstream_queue_length_m: upQueueLength,
       upstream_queue_ratio: upQueueRatio,
+      upstream_blocked_veh: upBlocked,
       rolled_back: rolledBack,
       spillover_risk: spillover || rolledBack,
       improved: Boolean(prev && queueRatio < prev.queue_ratio),
@@ -125,9 +133,14 @@ export function buildTrialEffectSeries(payload = {}) {
     {
       id: 'upstream',
       ok: upstreamSafe,
-      title: '上游未继续外溢',
+      // 截流让上游进口排队比上升，但下游不再溢出、回灌消失，路口内滞留反而减少，
+      // 两个口径一起说，才不会和幕 3 的 blocked_veh 9 → 3 看起来互相打架
+      title: '上游代价可控',
       detail: upstreamSafe
-        ? `解放东上游排队比 ${fmtRatio2(upRatio0)} → ${fmtRatio2(last.upstream_queue_ratio)}，未触回滚`
+        ? `解放东进口排队比 ${fmtRatio2(upRatio0)} → ${fmtRatio2(last.upstream_queue_ratio)}（回滚线 ${thresholds.rollback_queue_ratio}）`
+          + (last.upstream_blocked_veh != null
+            ? `；路口内滞留 ${upBlocked0} → ${last.upstream_blocked_veh} 辆`
+            : '')
         : '上游排队接近或超过安全阈值',
     },
     {
@@ -148,9 +161,13 @@ export function buildTrialEffectSeries(payload = {}) {
     targetLabel: trial.target_label || '北进口直行',
     downstreamName: trial.downstream_name || context.upstream_intersection || '奥体西路与解放东路路口',
     timing: {
+      cycleLenS: num(timing.cycle_len_s, num(trial.cycle_len_s, 220)),
+      cycleDeltaS: num(timing.cycle_delta_s, 0),
       targetGreenDeltaS: num(timing.target_green_delta_s, 0),
       donorGreenDeltaS: num(timing.donor_green_delta_s, 0),
-      cycleDeltaS: 0,
+      offsetShiftS: num(timing.offset_shift_s, null),
+      releaseBeforeS: num(timing.release_vs_downstream_green_s?.before, null),
+      releaseAfterS: num(timing.release_vs_downstream_green_s?.after, null),
       jingshiNote: timing.jingshi_offset_note || '',
       jiefangNote: timing.jiefang_release_note || '',
     },

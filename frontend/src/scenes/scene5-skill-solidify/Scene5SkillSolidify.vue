@@ -172,13 +172,15 @@ function onBuildFinish() {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* 经验吸收面板宽度：主视觉按屏宽 ~21% 预留右侧空档，两者不叠 */
+  --dock-w: min(352px, 19vw);
 }
 .absorption-dock {
   position: absolute;
   top: 12px;
   right: 16px;
   bottom: 24px;
-  width: min(360px, 32vw);
+  width: var(--dock-w);
   z-index: 44;
   overflow: hidden;
   pointer-events: auto;
@@ -187,8 +189,8 @@ function onBuildFinish() {
   top: 12px;
   bottom: 24px;
   left: 16px;
-  /* 为右侧经验吸收留空 */
-  width: min(980px, calc(100% - 360px - 48px));
+  /* 铺满除经验吸收面板外的宽度，大屏上不留空档 */
+  width: calc(100% - var(--dock-w) - 48px);
 }
 .state-banner {
   position: absolute;

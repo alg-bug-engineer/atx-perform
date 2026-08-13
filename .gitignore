@@ -37,6 +37,11 @@ data/*
 !data/1-*.json
 !data/skills/
 !data/skills/**
+!data/tts/
+!data/tts/**
+
+# deepagent 原始输出（scripts/pull_deepagent_plan.py 拉取，仅本地留存）
+data/deepagent-raw/
 
 # frontend 源码入库；依赖与构建产物不入库（根级已忽略 node_modules/dist）
 frontend/.vite/

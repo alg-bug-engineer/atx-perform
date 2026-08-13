@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CorridorStage from './CorridorStage.vue'
-import SignalPlanBoard from './SignalPlanBoard.vue'
 import { buildCorridorDemo, sampleVariant } from './corridorDemo.js'
 
 const props = defineProps({
@@ -77,7 +76,7 @@ const measureChips = computed(() => {
       tone: 'change',
     },
     { k: '进口道展宽', v: `${geo.widen_len_m || 100} m · 3 车道 → 5 车道`, tone: 'hold' },
-    { k: '经十东西向绿时', v: '维持不变', tone: 'hold' },
+    { k: '经十路配时', v: '全盘不动', tone: 'hold' },
   ]
 })
 
@@ -147,15 +146,13 @@ const measureChips = computed(() => {
         :sample="samples[v.key]"
       />
     </div>
-
-    <SignalPlanBoard :payload="payload" />
   </section>
 </template>
 
 <style scoped>
 .plan-compare {
   display: grid;
-  grid-template-rows: auto auto minmax(250px, 1fr) auto;
+  grid-template-rows: auto auto minmax(250px, 1fr);
   gap: 10px;
   min-height: 0;
   height: 100%;

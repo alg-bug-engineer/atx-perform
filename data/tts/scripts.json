@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "note": "幕 3/3b/4/5 讲解：贴合 origin-analysis，整场 1–1.5 分钟内不抢戏；每幕一句要点。",
+    "voice": "Neil",
+    "model": "qwen3-tts-flash-realtime",
+    "sample_rate": 24000,
+    "language": "Chinese",
+    "target_chars_per_sec": 4.5,
+    "duration_budget_sec": {
+      "3": "12-16",
+      "3b": "10-14",
+      "4": "8-12",
+      "5": "6-10",
+      "total": "38-50"
+    }
+  },
+  "scenes": {
+    "3": {
+      "scene_key": "3",
+      "title": "优化方案",
+      "segments": [
+        {
+          "id": "s3-main",
+          "file": "scene3/s3-main.wav",
+          "approx_sec": 14,
+          "text": "为保障经十路晚高峰通勤，本路段需求未超供给，轻微截流不致上游溢出，方案采用相位协调：现状解放东先放会溢出；优化后经十先放、队列消散后再汇入，避免溢出。"
+        }
+      ]
+    },
+    "3b": {
+      "scene_key": "3b",
+      "title": "信控方案调节",
+      "segments": [
+        {
+          "id": "s3b-main",
+          "file": "scene3b/s3b-main.wav",
+          "approx_sec": 13,
+          "text": "干线七个路口周期统一到一百八十秒、相位差重排，绿波带宽显著提升，协调方向通行时间缩短八十六秒、平均延误下降，方案待人工确认后下发。"
+        }
+      ]
+    },
+    "4": {
+      "scene_key": "4",
+      "title": "效果评估",
+      "segments": [
+        {
+          "id": "s4-main",
+          "file": "scene4/s4-main.wav",
+          "approx_sec": 10,
+          "text": "试运行后，排队由二百七十米下降，速度回升，上游解放东路口未触及回滚线。"
+        }
+      ]
+    },
+    "5": {
+      "scene_key": "5",
+      "title": "技能固化",
+      "segments": [
+        {
+          "id": "s5-main",
+          "file": "scene5/s5-main.wav",
+          "approx_sec": 8,
+          "text": "处置经验正在写成可复用技能包，同类廊道可直接调用。"
+        }
+      ]
+    }
+  }
+}

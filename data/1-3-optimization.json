@@ -162,16 +162,30 @@
     "source": "expert_proposal",
     "status": "proposed",
     "measure": "phase_coordination",
-    "summary": "保持两路口 220s 共同周期与各相位绿时不变，仅调整解放东路口放行时机，使北向南车流在经十路北进口绿灯启动、队列开始消散后再汇入。",
+    "summary": "保持两路口 220s 共同周期、经十路配时全盘不动；解放东路口相位差后移 56s，并把北进口直行绿时由 21s 压到 15s 轻微截流，使北向南车流在经十路北进口绿灯启动、队列开始消散后再汇入。",
+    "offset_shift_sec": {
+      "intersection": "jiefang",
+      "value": 56,
+      "note": "解放东路口阶段序列整体后移量，对应 corridor_demo.simulation.alignment.jiefang 83s → 139s"
+    },
     "release_timing_vs_downstream_green_sec": {
-      "before": -110,
-      "after": 30,
+      "before": -26,
+      "after": 36,
       "unit": "s",
-      "note": "解放东路口向本路段放行的时刻，相对经十路北进口直行绿灯启动时刻的差值；负值为提前放行"
+      "movement": "解放东路口 北进口直行",
+      "note": "走廊主流向放行时刻，相对经十路北进口直行绿灯启亮（第 85s）的差值；负值为提前放行。由 signal_plan_board 阶段表与 simulation.alignment 推出，与仿真一致",
+      "derived_from": "stage_no=12 启亮 59s → 121s"
+    },
+    "donor_green_delta_sec": {
+      "movement": "解放东路口 北进口直行",
+      "before": 21,
+      "after": 15,
+      "delta": -6,
+      "note": "轻微截流；让出的绿时给到解放东南向与西向，路口总绿时不变"
     },
     "unchanged": [
       "共同周期 220s",
-      "经十路东西向绿时",
+      "经十路全部相位绿时与相位差",
       "各路口相位顺序"
     ],
     "placeholder": "优化后 plan/offset 尚未在库内落库，展示值为专家建议值"

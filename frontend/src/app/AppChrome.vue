@@ -43,20 +43,20 @@ const statusLabel = computed(() => {
     1: '问题定位',
     2: '成因研判',
     3: '方案生成',
+    '3b': '信控配时',
     4: '效果评估',
     5: '技能固化',
   }
   return map[props.activeKey] || activeScene.value?.name || '执行中'
 })
 
+const activeIndex = computed(() => props.scenes.findIndex((s) => s.key === props.activeKey))
+
 function stepState(key) {
-  const cur = Number(props.activeKey)
-  const idx = Number(key)
-  if (Number.isNaN(cur) || Number.isNaN(idx)) {
-    return key === props.activeKey ? 'active' : 'idle'
-  }
-  if (idx < cur) return 'done'
-  if (idx === cur) return 'active'
+  const idx = props.scenes.findIndex((s) => s.key === key)
+  if (idx < 0 || activeIndex.value < 0) return key === props.activeKey ? 'active' : 'idle'
+  if (idx < activeIndex.value) return 'done'
+  if (idx === activeIndex.value) return 'active'
   return 'idle'
 }
 </script>
@@ -68,24 +68,26 @@ function stepState(key) {
       <time class="clock" :datetime="nowText">{{ nowText }}</time>
     </div>
 
-    <nav class="step-bar" aria-label="处置流程">
-      <button
-        v-for="(scene, i) in scenes"
-        :key="scene.key"
-        type="button"
-        class="step"
-        :class="`is-${stepState(scene.key)}`"
-        @click="emit('change', scene.key)"
-      >
-        <span class="step-dot" aria-hidden="true" />
-        <span class="step-label">{{ scene.name }}</span>
-        <span v-if="i < scenes.length - 1" class="step-line" aria-hidden="true" />
-      </button>
-    </nav>
+    <div class="step-row">
+      <nav class="step-bar" aria-label="处置流程">
+        <button
+          v-for="(scene, i) in scenes"
+          :key="scene.key"
+          type="button"
+          class="step"
+          :class="`is-${stepState(scene.key)}`"
+          @click="emit('change', scene.key)"
+        >
+          <span class="step-dot" aria-hidden="true" />
+          <span class="step-label">{{ scene.name }}</span>
+          <span v-if="i < scenes.length - 1" class="step-line" aria-hidden="true" />
+        </button>
+      </nav>
 
-    <div class="status-strip">
-      <span class="status-dot" aria-hidden="true" />
-      <span class="status-text">执行中：{{ statusLabel }}</span>
+      <div class="status-strip">
+        <span class="status-dot" aria-hidden="true" />
+        <span class="status-text">执行中：{{ statusLabel }}</span>
+      </div>
     </div>
   </header>
 </template>
@@ -127,12 +129,20 @@ function stepState(key) {
   white-space: nowrap;
 }
 
+/* 步骤栏与执行状态并排一行，给下方内容让出高度 */
+.step-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 .step-bar {
   display: flex;
   align-items: center;
   gap: 0;
   pointer-events: auto;
-  margin-bottom: 10px;
+  min-width: 0;
   overflow-x: auto;
 }
 
@@ -203,7 +213,8 @@ function stepState(key) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  flex: none;
+  padding: 5px 12px;
   border: 1px solid var(--cyan-border);
   background: rgba(4, 12, 30, 0.82);
   pointer-events: none;

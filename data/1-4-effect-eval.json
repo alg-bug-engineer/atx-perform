@@ -17,6 +17,7 @@
   "trial": {
     "cycles": 5,
     "observation_cycles": 5,
+    "cycle_len_s": 220,
     "downstream_name": "奥体西路与解放东路路口",
     "target_label": "北进口直行",
     "success": "缓解问题路段排队且不加重上游解放东路口溢出风险",
@@ -40,12 +41,21 @@
   },
   "plan": {
     "short_name": "相位协调试运行",
-    "name": "经十先绿消散 + 解放东再放行",
+    "name": "经十先绿消散 + 解放东错峰汇入",
+    "source_scene": 3,
+    "source_note": "参数与幕 3「优化方案」一致，取自 1-3-optimization.json optimized_signal_plans",
     "timing": {
+      "cycle_len_s": 220,
+      "cycle_delta_s": 0,
       "target_green_delta_s": 0,
-      "donor_green_delta_s": 0,
-      "jingshi_offset_note": "经十路优先放行消散",
-      "jiefang_release_note": "解放东错峰放行"
+      "donor_green_delta_s": -6,
+      "offset_shift_s": 56,
+      "release_vs_downstream_green_s": {
+        "before": -26,
+        "after": 36
+      },
+      "jingshi_offset_note": "经十路配时全盘不动，绿时与相位差均为 ±0",
+      "jiefang_release_note": "解放东相位差后移 56s，北进口直行绿时 21s → 15s 轻微截流"
     }
   },
   "context": {
@@ -64,15 +74,19 @@
     "upstream_queue_ratio": 0.22,
     "upstream_queue_length_m": 48,
     "upstream_storage_length_m": 215.7,
+    "upstream_blocked_veh": 9,
     "queue_length_source": "expert_survey",
-    "note": "排队 270m 为专家值；蓄车取问题路段 length_m"
+    "note": "排队 270m 为专家实测的常态排队；幕 3 走廊仿真的单周期峰值 368m（触顶蓄车能力即溢出）是另一口径，两者并存不互斥",
+    "upstream_blocked_note": "解放东路口内因下游吃满而进不来的滞留车辆峰值，取自幕 3 仿真 KPI blocked_veh"
   },
   "trial_targets": {
     "end_queue_ratio": 0.48,
     "end_speed_kmh": 22,
     "end_delay_index": 2.1,
     "end_green_utilization": 0.72,
-    "end_upstream_queue_ratio": 0.35
+    "end_upstream_queue_ratio": 0.35,
+    "end_upstream_blocked_veh": 3,
+    "upstream_tradeoff_note": "北进口直行绿时压 6s，上游进口排队比由 0.22 升至 0.35（仍低于回滚线 0.9）；同时下游不再溢出、回灌消失，路口内滞留车辆由 9 辆降到 3 辆"
   },
   "thresholds": {
     "queue_ratio_warning": 0.8,

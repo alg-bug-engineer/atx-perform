@@ -135,6 +135,21 @@ const radarAxes = computed(() => {
   ]
 })
 
+/** 试运行的是幕 3 那套方案，参数原样列出，避免两幕对不上 */
+const planChips = computed(() => {
+  const t = series.value.timing
+  const chips = [{ k: '共同周期', v: `${t.cycleLenS} s 不变` }]
+  if (t.releaseBeforeS != null && t.releaseAfterS != null) {
+    const fmt = (v) => (v < 0 ? `绿灯前 ${-v} s` : `绿灯后 ${v} s`)
+    chips.push({ k: '解放东北直放行', v: `${fmt(t.releaseBeforeS)} → ${fmt(t.releaseAfterS)}`, on: true })
+  }
+  if (t.donorGreenDeltaS) {
+    chips.push({ k: '解放东北直绿时', v: `${t.donorGreenDeltaS} s 轻微截流`, on: true })
+  }
+  chips.push({ k: '经十路配时', v: '全盘不动' })
+  return chips
+})
+
 /** 结论横幅下的三个核心数字，只留最该被记住的 */
 const headlineStats = computed(() => {
   const b = series.value.baseline
@@ -158,6 +173,12 @@ const headlineStats = computed(() => {
           {{ series.intersection }} · 监测上游 {{ series.downstreamName }}
           <template v-if="series.timePeriodLabel"> · {{ series.timePeriodLabel }}</template>
         </p>
+        <ul class="plan-chips">
+          <li v-for="c in planChips" :key="c.k" :class="{ on: c.on }">
+            <span>{{ c.k }}</span>
+            <strong>{{ c.v }}</strong>
+          </li>
+        </ul>
       </div>
 
       <div class="stats" data-testid="effect-kpis">
@@ -272,6 +293,37 @@ h2 {
   color: var(--text);
 }
 .lede { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+/* 试运行方案参数：与幕 3 逐项对应 */
+.plan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.plan-chips li {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid var(--cyan-border);
+  border-radius: 2px;
+  background: rgba(0, 22, 38, 0.5);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.plan-chips li strong {
+  font-weight: 500;
+  color: rgba(190, 220, 236, 0.85);
+}
+.plan-chips li.on {
+  border-color: rgba(51, 204, 136, 0.5);
+}
+.plan-chips li.on strong {
+  color: var(--ok);
+}
 
 .stats { display: flex; gap: 10px; margin-left: auto; }
 .stat {

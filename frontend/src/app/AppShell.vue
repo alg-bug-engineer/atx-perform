@@ -2,6 +2,8 @@
 import { computed, defineAsyncComponent, watch } from 'vue'
 import { sceneRegistry, getSceneByKey } from '../shared/scene-registry.js'
 import { useSceneRoute } from '../shared/useSceneRoute.js'
+import { playSceneNarration } from '../shared/sceneNarration.js'
+import DigitalAvatar from '../shared/components/DigitalAvatar.vue'
 import AppChrome from './AppChrome.vue'
 
 const { activeSceneKey, setScene } = useSceneRoute()
@@ -13,6 +15,7 @@ const activeSceneComponent = computed(() =>
 
 watch(activeSceneKey, (key) => {
   document.title = `奥体西绩效可视化 · ${getSceneByKey(key).name}`
+  playSceneNarration(key)
 }, { immediate: true })
 </script>
 
@@ -30,6 +33,8 @@ watch(activeSceneKey, (key) => {
         :key="activeScene.key"
       />
     </main>
+
+    <DigitalAvatar />
   </div>
 </template>
 
