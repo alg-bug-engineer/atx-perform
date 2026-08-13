@@ -42,11 +42,29 @@ onUnmounted(() => {
   if (timer) clearInterval(timer)
 })
 
+const corridor = computed(() => props.optimization?.corridor_demo || null)
+const storageM = computed(
+  () => corridor.value?.link?.storage_length_m ?? series.value.baseline.storage_length_m,
+)
+const peaks = computed(() => {
+  const kpi = (corridor.value?.kpis || []).find((k) => k.key === 'peak_queue')
+  return kpi ? { before: kpi.before, after: kpi.after } : null
+})
+
 const cycles = computed(() => series.value.cycles)
 const shown = computed(() => cycles.value.slice(0, revealed.value))
 const activeCycle = computed(() => shown.value[shown.value.length - 1] || null)
 const allRevealed = computed(() => revealed.value >= series.value.cyclesCount)
 const baseline = computed(() => series.value.baseline)
+
+/** 结论性大标题：一句话说清这轮试运行换来了什么 */
+const headline = computed(() => {
+  const c = activeCycle.value
+  if (!c) return '试运行观察中…'
+  const cut = Math.round(baseline.value.queue_length_m - c.queue_length_m)
+  const noSpill = peaks.value && peaks.value.after <= storageM.value
+  return `排队缩短 ${cut} 米，速度回到 ${c.avg_speed_kmh} km/h${noSpill ? '，路口不再溢出' : ''}`
+})
 
 function cycleState(i) {
   if (i < revealed.value - 1) return 'done'
@@ -154,10 +172,11 @@ const verdictText = computed(() => {
   <section class="effect" data-testid="trial-effect-panel">
     <header class="banner">
       <div class="banner-main">
-        <p class="eyebrow">效果评估</p>
-        <h2>{{ series.intersection }}</h2>
+        <p class="eyebrow">效果评估 · 相位协调试运行</p>
+        <h2>{{ headline }}</h2>
         <p class="lede">
-          试点 {{ series.cyclesCount }} 周期 · 监测上游 {{ series.downstreamName }}
+          {{ series.intersection }} · 试点 {{ series.cyclesCount }} 周期 · 监测上游
+          {{ series.downstreamName }}
           <template v-if="series.timePeriodLabel">（{{ series.timePeriodLabel }}）</template>
         </p>
         <ul class="plan-chips">

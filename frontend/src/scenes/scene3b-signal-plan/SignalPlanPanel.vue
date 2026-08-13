@@ -12,7 +12,7 @@ const props = defineProps({
 const model = computed(() => buildSignalPlanModel(props.payload))
 
 const mode = ref('optimized')
-const direction = ref('reverse')
+const direction = ref('both')
 const selectedId = ref('011wwe28ctu00001')
 
 const selectedNode = computed(
