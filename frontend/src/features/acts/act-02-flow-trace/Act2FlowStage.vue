@@ -6,7 +6,7 @@
  * 工厂）直接播放，HUD 状态经 flowTraceHud 桥接到这里渲染；
  * 演绎完成（overflow）后自动交棒退出，彻底去掉切回首页的跳转与重载。
  */
-import { computed, onMounted, onUnmounted, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { flowTracePhase } from '../../../shared/narrative-state.js';
 import {
   enterFlowTrace,
@@ -29,13 +29,27 @@ function clearTimers() {
   _timers.length = 0;
 }
 
-// ── HUD 派生 ─────────────────────────────────────────────────────────
-const dockStack = computed(() => {
-  const phase = flowTraceHud.value.phase;
-  const panel = flowTraceHud.value.panel;
-  if (phase === 'ew_clear') return [];
-  return panel ? [panel] : [];
-});
+// ── HUD：溯源卡可被后续拍替换；供需 / 本口 / 绿灯 / 溢流按拍叠上不撤 ──
+const dockStack = ref([]);
+
+function applyDockPanel(state) {
+  const phase = state?.phase;
+  const panel = state?.panel;
+  if (phase === 'trace' || phase === 'boot' || phase === 'error') {
+    dockStack.value = panel ? [panel] : [];
+    return;
+  }
+  if (phase === 'ew_clear') {
+    dockStack.value = dockStack.value.filter((p) => p.kind !== 'trace');
+    return;
+  }
+  if (!panel?.kind) return;
+  const rest = dockStack.value.filter((p) => p.kind !== 'trace' && p.kind !== panel.kind);
+  dockStack.value = [...rest, panel];
+}
+
+watch(flowTraceHud, (state) => applyDockPanel(state), { deep: true, immediate: true });
+
 const caption = computed(() => flowTraceHud.value.caption || flowTraceHud.value.text || '');
 const isDone = computed(() => flowTracePhase.value === 'done');
 
@@ -50,6 +64,7 @@ function isSatCrit(v) {
 }
 
 function onReplay() {
+  dockStack.value = [];
   requestFlowTraceReplay();
 }
 

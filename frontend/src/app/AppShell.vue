@@ -4,6 +4,7 @@ import TrafficOriginScene from '../features/scenes/traffic-origin/TrafficOriginS
 import ActLoopShell from '../features/acts/ActLoopShell.vue';
 import DigitalAvatar from '../shared/components/DigitalAvatar.vue';
 import { narrativeActive } from '../shared/narrative-state.js';
+import { broadcastSilent } from '../shared/broadcast-bus.js';
 </script>
 
 <template>
@@ -17,8 +18,8 @@ import { narrativeActive } from '../shared/narrative-state.js';
       <ActLoopShell />
     </template>
 
-    <!-- 数字人：全局固定左下角，消费口播队列（始终可见） -->
-    <DigitalAvatar />
+    <!-- 数字人 / 口播字幕：默认关闭，避免卡住面板揭示顺序；VITE_TTS_ENABLED=true 时再挂上 -->
+    <DigitalAvatar v-if="!broadcastSilent" />
   </div>
 </template>
 
