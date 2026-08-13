@@ -1,6 +1,6 @@
 /**
  * 幕 2 地图动作（方案 A）：路口脉冲、问题路段强调、示意相位环、270 m 排队条。
- * 数字不进地图，由侧栏按拍展示。
+ * 溢流拍在排队条旁标出排队比。
  */
 import * as THREE from 'three';
 
@@ -54,6 +54,77 @@ function pathFromSouth(coords, lengthUnits) {
   return pts;
 }
 
+function makeQueueRatioSprite(ratio) {
+  const title = '排队比已达';
+  const value = Number(ratio).toFixed(1);
+  const w = 220;
+  const h = 92;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = 'rgba(18, 8, 4, 0.78)';
+  ctx.strokeStyle = 'rgba(255, 138, 58, 0.85)';
+  ctx.lineWidth = 2;
+  const x = 6;
+  const y = 6;
+  const rw = w - 12;
+  const rh = h - 12;
+  const r = 10;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(x, y, rw, rh, r);
+  } else {
+    ctx.rect(x, y, rw, rh);
+  }
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(255, 196, 140, 0.95)';
+  ctx.fillText(title, w / 2, 30);
+  ctx.font = '700 34px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillStyle = '#ff8a3a';
+  ctx.shadowColor = 'rgba(255, 80, 20, 0.55)';
+  ctx.shadowBlur = 10;
+  ctx.fillText(value, w / 2, 62);
+  ctx.shadowBlur = 0;
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    depthTest: false,
+  });
+  const spr = new THREE.Sprite(mat);
+  spr.scale.set(22, 9.2, 1);
+  spr.renderOrder = 62;
+  spr.visible = false;
+  spr.userData.disposeLabel = () => {
+    tex.dispose();
+    mat.dispose();
+  };
+  return spr;
+}
+
+function queueLabelAnchor(coords2d) {
+  if (!coords2d || coords2d.length < 2) return null;
+  const a = coords2d[0];
+  const b = coords2d[coords2d.length - 1];
+  const mx = (a[0] + b[0]) / 2;
+  const my = (a[1] + b[1]) / 2;
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy) || 1;
+  return [mx + (-dy / len) * 11, my + (dx / len) * 11];
+}
+
 function makeTube(coords2d, radius, color, y = 1.2) {
   if (!coords2d || coords2d.length < 2) return null;
   const pts = coords2d.map(([x, ny]) => new THREE.Vector3(x, y, -ny));
@@ -101,6 +172,7 @@ function makeArcLine(radius, a0, a1, y, color) {
  *   target?: { pos: [number, number] },
  *   problemRoad?: { coords: [number, number][] },
  *   queueM?: number,
+ *   queueRatio?: number,
  *   hopTimes?: { pos: [number, number], revealAt: number, label: string }[],
  * }} opts
  */
@@ -109,6 +181,7 @@ export function createScene2MapAnnot({
   target,
   problemRoad,
   queueM = 270,
+  queueRatio = 0.8,
   hopTimes = [],
 } = {}) {
   const group = new THREE.Group();
@@ -182,8 +255,16 @@ export function createScene2MapAnnot({
   track(blockPulse);
 
   const queueLen = Math.max(4, queueM / METERS_PER_UNIT);
-  const queueTube = makeTube(pathFromSouth(problemRoad?.coords, queueLen), 1.15, C_QUEUE, 1.2);
+  const queuePts = pathFromSouth(problemRoad?.coords, queueLen);
+  const queueTube = makeTube(queuePts, 1.15, C_QUEUE, 1.2);
   if (queueTube) track(queueTube);
+
+  const ratioSpr = makeQueueRatioSprite(queueRatio);
+  const ratioAnchor = queueLabelAnchor(queuePts);
+  if (ratioAnchor) {
+    ratioSpr.position.set(ratioAnchor[0], 14, -ratioAnchor[1]);
+  }
+  track(ratioSpr);
 
   const viaPulse = new THREE.Sprite(
     new THREE.SpriteMaterial({
@@ -216,6 +297,7 @@ export function createScene2MapAnnot({
     fadeTo(viaPulse, showQueue ? 0.9 : 0);
     fadeTo(blockPulse, name === 'signal' ? 0.85 : 0);
     if (queueTube) fadeTo(queueTube, showQueue ? 0.85 : 0);
+    fadeTo(ratioSpr, showQueue ? 1 : 0);
     const ringOn = showRing ? 0.95 : 0;
     for (const arc of ringGroup.userData.arcs || []) fadeTo(arc, ringOn);
   }
@@ -277,6 +359,13 @@ export function createScene2MapAnnot({
         const grow = Math.min(1, Math.max(0.25, (time - beatAt) / 1.1));
         queueTube.material.opacity = 0.4 + grow * 0.5;
         queueTube.visible = true;
+      }
+      if (ratioSpr) {
+        const grow = Math.min(1, Math.max(0, (time - beatAt - 0.25) / 0.7));
+        ratioSpr.material.opacity = grow;
+        ratioSpr.visible = grow > 0.02;
+        const bob = 1 + 0.04 * Math.sin(time * 3.2);
+        ratioSpr.scale.set(22 * bob, 9.2 * bob, 1);
       }
     }
   };

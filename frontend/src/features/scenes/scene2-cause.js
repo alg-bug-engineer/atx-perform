@@ -399,6 +399,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
       target,
       problemRoad,
       queueM: beats.overflow?.queue_m || 270,
+      queueRatio: beats.overflow?.queue_ratio ?? 0.8,
       hopTimes,
     });
     runtime.scene.add(annot);
@@ -510,7 +511,6 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
                     kind: 'overflow',
                     title: '溢流风险',
                     queue_m: beats.overflow?.queue_m || 270,
-                    note: '专家值',
                     copy: copyText(dc, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散。'),
                   },
                 });

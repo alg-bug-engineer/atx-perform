@@ -8,7 +8,7 @@ import { narrativeActive } from '../shared/narrative-state.js';
 
 <template>
   <div class="app-shell">
-    <!-- 首页（idle）：城市监控 + 立即优化入口 + 分析成因 -->
+    <!-- 首页（idle）：城市监控 + 交通诊断入口 -->
     <MapRuntime v-if="!narrativeActive" />
 
     <!-- 叙事幕模式：车流溯源地图 + 幕循环壳 -->

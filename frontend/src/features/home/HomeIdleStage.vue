@@ -5,10 +5,7 @@ import CityMonitorMetricsCard from './CityMonitorMetricsCard.vue';
 import {
   cityMonitorReveal,
   cityMonitorSelection,
-  enterScene2,
 } from '../../shared/home-idle-state.js';
-
-const emit = defineEmits(['enter-scene2']);
 
 const showCityMonitor = computed(() => cityMonitorReveal.value);
 const showMonitorScanning = computed(() => !cityMonitorReveal.value);
@@ -17,11 +14,6 @@ const showIntersectionMetrics = computed(() => {
   const t = cityMonitorSelection.value?.type;
   return t === 'intersection' || t === 'corridor';
 });
-
-function onEnterCause() {
-  enterScene2();
-  emit('enter-scene2');
-}
 </script>
 
 <template>
@@ -47,9 +39,6 @@ function onEnterCause() {
 
     <div class="launcher-row">
       <button type="button" class="diag-launcher muted">交通诊断</button>
-      <button type="button" class="diag-launcher primary" @click="onEnterCause">
-        分析成因
-      </button>
     </div>
   </div>
 </template>
@@ -160,16 +149,6 @@ function onEnterCause() {
 .diag-launcher.muted {
   cursor: default;
   opacity: 0.72;
-}
-
-.diag-launcher.primary {
-  border-color: rgba(245, 166, 35, 0.55);
-  color: #f5a623;
-}
-
-.diag-launcher.primary:hover {
-  background: rgba(245, 166, 35, 0.16);
-  border-color: rgba(245, 166, 35, 0.75);
 }
 
 .dock-fade-enter-active,

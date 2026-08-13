@@ -158,6 +158,7 @@
       "ms": 3600,
       "caption": "经十路和奥体西路北进口车流在短时间内无法快速消散",
       "queue_m": 270,
+      "queue_ratio": 0.8,
       "gaps": ["GAP-QUEUE-TABLE"]
     }
   }
