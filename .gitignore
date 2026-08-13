@@ -35,5 +35,7 @@ logs/*
 data/*
 !data/.gitkeep
 !data/1-*.json
-frontend/*
-!frontend/.gitkeep
+# frontend：跟踪源码；忽略依赖与构建产物
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
