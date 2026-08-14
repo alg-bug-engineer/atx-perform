@@ -42,8 +42,22 @@ function toY(v) {
 const total = computed(() => (props.allValues.length || props.values.length || 1))
 
 const points = computed(() =>
-  props.values.map((v, i) => ({ x: toX(i, total.value), y: toY(v), v, i })),
+  props.values.map((v, i) => ({
+    x: toX(i, total.value),
+    y: toY(v),
+    v,
+    i,
+    risk: isRisk(v),
+  })),
 )
+
+function isRisk(v) {
+  const th = props.threshold
+  if (th?.value == null || v == null) return false
+  if (th.riskWhen === 'below') return v < th.value
+  if (th.riskWhen === 'above') return v >= th.value
+  return false
+}
 
 const line = computed(() =>
   points.value.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '),
@@ -95,7 +109,7 @@ const last = computed(() => points.value[points.value.length - 1] || null)
         v-for="p in points"
         :key="`p${p.i}`"
         class="dot"
-        :class="`tone-${tone}`"
+        :class="p.risk ? 'tone-danger' : `tone-${tone}`"
         :cx="p.x"
         :cy="p.y"
         r="3.2"

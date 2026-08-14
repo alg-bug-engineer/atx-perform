@@ -80,12 +80,15 @@
     "upstream_blocked_note": "解放东路口内因下游吃满而进不来的滞留车辆峰值，取自幕 3 仿真 KPI blocked_veh"
   },
   "trial_targets": {
+    "start_queue_length_m": 368,
+    "start_queue_ratio": 1.0,
     "end_queue_ratio": 0.48,
     "end_speed_kmh": 22,
     "end_delay_index": 2.1,
     "end_green_utilization": 0.72,
     "end_upstream_queue_ratio": 0.35,
     "end_upstream_blocked_veh": 3,
+    "start_note": "试运行第 1 周期用幕 3 单周期峰值 368 m（触顶蓄车、排队比 1.0），才能画出先越预警再回落到安全区；专家常态 270 m 仍低于 0.8，不能当有风险起点",
     "upstream_tradeoff_note": "北进口直行绿时压 6s，上游进口排队比由 0.22 升至 0.35（仍低于回滚线 0.9）；同时下游不再溢出、回灌消失，路口内滞留车辆由 9 辆降到 3 辆"
   },
   "thresholds": {

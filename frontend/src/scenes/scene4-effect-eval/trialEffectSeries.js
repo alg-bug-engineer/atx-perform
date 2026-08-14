@@ -48,8 +48,11 @@ export function buildTrialEffectSeries(payload = {}) {
   const n = Math.max(1, Math.round(num(trial.cycles, null) ?? num(trial.observation_cycles, 5)))
   const storage = num(baselineIn.storage_length_m, 367.89)
   const queue0 = num(baselineIn.queue_length_m, 270)
-  const ratio0 = calculateQueueRatio(queue0, storage)
-    ?? num(baselineIn.queue_ratio, queue0 / storage)
+  const queueStart = num(targets.start_queue_length_m, null)
+    ?? (num(targets.start_queue_ratio, null) != null ? round1(storage * targets.start_queue_ratio) : null)
+    ?? queue0
+  const ratioStart = calculateQueueRatio(queueStart, storage)
+    ?? num(targets.start_queue_ratio, queueStart / storage)
   const speed0 = num(baselineIn.avg_speed_kmh, 7.2)
   const delay0 = num(baselineIn.delay_index, 5.28)
   const green0 = num(baselineIn.green_utilization, 0.62)
@@ -58,7 +61,7 @@ export function buildTrialEffectSeries(payload = {}) {
   // 下游吃满时堵在解放东路口内进不来的车，取自幕 3 仿真 KPI；与上游进口排队比是两个口径
   const upBlocked0 = num(baselineIn.upstream_blocked_veh, null)
 
-  const endRatio = num(targets.end_queue_ratio, Math.min(0.55, Math.max(0.4, ratio0 - 0.25)))
+  const endRatio = num(targets.end_queue_ratio, Math.min(0.55, Math.max(0.4, ratioStart - 0.25)))
   const endQueue = round1(storage * endRatio)
   const endSpeed = num(targets.end_speed_kmh, 22)
   const endDelay = num(targets.end_delay_index, 2.1)
@@ -70,7 +73,7 @@ export function buildTrialEffectSeries(payload = {}) {
   for (let i = 0; i < n; i += 1) {
     const t = n === 1 ? 1 : i / (n - 1)
     const ease = smoothstep(t)
-    const queueLength = round1(lerp(queue0, endQueue, ease))
+    const queueLength = round1(lerp(queueStart, endQueue, ease))
     const queueRatio = calculateQueueRatio(queueLength, storage) ?? 0
     const avgSpeed = round1(lerp(speed0, endSpeed, ease))
     const delayIndex = round4(lerp(delay0, endDelay, ease))
@@ -127,7 +130,7 @@ export function buildTrialEffectSeries(payload = {}) {
       ok: overflowRelieved,
       title: '问题路段排队已缓解',
       detail: overflowRelieved
-        ? `排队比 ${fmtRatio2(ratio0)} → ${fmtRatio2(last.queue_ratio)}，已低于预警线 ${thresholds.queue_ratio_warning}`
+        ? `排队比 ${fmtRatio2(ratioStart)} → ${fmtRatio2(last.queue_ratio)}，已低于预警线 ${thresholds.queue_ratio_warning}`
         : '目标排队比尚未降至预警线以下',
     },
     {
@@ -173,8 +176,8 @@ export function buildTrialEffectSeries(payload = {}) {
     },
     thresholds,
     baseline: {
-      queue_length_m: round1(queue0),
-      queue_ratio: round4(ratio0),
+      queue_length_m: round1(queueStart),
+      queue_ratio: round4(ratioStart),
       avg_speed_kmh: round1(speed0),
       delay_index: round4(delay0),
       green_utilization: round4(green0),

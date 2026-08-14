@@ -15,18 +15,16 @@ const props = defineProps({
  * 上游 3 车道，距经十路 100 m 处在东侧展宽出两条左转道，变成 5 车道。
  */
 const GEO = {
-  w: 1240,
-  h: 292,
-  jiefangL: 66,
-  jiefangR: 165,
-  jingshiL: 1030,
-  jingshiR: 1196,
-  oppTop: 26,
-  oppBottom: 66,
-  downTop: 80,
-  upTop: 120,
-  roadBottom: 180,
-  laneH: 20,
+  w: 1280,
+  h: 194,
+  jiefangL: 8,
+  jiefangR: 108,
+  jingshiL: 1128,
+  jingshiR: 1228,
+  downTop: 10,
+  upTop: 70,
+  roadBottom: 160,
+  laneH: 30,
 }
 const CORRIDOR_PX = GEO.jingshiL - GEO.jiefangR
 
@@ -114,10 +112,6 @@ const worstLabel = computed(
 const spill = computed(() => !!props.sample?.spill)
 const warning = computed(() => !spill.value && queueM.value >= props.model.warningM)
 const queueTone = computed(() => (spill.value ? 'danger' : warning.value ? 'warn' : 'calm'))
-const occTone = computed(() => {
-  const ratio = occupiedM.value / props.model.storageM
-  return ratio >= 0.95 ? 'danger' : ratio >= 0.8 ? 'warn' : 'calm'
-})
 const tailX = computed(() => mx(Math.max(0, lengthM.value - queueM.value)))
 
 /** 对照方案的队尾（现状），画在本幅上直接量出缩短了多少 */
@@ -133,8 +127,8 @@ const ghost = computed(() => {
 const occX = computed(() => mx(Math.max(0, lengthM.value - occupiedM.value)))
 const warnX = computed(() => mx(Math.max(0, lengthM.value - props.model.warningM)))
 
-const VEH_L = 11
-const VEH_H = 9
+const VEH_L = 16
+const VEH_H = 14
 
 const cars = computed(() => {
   const list = props.sample?.cars || []
@@ -165,85 +159,8 @@ const blockedCars = computed(() => {
   }))
 })
 
-const through = computed(() => props.sample?.downstreamThrough || { green: false, countdown: 0 })
-const leftSig = computed(() => props.sample?.downstreamLeft || { green: false, countdown: 0 })
 const sources = computed(() => props.sample?.upstreamSources || [])
 const activeSource = computed(() => sources.value.find((s) => s.green) || null)
-
-/** 解说随信号状态走，不写死脚本 */
-const narration = computed(() => {
-  const q = Math.round(queueM.value)
-  const src = activeSource.value
-  if (spill.value) {
-    return { tone: 'alert', step: '路口溢出', text: `排队 ${q} m 已吃满整条路段，车辆滞留在解放东路口内，下游绿灯亮起前无法疏解。` }
-  }
-  if (through.value.green) {
-    return {
-      tone: 'ok',
-      step: `经十路直行放行 · 剩 ${through.value.countdown} s`,
-      text: `展宽段两条直行道同时启动，排队由 ${q} m 向前释放；上游只有一条直行车道补给，释放速度受限于此。`,
-    }
-  }
-  if (leftSig.value.green) {
-    return {
-      tone: 'ok',
-      step: `经十路左转放行 · 剩 ${leftSig.value.countdown} s`,
-      text: `展宽段两条左转道放行，直行方向转红开始重新蓄车，当前排队 ${q} m。`,
-    }
-  }
-  if (src) {
-    return {
-      tone: src.key === 'north_through' ? 'alert' : 'warn',
-      step: `${src.label}汇入 · 剩 ${src.countdown} s`,
-      text: `经十路口对本方向红灯，${src.label}车流持续汇入，排队推进到 ${q} m。`,
-    }
-  }
-  return { tone: 'calm', step: '双向红灯', text: `解放东暂无汇入，路段静态蓄车 ${q} m。` }
-})
-
-/** 经十路口北进口的三组信号灯，贴停止线对面立杆；右转借道 + 公交道为常放 */
-const downSignals = computed(() => [
-  {
-    key: 'left',
-    y: GEO.downTop + GEO.laneH,
-    name: '左转',
-    green: leftSig.value.green,
-    countdown: `${leftSig.value.countdown}s`,
-  },
-  {
-    key: 'through',
-    y: GEO.downTop + GEO.laneH * 3,
-    name: '直行',
-    green: through.value.green,
-    countdown: `${through.value.countdown}s`,
-  },
-  { key: 'right', y: downCenter(4), name: '右转', green: true, countdown: '常放' },
-])
-
-/** 底部信号盘：两个路口各一组灯头，倒计时直接读数字 */
-const HEAD_PITCH = 116
-const signalPanels = computed(() => {
-  const up = sources.value.map((s) => ({
-    key: s.key,
-    name: s.label,
-    green: s.green,
-    countdown: `${s.countdown}`,
-  }))
-  const down = [
-    { key: 'd-through', name: '北进口直行', green: through.value.green, countdown: `${through.value.countdown}` },
-    { key: 'd-left', name: '北进口左转', green: leftSig.value.green, countdown: `${leftSig.value.countdown}` },
-    { key: 'd-right', name: '北进口右转', green: true, countdown: '常放', text: true },
-  ]
-  return [
-    { key: 'jiefang', title: '解放东路口 · 汇入放行', x: GEO.jiefangL - 4, heads: up },
-    {
-      key: 'jingshi',
-      title: '经十路口 · 北进口放行',
-      x: GEO.jingshiR - (down.length - 1) * HEAD_PITCH - 92,
-      heads: down,
-    },
-  ]
-})
 
 const inflowArrows = computed(() => {
   const s = activeSource.value
@@ -264,7 +181,7 @@ const inflowArrows = computed(() => {
 
     <div class="body">
       <div class="canvas-wrap">
-      <svg class="canvas" :viewBox="`0 0 ${GEO.w} ${GEO.h}`" preserveAspectRatio="xMidYMid meet">
+      <svg class="canvas" :viewBox="`0 0 ${GEO.w} ${GEO.h}`" preserveAspectRatio="none">
         <defs>
           <marker
             :id="`flow-${variant.key}`"
@@ -294,13 +211,8 @@ const inflowArrows = computed(() => {
         </defs>
 
         <!-- 相交道路 -->
-        <rect class="cross" :x="GEO.jiefangL" y="0" :width="GEO.jiefangR - GEO.jiefangL" :height="GEO.h - 74" />
-        <rect class="cross trunk" :x="GEO.jingshiL" y="0" :width="GEO.jingshiR - GEO.jingshiL" :height="GEO.h - 74" />
-
-        <!-- 对向车道 -->
-        <rect class="opp" :x="GEO.jiefangL" :y="GEO.oppTop" :width="GEO.jingshiR - GEO.jiefangL" :height="GEO.oppBottom - GEO.oppTop" />
-        <line class="opp-dash" :x1="GEO.jiefangR" :y1="(GEO.oppTop + GEO.oppBottom) / 2" :x2="GEO.jingshiL" :y2="(GEO.oppTop + GEO.oppBottom) / 2" />
-        <text class="opp-label" :x="GEO.jiefangR + 12" :y="GEO.oppTop - 6">对向 南向北</text>
+        <rect class="cross" :x="GEO.jiefangL" y="0" :width="GEO.jiefangR - GEO.jiefangL" :height="GEO.h" />
+        <rect class="cross trunk" :x="GEO.jingshiL" y="0" :width="GEO.jingshiR - GEO.jingshiL" :height="GEO.h" />
 
         <!-- 问题方向路面 -->
         <path class="road" :d="roadPath" />
@@ -308,8 +220,8 @@ const inflowArrows = computed(() => {
         <path v-for="(l, i) in laneLines" :key="`ln${i}`" :class="['mark', l.cls]" :d="l.d" />
 
         <!-- 展宽标注 -->
-        <line class="widen-tick" :x1="taperEndX" :y1="GEO.downTop - 12" :x2="taperEndX" :y2="GEO.roadBottom + 6" />
-        <text class="widen-label" :x="taperEndX + 6" :y="GEO.downTop - 16">展宽起点 · 距经十路 100 m</text>
+        <line class="widen-tick" :x1="taperEndX" :y1="GEO.downTop + 2" :x2="taperEndX" :y2="GEO.roadBottom + 6" />
+        <text class="widen-label" :x="taperEndX + 6" :y="GEO.downTop + 14">展宽起点 · 距经十路 100 m</text>
         <text class="widen-label dim" :x="GEO.jiefangR + 8" :y="GEO.upTop - 8">上游 3 车道</text>
 
         <!-- 蓄车边界 / 预警线 -->
@@ -366,7 +278,7 @@ const inflowArrows = computed(() => {
           :d="a.d"
           :marker-end="`url(#arw-${variant.key})`"
         />
-        <text v-for="(l, i) in LANE_LABELS" :key="`ll${i}`" class="lane-label" :x="GEO.jingshiR + 8" :y="downCenter(i) + 3">
+        <text v-for="(l, i) in LANE_LABELS" :key="`ll${i}`" class="lane-label" :x="GEO.jingshiL - 8" :y="downCenter(i) + 3" text-anchor="end">
           {{ l }}
         </text>
         <g v-for="(l, i) in UP_LABELS" :key="`ul${i}`">
@@ -386,20 +298,20 @@ const inflowArrows = computed(() => {
           <text :x="occX + 6" :y="GEO.roadBottom + 2">占用 {{ Math.round(occupiedM) }} m</text>
         </g>
         <g class="tail" :class="queueTone">
-          <line :x1="tailX" :y1="GEO.oppBottom + 4" :x2="tailX" :y2="GEO.roadBottom + 8" />
-          <text :x="tailX - 8" :y="GEO.oppBottom + 16" text-anchor="end">
+          <line :x1="tailX" :y1="GEO.downTop" :x2="tailX" :y2="GEO.roadBottom + 8" />
+          <text :x="tailX - 8" :y="GEO.downTop + 14" text-anchor="end">
             {{ worstLabel }}队尾 {{ Math.round(queueM) }} m
           </text>
         </g>
 
         <!-- 与上一幅对读：现状队尾位置 + 缩短量 -->
         <g v-if="ghost" class="ghost">
-          <line :x1="ghost.x" :y1="GEO.oppTop - 8" :x2="ghost.x" :y2="GEO.roadBottom + 8" />
-          <text :x="ghost.x - 6" :y="GEO.oppTop - 10" text-anchor="end">
+          <line :x1="ghost.x" :y1="GEO.downTop" :x2="ghost.x" :y2="GEO.roadBottom + 8" />
+          <text :x="ghost.x - 6" :y="GEO.downTop + 14" text-anchor="end">
             现状队尾 {{ Math.round(ghost.queueM) }} m
           </text>
-          <line class="span" :x1="ghost.x" :y1="GEO.oppTop - 2" :x2="tailX" :y2="GEO.oppTop - 2" />
-          <text class="span-text" :x="(ghost.x + tailX) / 2" :y="GEO.oppTop - 6" text-anchor="middle">
+          <line class="span" :x1="ghost.x" :y1="GEO.downTop + 18" :x2="tailX" :y2="GEO.downTop + 18" />
+          <text class="span-text" :x="(ghost.x + tailX) / 2" :y="GEO.downTop + 14" text-anchor="middle">
             缩短 {{ ghost.deltaM }} m
           </text>
         </g>
@@ -413,69 +325,10 @@ const inflowArrows = computed(() => {
           </g>
         </g>
 
-        <!-- 停止线信号灯：经十路口北进口分流向立杆，解放东路口出口一组 -->
-        <g
-          v-for="s in downSignals"
-          :key="`dsg${s.key}`"
-          class="head"
-          :class="{ on: s.green }"
-          :transform="`translate(${GEO.jingshiL + 96}, ${s.y - 16})`"
-        >
-          <rect class="case" x="0" y="0" width="14" height="33" rx="3.5" />
-          <circle class="red" cx="7" cy="8" r="4.2" />
-          <circle class="amb" cx="7" cy="16.5" r="4.2" />
-          <circle class="grn" cx="7" cy="25" r="4.2" />
-          <text class="cd" x="19" y="21">{{ s.countdown }}</text>
-        </g>
         <!-- 路口名 -->
-        <text class="inter-name" :x="(GEO.jiefangL + GEO.jiefangR) / 2" y="16" text-anchor="middle">解放东路口</text>
-        <text class="inter-name trunk" :x="(GEO.jingshiL + GEO.jingshiR) / 2" y="16" text-anchor="middle">经十路口</text>
-
-        <!-- 信号盘：两个路口的灯头 + 倒计时读数 -->
-        <g v-for="p in signalPanels" :key="p.key" class="sig-panel" :transform="`translate(${p.x}, ${GEO.h - 58})`">
-          <text class="sig-title" x="0" y="0">{{ p.title }}</text>
-          <g
-            v-for="(s, i) in p.heads"
-            :key="s.key"
-            class="head lg"
-            :class="{ on: s.green }"
-            :transform="`translate(${i * HEAD_PITCH}, 8)`"
-          >
-            <rect class="case" x="0" y="0" width="17" height="42" rx="4" />
-            <circle class="red" cx="8.5" cy="10" r="5.4" />
-            <circle class="amb" cx="8.5" cy="21" r="5.4" />
-            <circle class="grn" cx="8.5" cy="32" r="5.4" />
-            <text class="nm" x="25" y="13">{{ s.name }}</text>
-            <text v-if="s.text" class="cd sm" x="25" y="35">{{ s.countdown }}</text>
-            <template v-else>
-              <text class="cd" x="25" y="37">{{ s.countdown }}</text>
-              <text class="cd-unit" :x="25 + String(s.countdown).length * 15 + 3" y="37">s</text>
-            </template>
-          </g>
-        </g>
+        <text class="inter-name" :x="(GEO.jiefangL + GEO.jiefangR) / 2" y="22" text-anchor="middle">解放东路口</text>
+        <text class="inter-name trunk" :x="(GEO.jingshiL + GEO.jingshiR) / 2" y="22" text-anchor="middle">经十路口</text>
       </svg>
-      </div>
-
-      <div class="side">
-        <div class="readout">
-      <span class="metric">
-        {{ worstLabel }}排队 <strong :class="queueTone">{{ Math.round(queueM) }}</strong> m
-      </span>
-      <span class="metric">
-        路段占用 <strong :class="occTone">{{ Math.round(occupiedM) }}</strong> / {{ Math.round(model.storageM) }} m
-      </span>
-      <span class="metric">
-        路口滞留 <strong :class="(sample?.spillQueueM ?? 0) > 40 ? 'danger' : 'calm'">{{ Math.round((sample?.spillQueueM ?? 0) / 7) }}</strong> 辆
-      </span>
-      <span class="metric">
-        在途车辆 <strong class="calm">{{ sample?.cars?.length ?? 0 }}</strong> 辆
-      </span>
-        <span class="metric now">{{ activeSource ? `汇入中 · ${activeSource.label}` : '解放东全红 · 无汇入' }}</span>
-        </div>
-
-        <p class="narration" :class="narration.tone">
-          <span class="step">{{ narration.step }}</span>{{ narration.text }}
-        </p>
       </div>
     </div>
   </figure>
@@ -487,8 +340,8 @@ const inflowArrows = computed(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: 7px;
-  padding: 9px 13px 10px;
+  gap: 4px;
+  padding: 6px 8px 6px;
   border: 1px solid var(--cyan-border);
   border-radius: 4px;
   background: rgba(2, 10, 24, 0.72);
@@ -520,30 +373,16 @@ const inflowArrows = computed(() => {
 }
 @keyframes blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-/* 上下排列后走廊只按高度铺开，右侧空档给读数与旁白，避免两边留白 */
 .body {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(210px, 258px);
-  gap: 12px;
 }
-.canvas-wrap { position: relative; min-height: 132px; }
+.canvas-wrap { position: relative; min-height: 0; height: 100%; }
 .canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-  overflow: auto;
-}
 
 .cross { fill: #07182a; stroke: rgba(0, 229, 255, 0.2); }
 .cross.trunk { fill: #082137; }
-.opp { fill: #061422; stroke: rgba(0, 229, 255, 0.12); }
-.opp-dash { stroke: rgba(0, 229, 255, 0.14); stroke-width: 1.1; stroke-dasharray: 9 8; }
-.opp-label { font-size: 10px; fill: rgba(150, 190, 212, 0.4); letter-spacing: 1px; }
 
 .road { fill: #0b2540; stroke: none; }
 .bus-lane { fill: rgba(0, 229, 255, 0.05); }
@@ -623,71 +462,4 @@ const inflowArrows = computed(() => {
 
 .inter-name { font-size: 12px; fill: rgba(160, 200, 220, 0.8); letter-spacing: 1px; }
 .inter-name.trunk { fill: rgba(0, 229, 255, 0.9); }
-
-.sig-title { font-size: 10px; fill: rgba(150, 190, 212, 0.6); letter-spacing: 1px; }
-
-.head .case { fill: rgba(4, 14, 26, 0.95); stroke: rgba(160, 200, 220, 0.4); stroke-width: 0.8; }
-.head .red { fill: #ff4444; filter: drop-shadow(0 0 4px rgba(255, 68, 68, 0.7)); }
-.head .amb { fill: rgba(255, 176, 32, 0.14); }
-.head .grn { fill: rgba(51, 204, 136, 0.16); }
-.head.on .red { fill: rgba(255, 68, 68, 0.16); filter: none; }
-.head.on .grn { fill: #33cc88; filter: drop-shadow(0 0 5px rgba(51, 204, 136, 0.9)); }
-.head .cd { font-size: 11px; font-family: var(--font-mono); fill: rgba(255, 130, 130, 0.85); }
-.head.on .cd { fill: #4be0a4; }
-
-.head.lg .nm { font-size: 11px; fill: rgba(170, 208, 228, 0.8); }
-.head.lg .cd { font-size: 21px; font-family: var(--font-mono); fill: #ff7b7b; }
-.head.lg.on .cd { fill: #4be0a4; }
-.head.lg .cd.sm { font-size: 13px; fill: rgba(75, 224, 164, 0.8); }
-.head.lg .cd-unit { font-size: 11px; font-family: var(--font-mono); fill: rgba(255, 130, 130, 0.6); }
-.head.lg.on .cd-unit { fill: rgba(75, 224, 164, 0.6); }
-
-.readout {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: none;
-  padding: 7px 10px;
-  border: 1px solid var(--cyan-border);
-  background: rgba(0, 20, 34, 0.5);
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.readout .metric {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-.readout strong {
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--cyan);
-  margin: 0 3px 0 6px;
-}
-.readout strong.warn { color: var(--warn); }
-.readout strong.danger { color: var(--danger); }
-.readout .now {
-  margin-top: 3px;
-  padding-top: 5px;
-  border-top: 1px dashed var(--cyan-border);
-  color: var(--cyan-dim);
-}
-
-.narration {
-  margin: 0;
-  flex: none;
-  min-height: 40px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--text-muted);
-}
-.narration .step {
-  margin-right: 8px;
-  color: var(--cyan);
-  font-family: var(--font-mono);
-}
-.narration.ok .step { color: var(--ok); }
-.narration.warn .step { color: var(--warn); }
-.narration.alert .step { color: var(--danger); }
 </style>

@@ -18,6 +18,28 @@
   --font-mono: 'Courier New', ui-monospace, monospace;
   /* 顶部大字报 + 步骤栏 + 状态条占位，内容区从此下沉 */
   --app-chrome-h: 96px;
+  /* 领导观看：效果评估 / 优化方案 / 信控方案 顶栏同一套 */
+  --lead-eyebrow-size: 13px;
+  --lead-title-size: 24px;
+  --lead-lede-size: 24px;
+  --lead-lede-line: 1.65;
+}
+
+.lead-eyebrow {
+  margin: 0 0 4px;
+  font-size: var(--lead-eyebrow-size);
+  letter-spacing: 2px;
+  font-weight: 400;
+  color: var(--cyan);
+}
+
+.lead-headline {
+  margin: 0;
+  font-size: var(--lead-lede-size);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  line-height: var(--lead-lede-line);
+  color: var(--text);
 }
 
 * {

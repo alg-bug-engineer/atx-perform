@@ -162,7 +162,7 @@
     "source": "expert_proposal",
     "status": "proposed",
     "measure": "phase_coordination",
-    "summary": "保持两路口 220s 共同周期、经十路配时全盘不动；解放东路口相位差后移 56s，并把北进口直行绿时由 21s 压到 15s 轻微截流，使北向南车流在经十路北进口绿灯启动、队列开始消散后再汇入。",
+    "summary": "为保障经十路晚高峰通勤要求，考虑到该路段需求未超过供给，轻微截流不会导致上游路段溢出，所以在该路口的方案为相位协调。",
     "offset_shift_sec": {
       "intersection": "jiefang",
       "value": 56,

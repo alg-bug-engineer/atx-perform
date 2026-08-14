@@ -100,6 +100,13 @@ const planChips = computed(() => {
   return chips
 })
 
+function trendOf(now, base) {
+  if (now == null || base == null || Number.isNaN(now) || Number.isNaN(base)) return ''
+  if (now < base) return 'down'
+  if (now > base) return 'up'
+  return ''
+}
+
 const cards = computed(() => {
   const c = activeCycle.value
   const b = baseline.value
@@ -111,6 +118,7 @@ const cards = computed(() => {
       value: c ? `${c.queue_length_m}` : '—',
       unit: 'm',
       tone: 'ok',
+      trend: c ? trendOf(c.queue_length_m, b.queue_length_m) : '',
       sub: `基线 ${b.queue_length_m} m`,
     },
     {
@@ -118,6 +126,7 @@ const cards = computed(() => {
       label: '排队比',
       value: c ? fmtRatio2(c.queue_ratio) : '—',
       tone: c && c.queue_ratio < th.queue_ratio_warning ? 'ok' : 'warn',
+      trend: c ? trendOf(c.queue_ratio, b.queue_ratio) : '',
       sub: `基线 ${fmtRatio2(b.queue_ratio)} · 预警 ${th.queue_ratio_warning}`,
     },
     {
@@ -125,6 +134,7 @@ const cards = computed(() => {
       label: '绿灯利用率',
       value: c ? fmtPct(c.green_utilization) : '—',
       tone: c && c.green_utilization >= th.green_utilization_low ? 'ok' : 'warn',
+      trend: c ? trendOf(c.green_utilization, b.green_utilization) : '',
       sub: `基线 ${fmtPct(b.green_utilization)} · 目标 ${th.green_utilization_low}`,
     },
     {
@@ -132,6 +142,7 @@ const cards = computed(() => {
       label: '上游排队比',
       value: c ? fmtRatio2(c.downstream_queue_ratio) : '—',
       tone: c && c.downstream_queue_ratio < series.value.rollbackThreshold ? 'ok' : 'danger',
+      trend: c ? trendOf(c.downstream_queue_ratio, b.downstream_queue_ratio) : '',
       sub: `回滚线 ${series.value.rollbackThreshold}`,
     },
   ]
@@ -146,7 +157,7 @@ const trends = computed(() => {
       tone: 'cyan',
       values: shown.value.map((c) => c.queue_ratio),
       allValues: cycles.value.map((c) => c.queue_ratio),
-      threshold: { value: th.queue_ratio_warning, label: `预警 ${th.queue_ratio_warning}`, tone: 'warn' },
+      threshold: { value: th.queue_ratio_warning, label: `预警 ${th.queue_ratio_warning}`, tone: 'warn', riskWhen: 'above' },
       format: (v) => fmtRatio2(v),
     },
     {
@@ -155,7 +166,7 @@ const trends = computed(() => {
       tone: 'ok',
       values: shown.value.map((c) => c.green_utilization),
       allValues: cycles.value.map((c) => c.green_utilization),
-      threshold: { value: th.green_utilization_low, label: `目标 ${th.green_utilization_low}`, tone: 'ok' },
+      threshold: { value: th.green_utilization_low, label: `目标 ${th.green_utilization_low}`, tone: 'ok', riskWhen: 'below' },
       format: (v) => fmtPct(v),
     },
     {
@@ -168,6 +179,7 @@ const trends = computed(() => {
         value: series.value.rollbackThreshold,
         label: `回滚 ${series.value.rollbackThreshold}`,
         tone: 'warn',
+        riskWhen: 'above',
       },
       format: (v) => fmtRatio2(v),
     },
@@ -184,8 +196,8 @@ const verdictText = computed(() => {
   <section class="effect" data-testid="trial-effect-panel">
     <header class="banner">
       <div class="banner-main">
-        <p class="eyebrow">效果评估 · 相位协调试运行</p>
-        <h2>{{ headline }}</h2>
+        <p class="lead-eyebrow">效果评估 · 相位协调试运行</p>
+        <h2 class="lead-headline">{{ headline }}</h2>
         <p class="lede">
           {{ series.intersection }} · 试点 {{ series.cyclesCount }} 周期 · 监测上游
           {{ series.downstreamName }}
@@ -225,7 +237,16 @@ const verdictText = computed(() => {
         <div class="cards" data-testid="effect-kpis">
           <div v-for="c in cards" :key="c.key" class="card" :class="`tone-${c.tone}`">
             <span class="card-k">{{ c.label }}</span>
-            <strong class="card-v">{{ c.value }}<em v-if="c.unit">{{ c.unit }}</em></strong>
+            <strong class="card-v">
+              {{ c.value }}<em v-if="c.unit">{{ c.unit }}</em>
+              <i
+                v-if="c.trend"
+                class="delta"
+                :class="c.trend"
+                :title="c.trend === 'down' ? '较基线下降' : '较基线上升'"
+                :aria-label="c.trend === 'down' ? '较基线下降' : '较基线上升'"
+              />
+            </strong>
             <span class="card-sub">{{ c.sub }}</span>
           </div>
         </div>
@@ -318,15 +339,12 @@ const verdictText = computed(() => {
   gap: 26px;
 }
 .banner-main { min-width: 0; }
-.eyebrow { margin: 0 0 4px; font-size: 11px; letter-spacing: 4px; color: var(--cyan-dim); }
-h2 {
-  margin: 0 0 5px;
-  font-size: 24px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  color: var(--text);
+.lede {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
 }
-.lede { margin: 0; font-size: 12px; color: var(--text-muted); }
 
 .plan-chips {
   display: flex;
@@ -431,8 +449,35 @@ h2 {
   background: rgba(0, 20, 34, 0.55);
 }
 .card-k { font-size: 11px; color: var(--text-muted); }
-.card-v { font-size: 26px; font-weight: 500; line-height: 1.1; color: var(--cyan); }
-.card-v em { font-style: normal; font-size: 12px; margin-left: 4px; color: var(--text-muted); }
+.card-v {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--cyan);
+}
+.card-v em { font-style: normal; font-size: 12px; margin-left: 0; color: var(--text-muted); }
+.delta {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  flex: none;
+  font-style: normal;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+.delta.up {
+  border-bottom: 9px solid currentColor;
+  filter: drop-shadow(0 0 4px currentColor);
+  transform: translateY(-3px);
+}
+.delta.down {
+  border-top: 9px solid currentColor;
+  filter: drop-shadow(0 0 4px currentColor);
+  transform: translateY(2px);
+}
 .card-sub { font-size: 10px; color: rgba(160, 200, 220, 0.55); }
 .card.tone-ok { border-left-color: var(--ok); }
 .card.tone-ok .card-v { color: var(--ok); }
@@ -465,7 +510,12 @@ h2 {
 }
 .verdict.ok { border-color: rgba(51, 204, 136, 0.45); }
 .verdict-hd { display: flex; align-items: baseline; gap: 12px; }
-.verdict-hd p { margin: 0; font-size: 12.5px; color: var(--text); }
+.verdict-hd p {
+  margin: 0;
+  font-size: var(--lead-lede-size);
+  line-height: var(--lead-lede-line);
+  color: var(--text);
+}
 .verdict-tag {
   flex: none;
   padding: 2px 10px;

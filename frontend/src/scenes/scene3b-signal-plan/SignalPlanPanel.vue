@@ -109,16 +109,12 @@ const bandCaption = computed(() => {
 <template>
   <section v-if="model" class="signal-plan" data-testid="signal-plan">
     <header class="head">
-      <div class="head-main">
-        <p class="eyebrow">信控方案调节</p>
-        <h2>{{ model.meta.subtitle }}</h2>
-        <p class="lede">{{ lede }}</p>
-      </div>
+      <p class="lead-eyebrow">信控方案调节 · {{ model.meta.subtitle }}</p>
+      <h2 class="lead-headline">{{ lede }}</h2>
       <div class="chips">
-        <div v-for="c in headChips" :key="c.k" class="chip" :class="c.tone">
+        <div v-for="c in headChips" :key="c.k" class="chip" :class="c.tone" :title="c.sub">
           <span>{{ c.k }}</span>
           <strong>{{ c.v }}</strong>
-          <em>{{ c.sub }}</em>
         </div>
       </div>
     </header>
@@ -250,65 +246,43 @@ const bandCaption = computed(() => {
 .signal-plan {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
   height: 100%;
   min-height: 0;
 }
 
 .head {
   display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-.eyebrow {
-  margin: 0 0 4px;
-  font-size: 11px;
-  letter-spacing: 4px;
-  color: var(--cyan-dim);
-}
-h2 {
-  margin: 0 0 4px;
-  font-size: 21px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  color: var(--text);
-}
-.lede {
-  margin: 0;
-  max-width: 100ch;
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--text-muted);
+  flex-direction: column;
+  gap: 0;
 }
 .chips {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
 }
 .chip {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 5px 12px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 8px;
   border: 1px solid var(--cyan-border);
-  border-radius: 3px;
-  background: rgba(0, 22, 38, 0.6);
+  border-radius: 2px;
+  background: var(--bg-inset);
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--text-muted);
 }
 .chip span {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
 }
 .chip strong {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--cyan);
-}
-.chip em {
-  font-style: normal;
   font-size: 10px;
-  color: rgba(160, 200, 220, 0.5);
+  font-weight: 500;
+  color: rgba(190, 220, 236, 0.85);
 }
 .chip.change {
   border-color: rgba(51, 204, 136, 0.5);
