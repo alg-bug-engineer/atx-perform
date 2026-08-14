@@ -31,8 +31,8 @@ export const PROJECTION = {
   centerLon: 117.096,
   centerLat: 36.662,
   metersPerUnit: 10,
-  // 定位态镜头：高度 160，FOV 45°，地面可见半高 ≈ 160*tan(22.5°) ≈ 66.3 单位
-  holdCamHeight: 160,
+  // 定位态镜头：高度 110，FOV 45°，地面可见半高 ≈ 110*tan(22.5°) ≈ 45.6 单位
+  holdCamHeight: 110,
   holdCamFovDeg: 45,
 };
 
@@ -178,9 +178,11 @@ export const SPATIAL_SCENE = {
  */
 export const FLOW_INFO_WINDOWS = [
   {
-    id: 'jiefang-n2s',
-    anchor: 'jiefang',
-    title: '解放路与奥体西路路口',
+    id: 'jingshi-n2s',
+    anchor: 'jingshi',
+    // 核心问题路段窗口（奥体西路·北向南）：幕 1 只展示本窗口，其余路口窗口不显示
+    core: true,
+    title: '奥体西路与经十路路口',
     subtitle: '奥体西路 · 北向南',
     metrics: [
       {
@@ -189,7 +191,7 @@ export const FLOW_INFO_WINDOWS = [
         value: '520',
         unit: '辆/h',
         status: 'normal',
-        hint: '北进口直行（GAP-NORTH-LR-FLOW：左/右转无值）',
+        hint: '北进口直行，饱和度 0.843（GAP-NORTH-LR-FLOW：左/右转无值）',
       },
       {
         key: 'queueRatio',
@@ -263,6 +265,8 @@ export const FLOW_INFO_WINDOWS = [
  * 经十路口东西进口车流窗口（E→W / W→E）
  * 数据来源：data/1-1-problem-locate.json → jingshi_ew_turn_flow
  *
+ * 注：幕 1 信息窗目前只展示核心问题路段窗口（core: true），
+ * 本组窗口保留在 fixture 中供后续幕次复用，不参与幕 1 渲染。
  * 直行：东进口 1230 辆/h（dws_inter_link_turn_flow_5min_mm 有值）
  * 左/右转：库内绝对流量缺值（西进口全向 GAP-WEST-SAT；东进口左/右转同缺）
  * 关联影响预测：由饱和度/延误指数派生估算（非库内直读）

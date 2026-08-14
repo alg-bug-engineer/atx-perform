@@ -6,12 +6,11 @@
  *   idle（输入卡）→ parsing（问题理解推理）
  *   → ticket_ready（工单左卡）
  *   → locating（地图飞入三路口走廊，走廊/流向箭头揭示）
- *   → 走廊揭示完成 → 信息窗口（北向南：车流量/排队比/延误指数/拥堵指数）+ 空间对象卡
- *   → confirming → handoff → emit('exit')
+ *   → 走廊揭示完成 → 空间对象卡 → 退出进入幕 2
  *
  * 与主工程地图运行时（TrafficOriginScene）的协作：
  *   act2Phase='locating' → 地图飞入 → 飞入完成回调 markChannelizationReady()
- *   → locateCorridorReady 信号 → 本舞台揭示信息窗口
+ *   → locateCorridorReady 信号 → 本舞台揭示空间对象卡
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import TicketSpatialCard from './TicketSpatialCard.vue';
@@ -19,7 +18,7 @@ import LocateReasoningPanel from './LocateReasoningPanel.vue';
 import FlowInfoWindow from './FlowInfoWindow.vue';
 import { createReadyGate, runExitBarrier } from '../../../shared/act-timing.js';
 import { act1Phase, act2Phase } from '../../../shared/narrative-state.js';
-import { FLOW_INFO_WINDOWS, INTERSECTIONS, JINGSHI_EW_FLOW_WINDOWS } from './fixture.js';
+import { FLOW_INFO_WINDOWS, INTERSECTIONS } from './fixture.js';
 import {
   beginLocate,
   beginParse,
@@ -62,7 +61,7 @@ const rightVisible = computed(
     || act2Phase.value === 'confirming',
 );
 
-// 走廊揭示状态（信息窗口 / 诊断对象锚点随走廊一起出现）
+// 走廊揭示状态（诊断对象锚点在走廊揭示时出现）
 const corridorRevealed = ref(false);
 
 // 信息窗口：走廊揭示 600ms 后出现（对齐地图指标脉冲动效）
@@ -108,18 +107,13 @@ function onLocateDone() {
   maybeConfirm();
 }
 
-// 信息窗口合并列表（北向南 2 个 + 经十路口东西入口 2 个）
-// 东西入口锚定经十路口，东入口偏右（+22），西入口偏左（-22）
+// 信息窗口：只展示核心问题路段（奥体西路·北向南）流量数据，
+// 去掉其余路口的流量窗口（坤顺上游 / 经十路东西入口）
 const allWindows = [
-  ...FLOW_INFO_WINDOWS.map((w) => ({
+  ...FLOW_INFO_WINDOWS.filter((w) => w.core).map((w) => ({
     ...w,
-    offsetX: w.anchor === 'jiefang' ? 15 : -13,
-    offsetY: 0,
-  })),
-  ...JINGSHI_EW_FLOW_WINDOWS.map((w) => ({
-    ...w,
-    offsetX: w.id.endsWith('east-ew') ? 22 : -22,
-    offsetY: 6,
+    offsetX: w.anchor === 'jingshi' ? -15 : -13,
+    offsetY: -18,
   })),
 ];
 
@@ -167,6 +161,10 @@ onMounted(async () => {
     later(() => runExitFlow(), 2600);
     maybeConfirm();
   });
+  // 无信息窗口时直接放行窗口守门员（当前至少保留 1 个核心窗口，此分支兜底）
+  if (allWindows.length === 0) {
+    windowsGate.signal();
+  }
 });
 
 onUnmounted(() => {
@@ -206,7 +204,7 @@ onUnmounted(() => {
       </div>
     </transition>
 
-    <!-- 流向信息窗口（北向南 + 经十路东西入口） -->
+    <!-- 核心问题路段流量信息窗口（奥体西路·北向南） -->
     <FlowInfoWindow
       v-for="(win, i) in allWindows"
       :key="win.id"

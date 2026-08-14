@@ -595,8 +595,8 @@ export function createAct2MapFx({ project: _project } = {}) {
   group.add(labelGroup);
   const labelMats = [];
   const axisLabels = [
-    { text: '奥体西路', pos: { x: CORRIDOR_CENTER.x + 34, z: CORRIDOR_CENTER.z } },
-    { text: '奥体西路', pos: { x: CORRIDOR_CENTER.x - 34, z: CORRIDOR_CENTER.z } },
+    // 奥体西路：仅保留右侧一份（左侧删除），并向左微调靠近走廊
+    { text: '奥体西路', pos: { x: CORRIDOR_CENTER.x + 15, z: CORRIDOR_CENTER.z + 10 } },
     { text: '经十路', pos: { x: JINGSHI.x + 40, z: JINGSHI.z } },
     { text: '经十路', pos: { x: JINGSHI.x - 40, z: JINGSHI.z } },
   ];

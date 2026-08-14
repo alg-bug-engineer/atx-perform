@@ -1061,7 +1061,7 @@ function startAct1CorridorDive() {
   if (!camera || !controls) return;
 
   const { x: tx, y: ty } = resolveLiveTargetWorld();
-  // 干线尺度高度（介于全域 1600 与路口特写 160 之间，对齐 SceneE 廊道气质）
+  // 干线尺度高度（介于全域 1600 与路口特写 110 之间，对齐 SceneE 廊道气质）
   const endH = 540;
   const southBias = 110;
 
@@ -2056,8 +2056,10 @@ function ensureAct2FlyToTarget(onArrive) {
   }
   _act2Cam.done.flyIn = true;
   const tw = act2Fx.getTargetWorld();
-  // SceneC：startFly(tx, 160, tz+70, tx, tz) — 从 Act1 结束位连续飞入
-  startAct2Fly(tw.x, 160, tw.z + 70, tw.x, tw.z, onArrive);
+  // SceneC：startFly(tx, 110, tz+70, tx, tz) — 从 Act1 结束位连续飞入
+  // 向北微调：相机与目标同步北移，取景整体偏向坤顺上游（世界 z 向南为正，北 = -z）
+  const northBias = -10;
+  startAct2Fly(tw.x, 110, tw.z + 70 - northBias, tw.x, tw.z - northBias, onArrive);
 }
 
 function onAct2ChannelArrive() {
