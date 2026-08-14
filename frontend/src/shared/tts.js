@@ -99,22 +99,66 @@ export function isTtsPlaybackActive() {
  * 兼容 baseline speak(text) 签名：无本地文件时只回调 onEnd。
  * 本项目优先用 playAudio(url)。
  */
-export function speak(text, { onStart, onEnd } = {}) {
+export function speak(text, { onStart, onEnd, fallbackMs = 0 } = {}) {
   if (!text) {
     onEnd?.()
     return () => {}
   }
-  speaking = true
-  onStart?.()
+
+  const synth = typeof window !== 'undefined' ? window.speechSynthesis : null
+
+  let finished = false
   const finish = () => {
+    if (finished) return
+    finished = true
     speaking = false
     onEnd?.()
   }
-  // 无音频 URL 时按字数估时，保证字幕节奏仍可用
-  const ms = Math.min(12000, Math.max(1800, String(text).length * 220))
-  const t = setTimeout(finish, ms)
+
+  // 浏览器原生 TTS 不可用：静默按字数推进，保证字幕节奏仍可用
+  if (!synth) {
+    speaking = true
+    onStart?.()
+    const ms = Math.min(12000, Math.max(1800, String(text).length * 220))
+    const t = setTimeout(finish, ms)
+    return () => {
+      clearTimeout(t)
+      finish()
+    }
+  }
+
+  const utter = new SpeechSynthesisUtterance(text)
+  utter.lang = 'zh-CN'
+  utter.rate = 1
+  utter.pitch = 1
+  // 优先选中文语音（部分浏览器首次 getVoices 为空，lang 兜底）
+  const zh = (synth.getVoices() || []).find((v) => /zh|cmn|chinese/i.test(v.lang))
+  if (zh) utter.voice = zh
+
+  let fallbackTimer = null
+  const done = () => {
+    if (finished) return
+    finished = true
+    if (fallbackTimer) clearTimeout(fallbackTimer)
+    speaking = false
+    onEnd?.()
+  }
+
+  utter.onstart = () => {
+    speaking = true
+    onStart?.()
+  }
+  utter.onend = done
+  utter.onerror = done
+
+  // 兜底：按字数估算 + 缓冲，防止语音卡住不触发 onend 导致幕间卡死
+  const estimatedMs = Math.min(20000, Math.max(2000, String(text).length * 220))
+  fallbackTimer = setTimeout(done, Math.max(Number(fallbackMs) || 0, estimatedMs) + 1500)
+
+  synth.speak(utter)
+
   return () => {
-    clearTimeout(t)
-    finish()
+    done()
+    try { synth.cancel() } catch { /* ignore */ }
   }
 }

@@ -1,20 +1,33 @@
 {
   "meta": {
     "note": "幕 3/3b/4/5 讲解：贴合 origin-analysis，整场 1–1.5 分钟内不抢戏；每幕一句要点。",
-    "voice": "Neil",
-    "model": "qwen3-tts-flash-realtime",
+    "voice": "longanlufeng",
+    "model": "qwen-audio-3.0-tts-plus",
     "sample_rate": 24000,
     "language": "Chinese",
     "target_chars_per_sec": 4.5,
     "duration_budget_sec": {
+      "1": "12-16",
       "3": "12-16",
       "3b": "10-14",
       "4": "8-12",
       "5": "6-10",
-      "total": "38-50"
+      "total": "50-64"
     }
   },
   "scenes": {
+    "1": {
+      "scene_key": "1",
+      "title": "问题定位",
+      "segments": [
+        {
+          "id": "s1-main",
+          "file": "scene1/s1-main.wav",
+          "approx_sec": 17,
+          "text": "已锁定经十路与奥体西路北入口，晚高峰北向南直行排队外溢，车流量五百二十辆每小时，排队二百七十米、排队比零点七三，延误指数五点二八、拥堵指数一点三二，问题定位完成。"
+        }
+      ]
+    },
     "3": {
       "scene_key": "3",
       "title": "优化方案",

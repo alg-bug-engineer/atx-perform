@@ -114,51 +114,36 @@ class _Collector:
         return b"".join(self.chunks)
 
 
-def synthesize(text: str, *, voice: str, model: str, sample_rate: int, mode: str) -> bytes:
-    import dashscope
-    from dashscope.audio.qwen_tts_realtime import (
-        AudioFormat,
-        QwenTtsRealtime,
-        QwenTtsRealtimeCallback,
-    )
+def synthesize(text: str, *, voice: str, model: str, base_url: str) -> bytes:
+    """通过百炼 MaaS 原生 SpeechSynthesizer 端点（非 WebSocket）合成，返回 WAV 字节。"""
+    import requests
 
     api_key = (
-        os.environ.get("DASHSCOPE_API_KEY")
-        or os.environ.get("QWEN_API_KEY")
+        os.environ.get("QWEN_API_KEY")
+        or os.environ.get("DASHSCOPE_API_KEY")
         or os.environ.get("VITE_QWEN_TTS_API_KEY")
     )
     if not api_key:
-        raise RuntimeError("缺少 DASHSCOPE_API_KEY / QWEN_API_KEY")
+        raise RuntimeError("缺少 QWEN_API_KEY / DASHSCOPE_API_KEY")
 
-    dashscope.api_key = api_key
-    collector = _Collector(QwenTtsRealtimeCallback)
-    workspace = os.environ.get("QWEN_TTS_WORKSPACE_ID") or None
-    client = QwenTtsRealtime(
-        model=model,
-        callback=collector.callback,
-        workspace=workspace or None,
+    url = f"{base_url.rstrip('/')}/api/v1/services/audio/tts/SpeechSynthesizer"
+    resp = requests.post(
+        url,
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"model": model, "input": {"text": text, "voice": voice}},
+        timeout=60,
     )
-    try:
-        client.connect()
-        kwargs: dict[str, Any] = {
-            "voice": voice,
-            "response_format": AudioFormat.PCM_24000HZ_MONO_16BIT,
-            "mode": mode,
-            "language_type": "Chinese",
-        }
-        if sample_rate != 24000:
-            kwargs["sample_rate"] = sample_rate
-        client.update_session(**kwargs)
-        client.append_text(text)
-        if mode == "commit":
-            client.commit()
-        pcm = collector.wait(timeout=45.0)
-        client.finish()
-        if not pcm:
-            raise RuntimeError("empty PCM")
-        return pcm
-    finally:
-        client.close()
+    if resp.status_code != 200:
+        raise RuntimeError(f"TTS 合成失败 {resp.status_code}: {resp.text[:300]}")
+    payload = resp.json()
+    audio_url = payload.get("output", {}).get("audio", {}).get("url")
+    if not audio_url:
+        raise RuntimeError(f"TTS 响应无音频 URL: {resp.text[:300]}")
+
+    audio_resp = requests.get(audio_url, timeout=60)
+    if audio_resp.status_code != 200:
+        raise RuntimeError(f"下载音频失败 {audio_resp.status_code}")
+    return audio_resp.content
 
 
 def main() -> int:
@@ -177,10 +162,10 @@ def main() -> int:
 
     data = json.loads(SCRIPTS.read_text(encoding="utf-8"))
     meta = data["meta"]
-    voice = os.environ.get("QWEN_TTS_VOICE") or meta.get("voice") or "Neil"
-    model = os.environ.get("QWEN_TTS_MODEL") or meta.get("model") or "qwen3-tts-flash-realtime"
+    voice = os.environ.get("QWEN_TTS_VOICE") or meta.get("voice") or "longanlufeng"
+    model = os.environ.get("QWEN_TTS_MODEL") or meta.get("model") or "qwen-audio-3.0-tts-plus"
+    base_url = os.environ.get("QWEN_TTS_BASE_URL") or "https://token-plan.cn-beijing.maas.aliyuncs.com"
     sample_rate = int(os.environ.get("QWEN_TTS_SAMPLE_RATE") or meta.get("sample_rate") or 24000)
-    mode = os.environ.get("QWEN_TTS_MODE") or "commit"
 
     scenes = data["scenes"]
     keys = [args.scene] if args.scene else sorted(scenes.keys())
@@ -213,14 +198,13 @@ def main() -> int:
                 rows.append({**seg, "duration_sec": None, "chars": chars})
                 continue
 
-            pcm = synthesize(
+            audio = synthesize(
                 seg["text"],
                 voice=voice,
                 model=model,
-                sample_rate=sample_rate,
-                mode=mode,
+                base_url=base_url,
             )
-            out.write_bytes(pcm_to_wav(pcm, sample_rate=sample_rate))
+            out.write_bytes(audio)
             dur = round(wav_duration_sec(out), 2)
             print(f"  wrote {out.stat().st_size} bytes · {dur}s")
             rows.append({**seg, "duration_sec": dur, "chars": chars})

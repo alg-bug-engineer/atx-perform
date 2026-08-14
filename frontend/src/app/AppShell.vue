@@ -4,6 +4,8 @@ import { sceneRegistry, getSceneByKey } from '../shared/scene-registry.js'
 import { useSceneRoute } from '../shared/useSceneRoute.js'
 import { playSceneNarration } from '../shared/sceneNarration.js'
 import { broadcastSilent } from '../shared/broadcast-bus.js'
+import { narrativeState } from '../shared/narrative-state.js'
+import { onBeatChanged } from '../shared/act-voice.js'
 import DigitalAvatar from '../shared/components/DigitalAvatar.vue'
 import AppChrome from './AppChrome.vue'
 
@@ -18,6 +20,18 @@ watch(activeSceneKey, (key) => {
   document.title = `奥体西绩效可视化 · ${getSceneByKey(key).name}`
   playSceneNarration(key)
 }, { immediate: true })
+
+// 叙事口播：幕内 beat 变化 → act-voice 词槽填充 → 入队播报
+// （原 ActLoopShell 随废弃的 MainLayout 不再挂载，此处补回该职责）
+watch(
+  () => narrativeState.beatId,
+  (beatId, prev) => {
+    if (!beatId || beatId === prev) return
+    // 幕 1（a1.* / a2.*）已改由 sceneNarration 预合成 WAV 播报，跳过逐句 speechSynthesis
+    if (/^a[12]\./.test(beatId)) return
+    onBeatChanged(beatId)
+  },
+)
 </script>
 
 <template>
