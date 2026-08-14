@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 生产壳层：大字报标题 + 顶部步骤栏 + 执行状态
- * 步骤栏覆盖全部幕（含 3b 信控方案调节），点选或 ← / → 切幕，与 ?scene= 调试路由同源。
+ * 步骤栏覆盖幕 0–5，点选或 ← / → 切幕，与 ?scene= 调试路由同源。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
@@ -34,7 +34,6 @@ const STATUS_LABEL = {
   1: '问题定位',
   2: '成因研判',
   3: '方案生成',
-  '3b': '信控配时',
   4: '效果评估',
   5: '技能固化',
 }
@@ -43,7 +42,7 @@ const statusLabel = computed(
   () => STATUS_LABEL[props.activeKey] || activeScene.value?.name || '执行中',
 )
 
-/** 编号直接用幕 key，和 ?scene= 调试参数对得上；3b 为幕 3 的子步 */
+/** 编号直接用幕 key，和 ?scene= 调试参数对得上 */
 const steps = computed(() =>
   props.scenes.map((scene, i) => ({
     key: scene.key,

@@ -3,7 +3,7 @@
 Vue 3 + Vite。分幕独立调试，幕 0–5 可并行开发。
 
 - **幕 0 / 1 / 2**：three.js 3D 地图演绎（baseline 路网底图 + 走廊/溯源特效）
-- **幕 3 / 3b / 4 / 5**：面板式大屏（走廊微观仿真、配时对比、效果评估、技能固化）
+- **幕 3 / 4 / 5**：面板式大屏（相位协调时距图与相序图、效果评估、技能固化）
 
 两类幕共用同一个壳：顶部步骤栏 + `?scene=` 路由，各自只读自己的 `data/1-*.json`。
 
@@ -25,8 +25,7 @@ npm run dev
 | `?scene=0` | 开幕 | 3D · 城市扫描 → 问题路段标红闪烁 → 拉近镜头 |
 | `?scene=1` | 问题定位 | 3D · 走廊揭示 + 高德式路况 + 指标卡 + 双路口渠化 |
 | `?scene=2` 或 `?scene=cause` | 分析成因 | 3D 原生幕 · 上游 3 跳流量溯源 → 供需 → 绿灯约束 → 溢流 |
-| `?scene=3` 或 `?scene=plan` | 优化方案 | 面板 |
-| `?scene=3b` 或 `?scene=signal` | 信控方案调节 | 面板 |
+| `?scene=3` 或 `?scene=plan` | 优化方案 | 面板（时距图 + 相位相序；`3b` / `signal` 别名仍进本幕） |
 | `?scene=4` 或 `?scene=effect` | 效果评估 | 面板 |
 | `?scene=5` 或 `?scene=skill` | 技能固化 | 面板 |
 
@@ -39,8 +38,8 @@ src/app/AppChrome.vue              # 大字报标题 + 步骤栏 + 执行状态
 src/scenes/scene0-opening/         # 挂 MapRuntime（idle 开幕）
 src/scenes/scene1-problem-locate/  # 挂 TrafficOriginScene + act-01，另补双路口渠化
 src/scenes/scene2-cause-analysis/  # 挂 TrafficOriginScene + act-02（原生流量溯源）
-src/scenes/scene3-optimization/    # 对齐 agent-loop act-08 方案生成
-src/scenes/scene3b-signal-plan/    # 干线协调配时 / 绿波时距图
+src/scenes/scene3-optimization/    # 幕 3 优化方案：两口时距图 + 相位相序图
+src/scenes/scene3b-signal-plan/    # 阶段渠化 SVG 等被幕 3 复用，不再单独占步骤栏
 src/scenes/scene4-effect-eval/     # 对齐 TrialEffect*
 src/scenes/scene5-skill-solidify/  # 对齐 SkillBuild*
 src/shared/components/SceneStage.vue   # 面板幕通用外框
@@ -67,7 +66,7 @@ src/features/**  src/layers/**  src/mesh/**  src/geo/**   # 3D 运行时（幕 0
 ## 口播 / 字幕
 
 默认关闭（`broadcastSilent`）：开发阶段只做地图与面板动作，避免播报卡住面板揭示顺序。
-需要幕 3/3b/4/5 的预合成讲解与数字人字幕时，在 `frontend/.env.local` 里设 `VITE_TTS_ENABLED=true`。
+需要幕 3/4/5 的预合成讲解与数字人字幕时，在 `frontend/.env.local` 里设 `VITE_TTS_ENABLED=true`。
 
 ## 幕间流转
 

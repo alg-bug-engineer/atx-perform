@@ -23,15 +23,9 @@ export const sceneRegistry = [
   },
   {
     key: '3',
-    aliases: ['plan', 'optimization'],
+    aliases: ['plan', 'optimization', 'signal', 'timing', '3b'],
     name: '优化方案',
     component: () => import('../scenes/scene3-optimization/Scene3Optimization.vue'),
-  },
-  {
-    key: '3b',
-    aliases: ['signal', 'timing'],
-    name: '信控方案调节',
-    component: () => import('../scenes/scene3b-signal-plan/Scene3bSignalPlan.vue'),
   },
   {
     key: '4',

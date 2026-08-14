@@ -10,10 +10,13 @@ const { setScene } = useSceneRoute()
 const loading = ref(true)
 const error = ref('')
 const payload = ref(null)
+const signalPlan = ref(null)
 
 onMounted(async () => {
   try {
-    payload.value = (await loadScene3Data()).optimization
+    const bundle = await loadScene3Data()
+    payload.value = bundle.optimization
+    signalPlan.value = bundle.signalPlan
   } catch (e) {
     error.value = e?.message || String(e)
   } finally {
@@ -29,10 +32,10 @@ onMounted(async () => {
     :ready="Boolean(payload)"
     data-testid="scene3-optimization"
   >
-    <PlanComparePanel v-if="payload" :payload="payload" />
+    <PlanComparePanel v-if="payload" :payload="payload" :signal-plan="signalPlan" />
 
     <template #foot>
-      <button type="button" class="btn primary" @click="setScene('3b')">看信控方案调节</button>
+      <button type="button" class="btn primary" @click="setScene('4')">试点后看效果评估</button>
     </template>
   </SceneStage>
 </template>
