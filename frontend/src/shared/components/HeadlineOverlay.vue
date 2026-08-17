@@ -45,8 +45,7 @@ watch(
   bottom: 92px;
   transform: translateX(-50%);
   z-index: 39;
-  /* 避开左下推理细条（宽 340 + 边距），窄屏不重叠 */
-  max-width: min(720px, calc(100vw - 480px));
+  max-width: min(720px, calc(100vw - 360px));
   padding: 14px 30px 12px;
   text-align: center;
   background: linear-gradient(

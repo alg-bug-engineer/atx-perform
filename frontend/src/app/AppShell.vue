@@ -80,13 +80,6 @@ onUnmounted(() => {
     <!-- 数字人 / 口播字幕：默认关闭，避免卡住面板揭示顺序；VITE_TTS_ENABLED=true 时再挂上 -->
     <DigitalAvatar v-if="!broadcastSilent" />
 
-    <!-- 空格暂停提示：本幕结束后暂停 / 已暂停待继续 -->
-    <Transition name="hint-fade">
-      <div v-if="playbackHint" class="pause-hint" data-testid="playback-hint">
-        <span class="ph-dot" />
-        <span>{{ playbackHint }}</span>
-      </div>
-    </Transition>
   </div>
 </template>
 

@@ -8,12 +8,11 @@
  *   upstream    指标窗撤下，镜头沿走廊扫视，上游汇入箭头强调
  *   conclusion  三路口同框收束 + 诊断对象锚点 + 大字报「问题定位完成」
  *
- * 侧板降级为过程信息：左卡紧凑模式（工单→空间对象），
- * 推理面板缩为左下细条；语音播完即交棒，无尾部干等。
+ * 侧板降级为过程信息：左卡紧凑模式（工单→空间对象）；
+ * 语音播完即交棒，无尾部干等。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import TicketSpatialCard from './TicketSpatialCard.vue';
-import LocateReasoningPanel from './LocateReasoningPanel.vue';
 import FlowInfoWindow from './FlowInfoWindow.vue';
 import HeadlineOverlay from '../../../shared/components/HeadlineOverlay.vue';
 import { createReadyGate, runExitBarrier } from '../../../shared/act-timing.js';
@@ -53,13 +52,6 @@ const leftVisible = computed(
     || act2Phase.value === 'handoff',
 );
 const leftMode = computed(() => (corridorRevealed.value ? 'spatial' : 'ticket'));
-
-const rightVisible = computed(
-  () => act1Phase.value === 'parsing'
-    || act1Phase.value === 'ticket_ready'
-    || act2Phase.value === 'locating'
-    || act2Phase.value === 'confirming',
-);
 
 // ── 指挥家状态 ─────────────────────────────────────────────────────
 const headline = ref(null);              // 大字报（每拍一条要点）
@@ -193,16 +185,6 @@ onUnmounted(() => {
       </aside>
     </transition>
 
-    <!-- 左下细条：两阶段推理过程（降级，不抢地图主角） -->
-    <transition name="dock-fade">
-      <aside v-if="rightVisible" class="act-dock act-dock-reason">
-        <LocateReasoningPanel
-          @parse-done="() => {}"
-          @locate-done="() => {}"
-        />
-      </aside>
-    </transition>
-
     <!-- 地图结论锚点：诊断对象 -->
     <transition name="anchor-fade">
       <div v-if="showAnchor" class="map-anchor">
@@ -260,16 +242,6 @@ onUnmounted(() => {
   top: 96px;
   left: 24px;
   width: 240px;
-}
-
-/* 推理面板降级为左下细条 */
-.act-dock-reason {
-  left: 24px;
-  bottom: 26px;
-  top: auto;
-  width: 340px;
-  max-height: 34vh;
-  font-size: 12px;
 }
 
 .map-anchor {
