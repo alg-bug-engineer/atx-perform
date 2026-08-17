@@ -6,10 +6,9 @@ import * as THREE from 'three';
 
 const LABEL_DPR = 2;
 
-export function createRoadNameLabel(text, { accent = '#7ee9ff' } = {}) {
-  const fontSize = 32;
-  const padX = 10;
-  const padY = 8;
+export function createRoadNameLabel(text, { accent = '#7ee9ff', fontSize = 22 } = {}) {
+  const padX = 8;
+  const padY = 6;
   const font = `600 ${fontSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
   const label = String(text || '');
 
@@ -66,7 +65,7 @@ export function createRoadNameLabel(text, { accent = '#7ee9ff' } = {}) {
     sizeAttenuation: true,
   });
   const sprite = new THREE.Sprite(mat);
-  const scale = 0.24;
+  const scale = 0.2;
   sprite.scale.set(cssW * scale, cssH * scale, 1);
   sprite.frustumCulled = false;
   sprite.renderOrder = 60;

@@ -48,11 +48,10 @@ export function buildTrialEffectSeries(payload = {}) {
   const n = Math.max(1, Math.round(num(trial.cycles, null) ?? num(trial.observation_cycles, 5)))
   const storage = num(baselineIn.storage_length_m, 367.89)
   const queue0 = num(baselineIn.queue_length_m, 270)
-  const queueStart = num(targets.start_queue_length_m, null)
-    ?? (num(targets.start_queue_ratio, null) != null ? round1(storage * targets.start_queue_ratio) : null)
-    ?? queue0
-  const ratioStart = calculateQueueRatio(queueStart, storage)
-    ?? num(targets.start_queue_ratio, queueStart / storage)
+  const queueStart = num(targets.start_queue_length_m, null) ?? queue0
+  const ratioStart = num(targets.start_queue_ratio, null)
+    ?? calculateQueueRatio(queueStart, storage)
+    ?? (storage > 0 ? queueStart / storage : 0)
   const speed0 = num(baselineIn.avg_speed_kmh, 7.2)
   const delay0 = num(baselineIn.delay_index, 5.28)
   const green0 = num(baselineIn.green_utilization, 0.62)
@@ -61,8 +60,8 @@ export function buildTrialEffectSeries(payload = {}) {
   // 下游吃满时堵在解放东路口内进不来的车，取自幕 3 仿真 KPI；与上游进口排队比是两个口径
   const upBlocked0 = num(baselineIn.upstream_blocked_veh, null)
 
-  const endRatio = num(targets.end_queue_ratio, Math.min(0.55, Math.max(0.4, ratioStart - 0.25)))
-  const endQueue = round1(storage * endRatio)
+  const endRatio = num(targets.end_queue_ratio, Math.min(0.55, Math.max(0.4, ratioStart - 0.32)))
+  const endQueue = num(targets.end_queue_length_m, null) ?? round1(storage * endRatio)
   const endSpeed = num(targets.end_speed_kmh, 22)
   const endDelay = num(targets.end_delay_index, 2.1)
   const endGreen = num(targets.end_green_utilization, 0.72)
@@ -74,7 +73,7 @@ export function buildTrialEffectSeries(payload = {}) {
     const t = n === 1 ? 1 : i / (n - 1)
     const ease = smoothstep(t)
     const queueLength = round1(lerp(queueStart, endQueue, ease))
-    const queueRatio = calculateQueueRatio(queueLength, storage) ?? 0
+    const queueRatio = round4(lerp(ratioStart, endRatio, ease))
     const avgSpeed = round1(lerp(speed0, endSpeed, ease))
     const delayIndex = round4(lerp(delay0, endDelay, ease))
     const greenUtil = round4(lerp(green0, endGreen, ease))
@@ -208,7 +207,8 @@ export function fmtMeters(v) {
 
 export function fmtRatio2(v) {
   if (v == null || !Number.isFinite(v)) return '—'
-  return (Math.round(v * 100) / 100).toFixed(2)
+  const rounded = Math.round(v * 100) / 100
+  return String(rounded)
 }
 
 export function fmtPct(v) {

@@ -47,9 +47,9 @@ const TASK_LABEL_BY_PHASE = {
 
 /**
  * 幕 2 HUD 状态（地图特效工厂 emitHud 输出 → 舞台组件渲染）
- * @type {import('vue').Ref<{ phase: string, caption: string, text: string, panel: object|null }>}
+ * @type {import('vue').Ref<{ phase: string, caption: string, text: string, headline: string, panel: object|null }>}
  */
-export const flowTraceHud = ref({ phase: '', caption: '', text: '', panel: null });
+export const flowTraceHud = ref({ phase: '', caption: '', text: '', headline: '', panel: null });
 
 /** 写入 HUD 状态；phase 变化时同步口播 beat */
 export function setFlowTraceHud(state) {
@@ -61,7 +61,7 @@ export function setFlowTraceHud(state) {
 }
 
 export function resetFlowTraceHud() {
-  flowTraceHud.value = { phase: '', caption: '', text: '', panel: null };
+  flowTraceHud.value = { phase: '', caption: '', text: '', headline: '', panel: null };
 }
 
 export function requestFlowTraceReplay() {

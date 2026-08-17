@@ -133,6 +133,10 @@ function captionFor(beats, key, fallback) {
   return beats?.[key]?.caption || fallback;
 }
 
+function headlineFor(beats, key, fallback) {
+  return beats?.[key]?.headline || fallback;
+}
+
 function beatMs(beats, key, fallback) {
   const n = Number(beats?.[key]?.ms);
   return Number.isFinite(n) ? n : fallback;
@@ -506,6 +510,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
       phase: 'trace',
       caption: captionFor(beats, 'trace', flowTrace.trace_hint || '正在进行问题路段流量溯源'),
       text: captionFor(beats, 'trace', flowTrace.trace_hint || '正在进行问题路段流量溯源'),
+      headline: headlineFor(beats, 'trace', '流量由北向南汇入经十路口'),
       panel: { kind: 'trace', title: '流量溯源' },
     });
 
@@ -521,6 +526,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
         phase: 'supply',
         caption: captionFor(beats, 'supply', '当前通行量低于车道能力上限，本段仍有承接余量'),
         text: captionFor(beats, 'supply', '当前通行量低于车道能力上限，本段仍有承接余量'),
+        headline: headlineFor(beats, 'supply', '本路段通行能力仍有余量'),
         panel: {
           kind: 'supply',
           title: ds.title || '路段供需核验',
@@ -560,6 +566,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
               'downstream',
               '北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向',
             ),
+            headline: headlineFor(beats, 'downstream', '下游通道具备承接余量'),
             panel: {
               kind: 'downstream',
               title: '下游关联去向',
@@ -602,6 +609,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                 phase: 'arterial',
                 caption: captionFor(beats, 'arterial', '经十路东西向通行压力突出，信号优先保障主干道通行'),
                 text: captionFor(beats, 'arterial', '经十路东西向通行压力突出，信号优先保障主干道通行'),
+                headline: headlineFor(beats, 'arterial', '经十路东西向优先保障'),
                 panel: {
                   kind: 'arterial',
                   title: '经十路主干道保护',
@@ -618,6 +626,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                   phase: 'signal',
                   caption: captionFor(beats, 'signal', '受主干道优先约束，当前周期内难以释放北向南有效绿灯窗口'),
                   text: captionFor(beats, 'signal', '受主干道优先约束，当前周期内难以释放北向南有效绿灯窗口'),
+                  headline: headlineFor(beats, 'signal', '北向南难以增配有效绿灯'),
                   panel: {
                     kind: 'signal',
                     title: '绿灯约束',
@@ -635,6 +644,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                     phase: 'overflow',
                     caption: captionFor(beats, 'overflow', '北向南车流短时难以消散，溢流风险成立'),
                     text: captionFor(beats, 'overflow', '北向南车流短时难以消散，溢流风险成立'),
+                    headline: headlineFor(beats, 'overflow', '北向南溢流风险成立'),
                     panel: {
                       kind: 'overflow',
                       title: '溢流风险',

@@ -58,6 +58,12 @@ watch(flowTraceHud, (state) => applyDockPanel(state), { deep: true, immediate: t
 
 const isDone = computed(() => flowTracePhase.value === 'done');
 
+const headline = computed(() => {
+  const phase = flowTraceHud.value.phase;
+  if (!phase || phase === 'error' || phase === 'boot') return '';
+  return flowTraceHud.value.headline || '';
+});
+
 function formatMetric(v, digits = 1) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '—';
@@ -132,6 +138,10 @@ onUnmounted(() => {
         </template>
       </div>
     </aside>
+
+    <transition name="headline-fade" mode="out-in">
+      <p v-if="headline" :key="headline" class="beat-headline">{{ headline }}</p>
+    </transition>
 
     <!-- 操作：重播溯源 -->
     <div class="trace-actions">
@@ -234,6 +244,40 @@ onUnmounted(() => {
 
 .dock-hero.warn {
   color: #ff8a3a;
+}
+
+.beat-headline {
+  position: absolute;
+  left: 50%;
+  bottom: 48px;
+  transform: translateX(-50%);
+  z-index: 42;
+  margin: 0;
+  padding: 10px 28px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  line-height: 1.35;
+  color: #00e5ff;
+  text-shadow:
+    0 0 14px rgba(0, 229, 255, 0.85),
+    0 0 28px rgba(0, 229, 255, 0.35);
+  background: rgba(4, 12, 30, 0.82);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.headline-fade-enter-active,
+.headline-fade-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+.headline-fade-enter-from,
+.headline-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
 }
 
 .trace-actions {

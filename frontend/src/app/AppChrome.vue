@@ -91,7 +91,6 @@ onUnmounted(() => {
     <div class="banner">
       <h1 class="title-main">奥体西绩效可视化</h1>
       <div class="banner-right">
-        <span class="route-hint">?scene={{ activeKey }}</span>
         <time class="clock" :datetime="nowText">{{ nowText }}</time>
       </div>
     </div>
@@ -157,12 +156,6 @@ onUnmounted(() => {
   align-items: baseline;
   gap: 14px;
   white-space: nowrap;
-}
-
-.route-hint {
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: rgba(160, 200, 220, 0.5);
 }
 
 .clock {

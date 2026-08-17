@@ -2,10 +2,14 @@
 import { computed } from 'vue';
 import CityMonitorPanel from './CityMonitorPanel.vue';
 import CityMonitorMetricsCard from './CityMonitorMetricsCard.vue';
+import DiagnosisInput from './DiagnosisInput.vue';
 import {
   cityMonitorReveal,
   cityMonitorSelection,
 } from '../../shared/home-idle-state.js';
+import { useSceneRoute } from '../../shared/useSceneRoute.js';
+
+const { setScene } = useSceneRoute();
 
 const showCityMonitor = computed(() => cityMonitorReveal.value);
 const showMonitorScanning = computed(() => !cityMonitorReveal.value);
@@ -14,6 +18,10 @@ const showIntersectionMetrics = computed(() => {
   const t = cityMonitorSelection.value?.type;
   return t === 'intersection' || t === 'corridor';
 });
+
+function onDiagnosisSubmit() {
+  setTimeout(() => setScene('1'), 720);
+}
 </script>
 
 <template>
@@ -37,9 +45,7 @@ const showIntersectionMetrics = computed(() => {
       </div>
     </transition>
 
-    <div class="launcher-row">
-      <button type="button" class="diag-launcher muted">交通诊断</button>
-    </div>
+    <DiagnosisInput @submit="onDiagnosisSubmit" />
   </div>
 </template>
 
@@ -121,34 +127,6 @@ const showIntersectionMetrics = computed(() => {
     opacity: 1;
     transform: scale(1.15);
   }
-}
-
-.launcher-row {
-  position: absolute;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  z-index: 50;
-  display: flex;
-  gap: 12px;
-  pointer-events: auto;
-}
-
-.diag-launcher {
-  border: 1px solid rgba(0, 212, 240, 0.45);
-  background: rgba(4, 14, 26, 0.88);
-  color: #00d4f0;
-  font-size: 12px;
-  letter-spacing: 2px;
-  padding: 10px 22px;
-  cursor: pointer;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-}
-
-.diag-launcher.muted {
-  cursor: default;
-  opacity: 0.72;
 }
 
 .dock-fade-enter-active,
