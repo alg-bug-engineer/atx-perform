@@ -4,43 +4,48 @@
  */
 import * as THREE from 'three';
 
+const LABEL_DPR = 2;
+
 export function createRoadNameLabel(text, { accent = '#7ee9ff' } = {}) {
-  const fontSize = 26;
-  const padX = 8;
-  const padY = 6;
-  const font = `500 ${fontSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  const fontSize = 32;
+  const padX = 10;
+  const padY = 8;
+  const font = `600 ${fontSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  const label = String(text || '');
 
   const measure = document.createElement('canvas').getContext('2d');
   measure.font = font;
-  const tw = Math.ceil(measure.measureText(String(text || '')).width);
+  const tw = Math.ceil(measure.measureText(label).width);
 
+  const cssW = tw + padX * 2 + 8;
+  const cssH = fontSize + padY * 2 + 12;
   const canvas = document.createElement('canvas');
-  canvas.width = tw + padX * 2 + 8;
-  canvas.height = fontSize + padY * 2 + 10;
+  canvas.width = Math.round(cssW * LABEL_DPR);
+  canvas.height = Math.round(cssH * LABEL_DPR);
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(LABEL_DPR, 0, 0, LABEL_DPR, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2 - 1;
-  const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, canvas.width * 0.55);
+  const cx = cssW / 2;
+  const cy = cssH / 2 - 1;
+  const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, cssW * 0.55);
   glow.addColorStop(0, 'rgba(0, 40, 60, 0.35)');
   glow.addColorStop(1, 'rgba(0, 20, 40, 0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, cssW, cssH);
 
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(4, 14, 26, 0.75)';
-  ctx.strokeText(text, cx, cy);
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(4, 14, 26, 0.82)';
+  ctx.strokeText(label, cx, cy);
   ctx.fillStyle = accent;
-  ctx.shadowColor = 'rgba(0, 212, 240, 0.55)';
-  ctx.shadowBlur = 8;
-  ctx.fillText(text, cx, cy);
-  ctx.shadowBlur = 0;
+  ctx.fillText(label, cx, cy);
 
-  ctx.strokeStyle = 'rgba(0, 212, 240, 0.35)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(0, 212, 240, 0.4)';
+  ctx.lineWidth = 1.25;
   ctx.beginPath();
   ctx.moveTo(cx - tw * 0.45, cy + fontSize * 0.55);
   ctx.lineTo(cx + tw * 0.45, cy + fontSize * 0.55);
@@ -48,6 +53,10 @@ export function createRoadNameLabel(text, { accent = '#7ee9ff' } = {}) {
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
   const mat = new THREE.SpriteMaterial({
     map: tex,
     transparent: true,
@@ -57,8 +66,8 @@ export function createRoadNameLabel(text, { accent = '#7ee9ff' } = {}) {
     sizeAttenuation: true,
   });
   const sprite = new THREE.Sprite(mat);
-  const scale = 0.22;
-  sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
+  const scale = 0.24;
+  sprite.scale.set(cssW * scale, cssH * scale, 1);
   sprite.frustumCulled = false;
   sprite.renderOrder = 60;
   sprite.center.set(0.5, 0.5);

@@ -15,7 +15,7 @@ import { gateSceneAdvance } from '../../shared/act-playback.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
 import { SCENE_META } from './index.js'
 
-const { setScene } = useSceneRoute()
+const { setScene, advanceScene } = useSceneRoute()
 
 /** 等地图与 flowTraceFx 就位再挂舞台，否则首拍 trace 会被丢掉 */
 const mapReady = ref(false)
@@ -63,9 +63,10 @@ onBeforeUnmount(() => {
   display: none;
 }
 
-/* 运行时原本给自带 HUD 留的顶距，这里由步骤栏承担，收回给内容 */
+/* 视口已在步骤栏下方；覆盖打到实际类名 .trace-dock，避免再留 92px 空档 */
 .scene-3d :deep(.act-dock),
-.scene-3d :deep(.scene2-dock) {
+.scene-3d :deep(.scene2-dock),
+.scene-3d :deep(.trace-dock) {
   top: 12px;
   max-height: calc(100% - 100px);
 }

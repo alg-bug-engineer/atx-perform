@@ -10,6 +10,7 @@ import {
   conclusionSpaceWaitActive,
   isTypingTarget,
   playbackHint,
+  resetPlaybackPause,
   toggleSpacePlayback,
 } from '../shared/act-playback.js'
 import DigitalAvatar from '../shared/components/DigitalAvatar.vue'
@@ -57,6 +58,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
+  resetPlaybackPause()
 })
 </script>
 

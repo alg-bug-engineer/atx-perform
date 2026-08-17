@@ -1,9 +1,11 @@
 <script setup>
 import { onMounted, onUnmounted, ref, watch } from 'vue'
-import avatarImage from '../../assets/digital_avatar_reference.png'
+import avatarImage from '../../assets/digital_avatar_officer_male.png'
 import {
   _notifyBroadcastEnd,
   _notifyBroadcastStart,
+  broadcastFrozen,
+  broadcastInterruptSeq,
   broadcastMuted,
   broadcastQueue,
 } from '../broadcast-bus.js'
@@ -22,6 +24,7 @@ const showMuteHint = ref(false)
 let typeTimer = null
 let cancelCurrentSpeak = null
 let endTimer = null
+let speakGeneration = 0
 
 function runTypewriter(text) {
   typeText.value = ''
@@ -34,7 +37,22 @@ function runTypewriter(text) {
   }, 48)
 }
 
+function hardStopSpeaking({ notifyEnd = true } = {}) {
+  speakGeneration += 1
+  cancelCurrentSpeak?.()
+  cancelCurrentSpeak = null
+  clearTimeout(endTimer)
+  clearInterval(typeTimer)
+  endTimer = null
+  isSpeaking.value = false
+  isProcessing.value = false
+  displayText.value = ''
+  typeText.value = ''
+  if (notifyEnd) _notifyBroadcastEnd()
+}
+
 async function processNext() {
+  if (broadcastFrozen.value) return
   if (isProcessing.value || broadcastQueue.length === 0) return
   isProcessing.value = true
   _notifyBroadcastStart()
@@ -51,6 +69,8 @@ async function processNext() {
   clearTimeout(endTimer)
   runTypewriter(item.text)
 
+  const gen = ++speakGeneration
+
   if (!broadcastMuted.value) {
     const player = item.audioUrl
       ? (opts) => playAudio(item.audioUrl, opts)
@@ -58,13 +78,14 @@ async function processNext() {
 
     let finished = false
     const finishItem = () => {
-      if (finished) return
+      if (finished || gen !== speakGeneration || broadcastFrozen.value) return
       finished = true
       clearTimeout(endTimer)
       isSpeaking.value = false
       isProcessing.value = false
       _notifyBroadcastEnd()
       endTimer = setTimeout(() => {
+        if (gen !== speakGeneration || broadcastFrozen.value) return
         displayText.value = ''
         typeText.value = ''
         processNext()
@@ -81,6 +102,7 @@ async function processNext() {
   } else {
     const hold = Math.min(3200, Math.max(1600, (item.text?.length || 20) * 40))
     endTimer = setTimeout(() => {
+      if (gen !== speakGeneration || broadcastFrozen.value) return
       isSpeaking.value = false
       isProcessing.value = false
       displayText.value = ''
@@ -94,9 +116,22 @@ async function processNext() {
 watch(
   () => broadcastQueue.length,
   (len) => {
-    if (len > 0 && !isProcessing.value) processNext()
+    if (len > 0 && !isProcessing.value && !broadcastFrozen.value) processNext()
   },
 )
+
+watch(broadcastInterruptSeq, () => {
+  hardStopSpeaking()
+  if (!broadcastFrozen.value && broadcastQueue.length > 0) setTimeout(processNext, 0)
+})
+
+watch(broadcastFrozen, (frozen) => {
+  if (frozen) {
+    hardStopSpeaking()
+    return
+  }
+  if (broadcastQueue.length > 0 && !isProcessing.value) processNext()
+})
 
 onMounted(() => {
   if (broadcastQueue.length > 0 && !isProcessing.value) processNext()
@@ -106,16 +141,8 @@ function toggleMute() {
   const turningOn = broadcastMuted.value
   broadcastMuted.value = !broadcastMuted.value
   if (broadcastMuted.value && isSpeaking.value) {
-    cancelCurrentSpeak?.()
-    cancelCurrentSpeak = null
-    clearTimeout(endTimer)
-    clearInterval(typeTimer)
-    isSpeaking.value = false
-    isProcessing.value = false
-    displayText.value = ''
-    typeText.value = ''
-    _notifyBroadcastEnd()
-    if (broadcastQueue.length > 0) setTimeout(processNext, 0)
+    hardStopSpeaking()
+    if (broadcastQueue.length > 0 && !broadcastFrozen.value) setTimeout(processNext, 0)
   } else if (turningOn && sceneHasNarration(activeSceneKey.value)) {
     // 用户手势开启播报：重播当前幕（解锁浏览器自动播放限制）
     playSceneNarration(activeSceneKey.value)
@@ -250,11 +277,11 @@ onUnmounted(() => {
 
 .da-officer-image {
   position: absolute;
-  top: -4px;
-  left: 50%;
-  width: 132px;
-  max-width: none;
-  transform: translateX(-50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
   filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.25));
   user-select: none;
   pointer-events: none;

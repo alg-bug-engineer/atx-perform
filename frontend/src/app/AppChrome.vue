@@ -4,6 +4,11 @@
  * 步骤栏覆盖幕 0–5，点选或 ← / → 切幕，与 ?scene= 调试路由同源。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import {
+  barrierPaused,
+  pauseAfterActRequested,
+  playbackHint,
+} from '../shared/act-playback.js'
 
 const props = defineProps({
   scenes: { type: Array, required: true },
@@ -41,6 +46,10 @@ const STATUS_LABEL = {
 const statusLabel = computed(
   () => STATUS_LABEL[props.activeKey] || activeScene.value?.name || '执行中',
 )
+
+const pausedTone = computed(() => barrierPaused.value || pauseAfterActRequested.value)
+
+const statusText = computed(() => playbackHint.value || `执行中：${statusLabel.value}`)
 
 /** 编号直接用幕 key，和 ?scene= 调试参数对得上 */
 const steps = computed(() =>
@@ -104,9 +113,10 @@ onUnmounted(() => {
         </template>
       </nav>
 
-      <div class="status-strip">
+      <div class="status-strip" :class="{ paused: pausedTone }">
         <span class="status-dot" aria-hidden="true" />
-        <span class="status-text">执行中：{{ statusLabel }}</span>
+        <span class="status-text">{{ statusText }}</span>
+        <kbd class="status-kbd" :class="{ space: pausedTone }">空格</kbd>
         <kbd class="status-kbd">← →</kbd>
       </div>
     </div>
@@ -266,6 +276,11 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
+.status-strip.paused {
+  border-color: rgba(255, 193, 74, 0.55);
+  background: rgba(18, 14, 8, 0.88);
+}
+
 .status-dot {
   width: 7px;
   height: 7px;
@@ -273,6 +288,12 @@ onUnmounted(() => {
   background: var(--cyan);
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
   animation: blink 1.1s ease-in-out infinite;
+}
+
+.status-strip.paused .status-dot {
+  background: #ffc14a;
+  box-shadow: 0 0 8px rgba(255, 193, 74, 0.55);
+  animation: none;
 }
 
 .status-text {
@@ -289,6 +310,11 @@ onUnmounted(() => {
   border: 1px solid rgba(160, 200, 220, 0.28);
   border-radius: 2px;
   padding: 0 5px;
+}
+
+.status-kbd.space {
+  color: rgba(255, 193, 74, 0.95);
+  border-color: rgba(255, 193, 74, 0.45);
 }
 
 @keyframes blink {

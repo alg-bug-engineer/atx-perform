@@ -151,9 +151,21 @@ export function speak(text, { onStart, onEnd, fallbackMs = 0 } = {}) {
   utter.onend = done
   utter.onerror = done
 
-  // 兜底：按字数估算 + 缓冲，防止语音卡住不触发 onend 导致幕间卡死
-  const estimatedMs = Math.min(20000, Math.max(2000, String(text).length * 220))
-  fallbackTimer = setTimeout(done, Math.max(Number(fallbackMs) || 0, estimatedMs) + 1500)
+  // 兜底：语音卡住才放行；仍在出声则继续等，避免定时器抢断
+  const estimatedMs = Math.min(28000, Math.max(2500, String(text).length * 280))
+  const hardCapMs = Math.max(Number(fallbackMs) || 0, estimatedMs) + 4000
+  const startedAt = Date.now()
+  const armFallback = () => {
+    fallbackTimer = setTimeout(() => {
+      if (finished) return
+      if ((synth.speaking || synth.pending) && Date.now() - startedAt < hardCapMs) {
+        armFallback()
+        return
+      }
+      done()
+    }, 500)
+  }
+  armFallback()
 
   synth.speak(utter)
 

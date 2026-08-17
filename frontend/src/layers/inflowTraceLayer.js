@@ -11,12 +11,12 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { incomingApproachDir } from '../geo/tracing.js';
 
-const WAVE_SPEED = 22;
-const FADE_IN_DUR = 0.4;
-const TRANS_DUR = 0.8;
+export const WAVE_SPEED = 22;
+export const FADE_IN_DUR = 0.4;
+export const TRANS_DUR = 0.8;
 const DEFAULT_APPROACHES = ['N', 'E', 'W'];
 /** 走廊视野边距（投影单位，1 单位 ≈ 10 m） */
-const VIEW_PAD = 28;
+export const VIEW_PAD = 28;
 
 const C_CLEAR = new THREE.Color(0x00cc44);
 const C_SLOW = new THREE.Color(0xffcc00);
@@ -44,7 +44,7 @@ function isJamTraceRoad(road, { originId, viaIds } = {}) {
   return false;
 }
 
-function roadLen(coords) {
+export function roadLen(coords) {
   let len = 0;
   for (let i = 0; i < coords.length - 1; i++) {
     const dx = coords[i + 1][0] - coords[i][0];
@@ -54,7 +54,7 @@ function roadLen(coords) {
   return len;
 }
 
-function roadKey(road) {
+export function roadKey(road) {
   return `${road.props.from_inter_id}→${road.props.to_inter_id}`;
 }
 
@@ -109,7 +109,7 @@ export function computeInflowTimes(
   return { distTime, tracedRoadKeys };
 }
 
-function boundsFromIds(intersections, ids, pad = VIEW_PAD) {
+export function boundsFromIds(intersections, ids, pad = VIEW_PAD) {
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -154,7 +154,7 @@ function toRevealMap(distTime) {
   return { reveal, maxT };
 }
 
-function buildInflowRoads(roads, revealMap, tracedRoadKeys, viewBounds, resolution, jamOpts) {
+export function buildInflowRoads(roads, revealMap, tracedRoadKeys, viewBounds, resolution, jamOpts) {
   const posArr = [];
   const colArr = [];
   const segMeta = [];
@@ -219,6 +219,9 @@ function buildInflowRoads(roads, revealMap, tracedRoadKeys, viewBounds, resoluti
   const mesh = new LineSegments2(geo, mat);
   mesh.renderOrder = 10;
 
+  const yellowOnly = jamOpts?.palette === 'yellow';
+  const waveColor = yellowOnly ? C_SLOW : C_CLEAR;
+
   const calcColor = (frac, fromT, toT, cycleTime, finalJam) => {
     let vertWave;
     if (Number.isFinite(fromT) && Number.isFinite(toT)) {
@@ -233,8 +236,9 @@ function buildInflowRoads(roads, revealMap, tracedRoadKeys, viewBounds, resoluti
     const elapsed = cycleTime - vertWave;
     if (elapsed < 0) return C_BASE;
     if (elapsed < FADE_IN_DUR) {
-      return C_BASE.clone().lerp(C_CLEAR, elapsed / FADE_IN_DUR);
+      return C_BASE.clone().lerp(waveColor, elapsed / FADE_IN_DUR);
     }
+    if (yellowOnly) return C_SLOW.clone();
     return congestionColor(
       Math.max(0, Math.min(1, (elapsed - FADE_IN_DUR) / TRANS_DUR)),
       finalJam,
@@ -265,7 +269,7 @@ function buildInflowRoads(roads, revealMap, tracedRoadKeys, viewBounds, resoluti
   return mesh;
 }
 
-function buildRippleRings(intersections, revealMap, viewBounds) {
+export function buildRippleRings(intersections, revealMap, viewBounds) {
   const group = new THREE.Group();
 
   const congested = intersections.filter((i) => {
@@ -396,7 +400,7 @@ function samplePath(pts, t) {
 }
 
 /** 沿 from→to 汇入下游路口；三角躺在 XZ，尖端对齐行进方向 */
-function buildFlowArrows(roads, revealMap, tracedRoadKeys, viewBounds, jamOpts) {
+export function buildFlowArrows(roads, revealMap, tracedRoadKeys, viewBounds, jamOpts) {
   const group = new THREE.Group();
   const arrowGeo = makeArrowGeometry();
   const items = [];
@@ -466,7 +470,7 @@ function buildFlowArrows(roads, revealMap, tracedRoadKeys, viewBounds, jamOpts) 
   return group;
 }
 
-function buildSinkMarker(inter) {
+export function buildSinkMarker(inter, { beamColor = 0x22c55e } = {}) {
   const [ix, iy] = inter.pos;
   const group = new THREE.Group();
   group.position.set(ix, 0, -iy);
@@ -489,7 +493,7 @@ function buildSinkMarker(inter) {
 
   const beamGeo = new THREE.CylinderGeometry(0.08, 2.5, 28, 8, 1, true);
   const beamMat = new THREE.MeshBasicMaterial({
-    color: 0x22c55e,
+    color: beamColor,
     transparent: true,
     opacity: 0.22,
     side: THREE.BackSide,

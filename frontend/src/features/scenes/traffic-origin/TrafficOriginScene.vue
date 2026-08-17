@@ -2283,8 +2283,8 @@ watch(act2MapBeat, (beat) => {
 // 幕 2 流量溯源节拍 → 原生地图演绎（成因分析：溯源→供需→本口→绿灯→溢流）
 watch(flowTraceMapBeat, (beat) => {
   if (!beat || beat === 'clear') {
-    flowTraceFx?.stop?.();
-    flowTraceFx?.clear?.();
+    // 终态保留经十/奥体西流量图，切幕卸载时再释放
+    if (beat === 'clear') flowTraceFx?.stop?.();
     return;
   }
   if (beat === 'trace') {

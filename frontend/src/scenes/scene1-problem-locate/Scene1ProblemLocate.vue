@@ -11,7 +11,7 @@ import { gateSceneAdvance } from '../../shared/act-playback.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
 import { SCENE_META } from './index.js'
 
-const { setScene } = useSceneRoute()
+const { setScene, advanceScene } = useSceneRoute()
 
 const mapReady = ref(false)
 

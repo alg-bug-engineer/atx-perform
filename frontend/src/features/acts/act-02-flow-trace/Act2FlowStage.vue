@@ -7,6 +7,7 @@
  * 演绎完成（overflow）后自动交棒退出，彻底去掉切回首页的跳转与重载。
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { whenBroadcastIdle } from '../../../shared/broadcast-bus.js';
 import { flowTracePhase } from '../../../shared/narrative-state.js';
 import {
   enterFlowTrace,
@@ -44,23 +45,23 @@ function applyDockPanel(state) {
     return;
   }
   if (!panel?.kind) return;
-  const rest = dockStack.value.filter((p) => p.kind !== 'trace' && p.kind !== panel.kind);
+  const hideSupplyChain = panel.kind === 'arterial' || panel.kind === 'signal' || panel.kind === 'overflow';
+  const rest = dockStack.value.filter((p) => {
+    if (p.kind === 'trace' || p.kind === panel.kind) return false;
+    if (hideSupplyChain && (p.kind === 'supply' || p.kind === 'downstream')) return false;
+    return true;
+  });
   dockStack.value = [...rest, panel];
 }
 
 watch(flowTraceHud, (state) => applyDockPanel(state), { deep: true, immediate: true });
 
-const caption = computed(() => flowTraceHud.value.caption || flowTraceHud.value.text || '');
 const isDone = computed(() => flowTracePhase.value === 'done');
 
-function formatSat(v) {
+function formatMetric(v, digits = 1) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '—';
-  return n.toFixed(2);
-}
-
-function isSatCrit(v) {
-  return Number(v) >= 0.85;
+  return n.toFixed(digits);
 }
 
 function onReplay() {
@@ -71,9 +72,11 @@ function onReplay() {
 // 演绎完成（溢流揭示）→ 收束交棒进入下一幕（未注册则停留提示）
 watch(isDone, (v) => {
   if (!v) return;
-  later(() => {
-    emit('exit', exitFlowTrace({ nextAct: 3 }));
-  }, 2000);
+  whenBroadcastIdle({ later, safetyMs: 28_000 }).then(() => {
+    later(() => {
+      emit('exit', exitFlowTrace({ nextAct: 3 }));
+    }, 600);
+  });
 });
 
 onMounted(() => {
@@ -87,43 +90,33 @@ onUnmounted(() => {
 
 <template>
   <div class="flow-trace-stage">
-    <!-- 左侧演绎结论卡（溯源 → 供需 → 本口 → 绿灯约束 → 溢流） -->
+    <!-- 左侧结论卡只保留关键结论；详细数字优先落在地图钉上 -->
     <aside v-if="dockStack.length" class="trace-dock">
       <div v-for="item in dockStack" :key="item.kind" class="dock-card">
         <div class="dock-title">{{ item.title }}</div>
 
-        <p v-if="item.kind === 'trace'" class="dock-lead">正在进行问题路段流量溯源</p>
+        <p v-if="item.kind === 'trace'" class="dock-lead">正在追溯上游来流</p>
 
         <template v-else-if="item.kind === 'supply'">
           <div class="dock-row">
-            <span>供给流量</span>
+            <span>当前通行流量</span>
             <strong>{{ item.supply }} vph</strong>
           </div>
           <div class="dock-row">
-            <span>需求流量</span>
+            <span>车道能力上限</span>
             <strong>{{ item.demand }} vph</strong>
           </div>
           <div class="dock-ok">{{ item.conclusion }}</div>
         </template>
 
+        <template v-else-if="item.kind === 'downstream'">
+          <div class="dock-hero">{{ formatMetric(item.ratio, 2) }}%</div>
+          <div class="dock-lab">主要关联去向 · 下游关联占比</div>
+          <p class="dock-copy">{{ item.destination }}</p>
+          <div class="dock-ok">{{ item.conclusion }}</div>
+        </template>
+
         <template v-else-if="item.kind === 'arterial'">
-          <div v-for="arm in item.approaches" :key="arm.role" class="dock-arm">
-            <div class="dock-arm-h">
-              <span class="dock-role">{{ arm.name ? `${arm.name} ${arm.role}` : arm.role }}</span>
-            </div>
-            <div class="dock-metrics">
-              <div>
-                <div class="dock-num" :class="{ crit: isSatCrit(arm.saturation) }">
-                  {{ formatSat(arm.saturation) }}
-                </div>
-                <div class="dock-lab">饱和度</div>
-              </div>
-              <div>
-                <div class="dock-num">{{ arm.flow_vph }}</div>
-                <div class="dock-lab">直行流量 vph</div>
-              </div>
-            </div>
-          </div>
           <p v-if="item.copy" class="dock-copy">{{ item.copy }}</p>
         </template>
 
@@ -134,17 +127,11 @@ onUnmounted(() => {
 
         <template v-else-if="item.kind === 'overflow'">
           <div class="dock-hero warn">{{ item.queue_m }} m</div>
-          <div class="dock-lab">排队长度 · {{ item.note }}</div>
+          <div class="dock-lab">排队长度 · 排队比 {{ formatMetric(item.queue_ratio, 1) }}</div>
           <p v-if="item.copy" class="dock-copy">{{ item.copy }}</p>
         </template>
       </div>
     </aside>
-
-    <!-- 底部演绎说明条 -->
-    <div v-if="caption && !isDone" class="trace-caption">
-      <span class="scan-dot" />
-      <span class="hint-text">{{ caption }}</span>
-    </div>
 
     <!-- 操作：重播溯源 -->
     <div class="trace-actions">
@@ -167,11 +154,13 @@ onUnmounted(() => {
 .trace-dock {
   position: absolute;
   left: 24px;
-  top: 92px;
+  top: 12px;
   z-index: 38;
   width: min(280px, calc(100vw - 48px));
   max-height: calc(100% - 160px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -230,40 +219,6 @@ onUnmounted(() => {
   color: rgba(220, 230, 240, 0.92);
 }
 
-.dock-arm + .dock-arm {
-  margin-top: 8px;
-}
-
-.dock-arm-h {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.dock-role {
-  font-size: 11px;
-  color: rgba(255, 180, 100, 0.9);
-}
-
-.dock-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.dock-num {
-  font-size: 18px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: rgba(230, 240, 250, 0.95);
-  line-height: 1.2;
-}
-
-.dock-num.crit {
-  color: #fb7185;
-}
-
 .dock-lab {
   font-size: 10px;
   color: rgba(160, 180, 200, 0.75);
@@ -279,44 +234,6 @@ onUnmounted(() => {
 
 .dock-hero.warn {
   color: #ff8a3a;
-}
-
-.trace-caption {
-  position: absolute;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  z-index: 37;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  max-width: min(560px, calc(100vw - 280px));
-  padding: 8px 16px;
-  font-size: 14px;
-  letter-spacing: 1px;
-  line-height: 1.5;
-  color: rgba(232, 246, 255, 0.95);
-  background: rgba(4, 14, 26, 0.78);
-  border: 1px solid rgba(0, 229, 255, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(8px);
-}
-
-.scan-dot {
-  width: 7px;
-  height: 7px;
-  margin-top: 4px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #f5a623;
-  box-shadow: 0 0 8px rgba(245, 166, 35, 0.8);
-  animation: pulse 1s ease-in-out infinite;
-}
-
-.hint-text {
-  flex: 1;
-  min-width: 0;
-  white-space: normal;
 }
 
 .trace-actions {
@@ -345,15 +262,4 @@ onUnmounted(() => {
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.22);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
 </style>

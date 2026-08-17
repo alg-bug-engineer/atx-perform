@@ -10,6 +10,28 @@ const C_RED = 0xff1800;
 const C_QUEUE = 0xff8a3a;
 const C_CYAN = 0x00e5ff;
 const METERS_PER_UNIT = 10;
+const LABEL_DPR = 2;
+
+function beginLabelCanvas(cssW, cssH) {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(cssW * LABEL_DPR);
+  canvas.height = Math.round(cssH * LABEL_DPR);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(LABEL_DPR, 0, 0, LABEL_DPR, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  return { canvas, ctx };
+}
+
+function makeLabelTexture(canvas) {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
 
 function makeGlowTexture() {
   const sz = 64;
@@ -57,27 +79,16 @@ function pathFromSouth(coords, lengthUnits) {
 function makeQueueRatioSprite(ratio) {
   const title = '排队比已达';
   const value = Number(ratio).toFixed(1);
-  const w = 220;
-  const h = 92;
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
+  const cssW = 220;
+  const cssH = 92;
+  const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
 
   ctx.fillStyle = 'rgba(18, 8, 4, 0.78)';
   ctx.strokeStyle = 'rgba(255, 138, 58, 0.85)';
   ctx.lineWidth = 2;
-  const x = 6;
-  const y = 6;
-  const rw = w - 12;
-  const rh = h - 12;
-  const r = 10;
   ctx.beginPath();
-  if (typeof ctx.roundRect === 'function') {
-    ctx.roundRect(x, y, rw, rh, r);
-  } else {
-    ctx.rect(x, y, rw, rh);
-  }
+  if (typeof ctx.roundRect === 'function') ctx.roundRect(6, 6, cssW - 12, cssH - 12, 10);
+  else ctx.rect(6, 6, cssW - 12, cssH - 12);
   ctx.fill();
   ctx.stroke();
 
@@ -85,16 +96,12 @@ function makeQueueRatioSprite(ratio) {
   ctx.textBaseline = 'middle';
   ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
   ctx.fillStyle = 'rgba(255, 196, 140, 0.95)';
-  ctx.fillText(title, w / 2, 30);
+  ctx.fillText(title, cssW / 2, 30);
   ctx.font = '700 34px "DIN Alternate","PingFang SC",sans-serif';
   ctx.fillStyle = '#ff8a3a';
-  ctx.shadowColor = 'rgba(255, 80, 20, 0.55)';
-  ctx.shadowBlur = 10;
-  ctx.fillText(value, w / 2, 62);
-  ctx.shadowBlur = 0;
+  ctx.fillText(value, cssW / 2, 62);
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  const tex = makeLabelTexture(canvas);
   const mat = new THREE.SpriteMaterial({
     map: tex,
     transparent: true,
@@ -111,6 +118,149 @@ function makeQueueRatioSprite(ratio) {
     mat.dispose();
   };
   return spr;
+}
+
+function makeArterialSprite({ title, speed, saturation, flow, delay, accent = '#ff8a3a' }) {
+  const speedText = `${Number(speed || 0).toFixed(1)} km/h`;
+  const sat = Number(saturation);
+  const flowN = Number(flow);
+  const delayN = Number(delay);
+  const rows = [
+    `饱和度 ${Number.isFinite(sat) ? sat.toFixed(2) : '—'}`,
+    `流量 ${Number.isFinite(flowN) ? `${flowN.toFixed(0)} vph` : '—'}`,
+    Number.isFinite(delayN) ? `拥堵延时指数 ${delayN.toFixed(2)}` : '',
+  ].filter(Boolean);
+
+  const measure = document.createElement('canvas').getContext('2d');
+  measure.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  let contentW = measure.measureText(title).width;
+  measure.font = '700 32px "DIN Alternate","PingFang SC",sans-serif';
+  contentW = Math.max(contentW, measure.measureText(speedText).width);
+  measure.font = '500 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  for (const line of rows) contentW = Math.max(contentW, measure.measureText(line).width);
+
+  const padX = 22;
+  const padY = 16;
+  const cssW = Math.ceil(Math.max(contentW + padX * 2, 228));
+  const cssH = Math.ceil(padY + 26 + 36 + 8 + rows.length * 22 + padY);
+  const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
+
+  ctx.fillStyle = 'rgba(3, 14, 25, 0.9)';
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.75;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') ctx.roundRect(5, 5, cssW - 10, cssH - 10, 10);
+  else ctx.rect(5, 5, cssW - 10, cssH - 10);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(175,205,220,0.94)';
+  ctx.fillText(title, padX, padY + 13);
+  ctx.font = '700 32px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillStyle = accent;
+  ctx.fillText(speedText, padX, padY + 26 + 18);
+
+  ctx.font = '500 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(205,225,238,0.9)';
+  const rowTop = padY + 26 + 36 + 8;
+  rows.forEach((line, i) => ctx.fillText(line, padX, rowTop + 11 + i * 22));
+
+  const texture = makeLabelTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    depthTest: false,
+  });
+  const sprite = new THREE.Sprite(material);
+  const worldH = 16.8;
+  sprite.scale.set(worldH * (cssW / cssH), worldH, 1);
+  sprite.renderOrder = 63;
+  sprite.visible = false;
+  sprite.userData.disposeLabel = () => texture.dispose();
+  return sprite;
+}
+
+function makeMetricSprite({ title, value, sub = '', accent = '#00e5ff' }) {
+  const measure = document.createElement('canvas').getContext('2d');
+  measure.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  let contentW = measure.measureText(title).width;
+  measure.font = '700 30px "DIN Alternate","PingFang SC",sans-serif';
+  contentW = Math.max(contentW, measure.measureText(String(value)).width);
+  if (sub) {
+    measure.font = '500 15px "PingFang SC","Microsoft YaHei",sans-serif';
+    contentW = Math.max(contentW, measure.measureText(sub).width);
+  }
+  const cssW = Math.ceil(Math.max(contentW + 40, 220));
+  const cssH = sub ? 126 : 102;
+  const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
+
+  ctx.fillStyle = 'rgba(3, 14, 25, 0.9)';
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.75;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') ctx.roundRect(6, 6, cssW - 12, cssH - 12, 10);
+  else ctx.rect(6, 6, cssW - 12, cssH - 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(175,205,220,0.9)';
+  ctx.fillText(title, 20, 28);
+  ctx.font = '700 30px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillStyle = accent;
+  ctx.fillText(value, 20, 67);
+  if (sub) {
+    ctx.font = '500 15px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = 'rgba(205,225,238,0.82)';
+    ctx.fillText(sub, 20, 101);
+  }
+
+  const texture = makeLabelTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    depthTest: false,
+  });
+  const sprite = new THREE.Sprite(material);
+  const worldH = sub ? 12.4 : 10.2;
+  sprite.scale.set(worldH * (cssW / cssH), worldH, 1);
+  sprite.renderOrder = 63;
+  sprite.visible = false;
+  sprite.userData.disposeLabel = () => texture.dispose();
+  return sprite;
+}
+
+function midpoint(coords2d) {
+  if (!coords2d?.length) return null;
+  const point = coords2d[Math.floor(coords2d.length / 2)];
+  return point ? [point[0], point[1]] : null;
+}
+
+function metricAnchors(coords2d) {
+  const mid = midpoint(coords2d);
+  if (!mid || !coords2d || coords2d.length < 2) return null;
+  const first = coords2d[0];
+  const last = coords2d[coords2d.length - 1];
+  const dx = last[0] - first[0];
+  const dy = last[1] - first[1];
+  const length = Math.hypot(dx, dy) || 1;
+  const tx = dx / length;
+  const ty = dy / length;
+  const nx = -ty;
+  const ny = tx;
+  return [
+    [mid[0] - tx * 9 + nx * 8, mid[1] - ty * 9 + ny * 8],
+    [mid[0] + tx * 9 - nx * 8, mid[1] + ty * 9 - ny * 8],
+  ];
 }
 
 function queueLabelAnchor(coords2d) {
@@ -173,7 +323,17 @@ function makeArcLine(radius, a0, a1, y, color) {
  *   problemRoad?: { coords: [number, number][] },
  *   queueM?: number,
  *   queueRatio?: number,
- *   hopTimes?: { pos: [number, number], revealAt: number, label: string }[],
+ *   supplyMetrics?: { flow?: number, capacity?: number },
+ *   arterialMetrics?: {
+ *     east?: { speed?: number, delay?: number, saturation?: number, flow?: number },
+ *     west?: { speed?: number, delay?: number, saturation?: number, flow?: number },
+ *   },
+ *   hopTimes?: {
+ *     pos: [number, number],
+ *     revealAt: number,
+ *     label: string,
+ *     shareRatio?: number|null,
+ *   }[],
  * }} opts
  */
 export function createScene2MapAnnot({
@@ -182,6 +342,8 @@ export function createScene2MapAnnot({
   problemRoad,
   queueM = 270,
   queueRatio = 0.8,
+  supplyMetrics = {},
+  arterialMetrics = {},
   hopTimes = [],
 } = {}) {
   const group = new THREE.Group();
@@ -220,8 +382,76 @@ export function createScene2MapAnnot({
     return { ...hop, spr };
   });
 
+  const hopShareLabels = hopTimes
+    .filter((hop) => hop.shareRatio != null && Number.isFinite(Number(hop.shareRatio)))
+    .map((hop, index) => {
+      const sprite = makeMetricSprite({
+        title: `${hop.label} · 上游关联占比`,
+        value: `${Number(hop.shareRatio).toFixed(2)}%`,
+        sub: '流量关联占比',
+        accent: index === 0 ? '#f5c14b' : '#00e5ff',
+      });
+      sprite.position.set(hop.pos[0] + (index % 2 ? -18 : 18), 15, -hop.pos[1]);
+      sprite.userData.revealAt = hop.revealAt ?? 0;
+      track(sprite);
+      return sprite;
+    });
+
   const linkGlow = makeTube(problemRoad?.coords, 1.35, C_CYAN, 0.9);
   if (linkGlow) track(linkGlow);
+
+  const problemMid = midpoint(problemRoad?.coords);
+  const supplyAnchors = metricAnchors(problemRoad?.coords);
+  const supplyGroup = new THREE.Group();
+  const flowSpr = makeMetricSprite({
+    title: '当前通行流量',
+    value: `${Number(supplyMetrics.flow || 0).toFixed(0)} vph`,
+    sub: '路段实际通行',
+    accent: '#00e5ff',
+  });
+  const capacitySpr = makeMetricSprite({
+    title: '车道能力上限',
+    value: `${Number(supplyMetrics.capacity || 0).toFixed(1)} vph`,
+    sub: '当前仍有承接余量',
+    accent: '#86efac',
+  });
+  if (supplyAnchors) {
+    flowSpr.position.set(supplyAnchors[0][0], 17, -supplyAnchors[0][1]);
+    capacitySpr.position.set(supplyAnchors[1][0], 17, -supplyAnchors[1][1]);
+  } else if (problemMid) {
+    flowSpr.position.set(problemMid[0] - 10, 17, -problemMid[1]);
+    capacitySpr.position.set(problemMid[0] + 10, 17, -problemMid[1]);
+  }
+  supplyGroup.add(flowSpr, capacitySpr);
+  supplyGroup.visible = false;
+  track(supplyGroup);
+
+  const arterialGroup = new THREE.Group();
+  const east = arterialMetrics.east || {};
+  const west = arterialMetrics.west || {};
+  const eastSpr = makeArterialSprite({
+    title: '经十路东侧',
+    speed: east.speed,
+    saturation: east.saturation,
+    flow: east.flow,
+    delay: east.delay,
+    accent: '#ff8a3a',
+  });
+  const westSpr = makeArterialSprite({
+    title: '经十路西侧',
+    speed: west.speed,
+    saturation: west.saturation,
+    flow: west.flow,
+    delay: west.delay,
+    accent: '#f5c14b',
+  });
+  if (targetPos) {
+    eastSpr.position.set(targetPos[0] + 30, 17, -targetPos[1]);
+    westSpr.position.set(targetPos[0] - 30, 17, -targetPos[1]);
+  }
+  arterialGroup.add(eastSpr, westSpr);
+  arterialGroup.visible = false;
+  track(arterialGroup);
 
   const ringGroup = new THREE.Group();
   ringGroup.visible = false;
@@ -257,7 +487,10 @@ export function createScene2MapAnnot({
   const queueLen = Math.max(4, queueM / METERS_PER_UNIT);
   const queuePts = pathFromSouth(problemRoad?.coords, queueLen);
   const queueTube = makeTube(queuePts, 1.15, C_QUEUE, 1.2);
-  if (queueTube) track(queueTube);
+  if (queueTube) {
+    queueTube.geometry.setDrawRange(0, 0);
+    track(queueTube);
+  }
 
   const ratioSpr = makeQueueRatioSprite(queueRatio);
   const ratioAnchor = queueLabelAnchor(queuePts);
@@ -291,9 +524,33 @@ export function createScene2MapAnnot({
     const showLink = name === 'supply';
     const showRing = name === 'signal';
     const showQueue = name === 'overflow';
+    const showSupply = name === 'supply';
+    const supplyLeaving = name === 'supply_out';
+    const showArterial = name === 'arterial' || name === 'signal' || name === 'overflow';
     ringGroup.visible = showRing;
+    supplyGroup.visible = showSupply || supplyLeaving;
+    arterialGroup.visible = showArterial;
 
     if (linkGlow) fadeTo(linkGlow, showLink ? 0.55 : 0);
+    if (supplyLeaving) {
+      for (const spr of [flowSpr, capacitySpr]) fadeTo(spr, 0);
+    } else if (!showSupply) {
+      for (const spr of [flowSpr, capacitySpr]) fadeTo(spr, 0);
+    } else {
+      flowSpr.material.opacity = 0;
+      capacitySpr.material.opacity = 0;
+    }
+    if (!showArterial) {
+      for (const spr of [eastSpr, westSpr]) fadeTo(spr, 0);
+    } else if (name === 'arterial') {
+      eastSpr.material.opacity = 0;
+      westSpr.material.opacity = 0;
+    } else {
+      for (const spr of [eastSpr, westSpr]) fadeTo(spr, 1);
+    }
+    if (name !== 'trace') {
+      for (const spr of hopShareLabels) fadeTo(spr, 0);
+    }
     fadeTo(viaPulse, showQueue ? 0.9 : 0);
     fadeTo(blockPulse, name === 'signal' ? 0.85 : 0);
     if (queueTube) fadeTo(queueTube, showQueue ? 0.85 : 0);
@@ -336,18 +593,57 @@ export function createScene2MapAnnot({
         const s = 10 + peak * 16;
         hop.spr.scale.set(s, s, 1);
       }
+      for (const sprite of hopShareLabels) {
+        const local = traceElapsed - sprite.userData.revealAt - 0.18;
+        const alpha = Math.min(1, Math.max(0, local / 0.4));
+        sprite.material.opacity = alpha;
+        sprite.visible = alpha > 0.02;
+      }
     } else {
       for (const hop of hopPulses) {
         hop.spr.visible = false;
         hop.spr.material.opacity = 0;
       }
+      for (const sprite of hopShareLabels) {
+        sprite.visible = false;
+        sprite.material.opacity = 0;
+      }
     }
 
     if (beat === 'signal') {
-      const p = 0.55 + 0.45 * Math.sin(time * 5.2);
+      const signalElapsed = time - beatAt;
+      const arcs = ringGroup.userData.arcs || [];
+      arcs.forEach((arc, index) => {
+        const revealAt = index < 2 ? index * 0.18 : 0.72 + (index - 2) * 0.16;
+        const reveal = Math.min(1, Math.max(0, (signalElapsed - revealAt) / 0.35));
+        arc.material.opacity = reveal * (index < 2 ? 0.95 : 0.88);
+      });
+      const p = signalElapsed > 0.7 ? 0.55 + 0.45 * Math.sin(time * 5.2) : 0;
       blockPulse.material.opacity = Math.max(blockPulse.material.opacity, p * 0.7);
       const s = 12 + p * 10;
       blockPulse.scale.set(s, s, 1);
+    }
+
+    if (beat === 'supply') {
+      const elapsed = time - beatAt;
+      const flowAlpha = Math.min(1, Math.max(0, elapsed / 0.45));
+      const capacityAlpha = Math.min(1, Math.max(0, (elapsed - 0.38) / 0.45));
+      flowSpr.material.opacity = flowAlpha;
+      capacitySpr.material.opacity = capacityAlpha;
+      flowSpr.visible = flowAlpha > 0.02;
+      capacitySpr.visible = capacityAlpha > 0.02;
+      flowSpr.scale.set(30 * (0.82 + flowAlpha * 0.18), 11.8, 1);
+      capacitySpr.scale.set(30 * (0.82 + capacityAlpha * 0.18), 11.8, 1);
+    }
+
+    if (beat === 'arterial') {
+      const elapsed = time - beatAt;
+      const eastAlpha = Math.min(1, Math.max(0, elapsed / 0.42));
+      const westAlpha = Math.min(1, Math.max(0, (elapsed - 0.58) / 0.42));
+      eastSpr.material.opacity = eastAlpha;
+      westSpr.material.opacity = westAlpha;
+      eastSpr.visible = eastAlpha > 0.02;
+      westSpr.visible = westAlpha > 0.02;
     }
 
     if (beat === 'overflow') {
@@ -356,9 +652,11 @@ export function createScene2MapAnnot({
       const s = 14 + p * 10;
       viaPulse.scale.set(s, s, 1);
       if (queueTube) {
-        const grow = Math.min(1, Math.max(0.25, (time - beatAt) / 1.1));
+        const grow = Math.min(1, Math.max(0, (time - beatAt) / 1.1));
         queueTube.material.opacity = 0.4 + grow * 0.5;
         queueTube.visible = true;
+        const indexCount = queueTube.geometry.index?.count || 0;
+        queueTube.geometry.setDrawRange(0, Math.floor(indexCount * grow));
       }
       if (ratioSpr) {
         const grow = Math.min(1, Math.max(0, (time - beatAt - 0.25) / 0.7));
