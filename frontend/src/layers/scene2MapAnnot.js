@@ -186,16 +186,7 @@ function makeArterialSprite({ title, speed, saturation, flow, delay, accent = '#
 }
 
 function makeMetricSprite({ title, value, sub = '', accent = '#00e5ff' }) {
-  const measure = document.createElement('canvas').getContext('2d');
-  measure.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
-  let contentW = measure.measureText(title).width;
-  measure.font = '700 30px "DIN Alternate","PingFang SC",sans-serif';
-  contentW = Math.max(contentW, measure.measureText(String(value)).width);
-  if (sub) {
-    measure.font = '500 15px "PingFang SC","Microsoft YaHei",sans-serif';
-    contentW = Math.max(contentW, measure.measureText(sub).width);
-  }
-  const cssW = Math.ceil(Math.max(contentW + 40, 220));
+  const cssW = 320;
   const cssH = sub ? 126 : 102;
   const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
 
@@ -231,8 +222,10 @@ function makeMetricSprite({ title, value, sub = '', accent = '#00e5ff' }) {
     depthTest: false,
   });
   const sprite = new THREE.Sprite(material);
-  const worldH = sub ? 12.4 : 10.2;
-  sprite.scale.set(worldH * (cssW / cssH), worldH, 1);
+  const worldH = sub ? 11.8 : 9.6;
+  const worldW = worldH * (cssW / cssH);
+  sprite.scale.set(worldW, worldH, 1);
+  sprite.userData.baseScale = [worldW, worldH];
   sprite.renderOrder = 63;
   sprite.visible = false;
   sprite.userData.disposeLabel = () => texture.dispose();
@@ -632,8 +625,10 @@ export function createScene2MapAnnot({
       capacitySpr.material.opacity = capacityAlpha;
       flowSpr.visible = flowAlpha > 0.02;
       capacitySpr.visible = capacityAlpha > 0.02;
-      flowSpr.scale.set(30 * (0.82 + flowAlpha * 0.18), 11.8, 1);
-      capacitySpr.scale.set(30 * (0.82 + capacityAlpha * 0.18), 11.8, 1);
+      const [flowW, flowH] = flowSpr.userData.baseScale || [30, 11.8];
+      const [capW, capH] = capacitySpr.userData.baseScale || [30, 11.8];
+      flowSpr.scale.set(flowW * (0.82 + flowAlpha * 0.18), flowH, 1);
+      capacitySpr.scale.set(capW * (0.82 + capacityAlpha * 0.18), capH, 1);
     }
 
     if (beat === 'arterial') {
