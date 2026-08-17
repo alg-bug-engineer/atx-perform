@@ -31,8 +31,8 @@ export const PROJECTION = {
   centerLon: 117.096,
   centerLat: 36.662,
   metersPerUnit: 10,
-  // 定位态镜头：高度 110，FOV 45°，地面可见半高 ≈ 110*tan(22.5°) ≈ 45.6 单位
-  holdCamHeight: 110,
+  // 定位态镜头：高度 120，FOV 45°，地面可见半高 ≈ 120*tan(22.5°) ≈ 49.7 单位
+  holdCamHeight: 120,
   holdCamFovDeg: 45,
 };
 

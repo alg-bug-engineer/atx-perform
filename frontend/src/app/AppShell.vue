@@ -1,11 +1,17 @@
 <script setup>
-import { computed, defineAsyncComponent, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, watch } from 'vue'
 import { sceneRegistry, getSceneByKey } from '../shared/scene-registry.js'
 import { useSceneRoute } from '../shared/useSceneRoute.js'
 import { playSceneNarration } from '../shared/sceneNarration.js'
 import { broadcastSilent } from '../shared/broadcast-bus.js'
-import { narrativeState } from '../shared/narrative-state.js'
+import { narrativeActive, narrativeState } from '../shared/narrative-state.js'
 import { onBeatChanged } from '../shared/act-voice.js'
+import {
+  conclusionSpaceWaitActive,
+  isTypingTarget,
+  playbackHint,
+  toggleSpacePlayback,
+} from '../shared/act-playback.js'
 import DigitalAvatar from '../shared/components/DigitalAvatar.vue'
 import AppChrome from './AppChrome.vue'
 
@@ -32,6 +38,26 @@ watch(
     onBeatChanged(beatId)
   },
 )
+
+// 空格暂停：按一次 → 本幕演完停在幕间栅栏不自动跳转；再按一次恢复
+function onKeydown(e) {
+  if (e.code !== 'Space' && e.key !== ' ') return
+  if (e.repeat) return
+  if (e.altKey || e.ctrlKey || e.metaKey) return
+  if (!narrativeActive.value) return
+  if (isTypingTarget(e.target)) return
+  if (conclusionSpaceWaitActive.value) return
+  e.preventDefault()
+  toggleSpacePlayback()
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <template>
@@ -51,6 +77,14 @@ watch(
 
     <!-- 数字人 / 口播字幕：默认关闭，避免卡住面板揭示顺序；VITE_TTS_ENABLED=true 时再挂上 -->
     <DigitalAvatar v-if="!broadcastSilent" />
+
+    <!-- 空格暂停提示：本幕结束后暂停 / 已暂停待继续 -->
+    <Transition name="hint-fade">
+      <div v-if="playbackHint" class="pause-hint" data-testid="playback-hint">
+        <span class="ph-dot" />
+        <span>{{ playbackHint }}</span>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -71,5 +105,48 @@ watch(
   right: 0;
   bottom: 0;
   left: 0;
+}
+
+.pause-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 148px;
+  transform: translateX(-50%);
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  background: rgba(4, 12, 30, 0.88);
+  border: 1px solid var(--cyan-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.ph-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: ph-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes ph-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.hint-fade-enter-active,
+.hint-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.hint-fade-enter-from,
+.hint-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
 }
 </style>

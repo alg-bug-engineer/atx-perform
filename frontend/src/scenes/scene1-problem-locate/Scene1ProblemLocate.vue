@@ -7,6 +7,7 @@ import '../../features/acts/act-01-problem-locate/index.js'
 import TrafficOriginScene from '../../features/scenes/traffic-origin/TrafficOriginScene.vue'
 import ProblemLocateStage from '../../features/acts/act-01-problem-locate/ProblemLocateStage.vue'
 import { narrativeActive } from '../../shared/narrative-state.js'
+import { gateSceneAdvance } from '../../shared/act-playback.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
 import { SCENE_META } from './index.js'
 
@@ -15,6 +16,11 @@ const { setScene } = useSceneRoute()
 const mapReady = ref(false)
 
 narrativeActive.value = true
+
+/** 幕 1 自动退出 → 门控跳转幕 2（空格暂停时停在幕间栅栏） */
+function onActExit() {
+  gateSceneAdvance({ nextSceneKey: '2', apply: () => setScene('2') })
+}
 
 onMounted(() => {
   // mapReady 由 TrafficOriginScene @ready 事件设置
@@ -28,7 +34,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="scene-3d" data-testid="scene1-problem-locate">
     <TrafficOriginScene @ready="mapReady = true" />
-    <ProblemLocateStage v-if="mapReady" @exit="setScene('2')" />
+    <ProblemLocateStage v-if="mapReady" @exit="onActExit" />
 
     <div class="scene-actions">
       <span class="scene-tag">{{ SCENE_META.name }}</span>

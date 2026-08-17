@@ -80,13 +80,51 @@ export function gateActAdvance({ nextAct, apply }) {
   return true;
 }
 
-/** 从幕间栅栏恢复，执行挂起的 setAct */
+/** @type {{ nextSceneKey: string, apply: () => void } | null} */
+let pendingSceneAdvance = null;
+
+/**
+ * 场景路由版交棒门控：与 gateActAdvance 同语义，供场景路由（useSceneRoute）使用。
+ * @param {{ nextSceneKey: string, apply: () => void }} opts
+ * @returns {boolean} true = 已进入幕间暂停
+ */
+export function gateSceneAdvance({ nextSceneKey, apply }) {
+  if (typeof apply !== 'function') return false;
+
+  if (!pauseAfterActRequested.value) {
+    pendingSceneAdvance = null;
+    barrierPaused.value = false;
+    apply();
+    return false;
+  }
+
+  pauseAfterActRequested.value = false;
+  barrierPaused.value = true;
+  pendingSceneAdvance = { nextSceneKey, apply };
+  freezeBroadcastForBarrier();
+  console.info('[ActLoop] barrier pause · hold before scene', nextSceneKey);
+  return true;
+}
+
+/** 从幕间栅栏恢复，执行挂起的 setAct / setScene */
 export function resumeFromBarrier() {
-  if (!barrierPaused.value || !pendingAdvance) return false;
+  if (!barrierPaused.value) return false;
+
+  if (pendingSceneAdvance) {
+    const { nextSceneKey, apply } = pendingSceneAdvance;
+    pendingSceneAdvance = null;
+    barrierPaused.value = false;
+    // 解冻后再交棒，由下一幕重新入队口播
+    unfreezeBroadcastAfterBarrier({ clearQueue: true });
+    console.info('[ActLoop] barrier resume → scene', nextSceneKey);
+    apply();
+    return true;
+  }
+
+  if (!pendingAdvance) return false;
   const { nextAct, apply } = pendingAdvance;
   pendingAdvance = null;
   barrierPaused.value = false;
-  // 解冻后再交棒，由下一幕重新入队口播
   unfreezeBroadcastAfterBarrier({ clearQueue: true });
   console.info('[ActLoop] barrier resume → Act', nextAct);
   apply();
@@ -98,6 +136,7 @@ export function resetPlaybackPause() {
   barrierPaused.value = false;
   conclusionSpaceWaitActive.value = false;
   pendingAdvance = null;
+  pendingSceneAdvance = null;
   unfreezeBroadcastAfterBarrier({ clearQueue: true });
 }
 

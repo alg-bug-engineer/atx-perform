@@ -11,6 +11,7 @@ import '../../features/acts/act-02-flow-trace/index.js'
 import TrafficOriginScene from '../../features/scenes/traffic-origin/TrafficOriginScene.vue'
 import Act2FlowStage from '../../features/acts/act-02-flow-trace/Act2FlowStage.vue'
 import { narrativeActive } from '../../shared/narrative-state.js'
+import { gateSceneAdvance } from '../../shared/act-playback.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
 import { SCENE_META } from './index.js'
 
@@ -21,6 +22,11 @@ const mapReady = ref(false)
 
 narrativeActive.value = true
 
+/** 幕 2 自动退出 → 门控跳转幕 3（空格暂停时停在幕间栅栏） */
+function onActExit() {
+  gateSceneAdvance({ nextSceneKey: '3', apply: () => setScene('3') })
+}
+
 onBeforeUnmount(() => {
   narrativeActive.value = false
 })
@@ -29,7 +35,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="scene-3d" data-testid="scene2-cause-analysis">
     <TrafficOriginScene @ready="mapReady = true" />
-    <Act2FlowStage v-if="mapReady" @exit="setScene('3')" />
+    <Act2FlowStage v-if="mapReady" @exit="onActExit" />
 
     <div class="scene-actions">
       <span class="scene-tag">{{ SCENE_META.name }}</span>

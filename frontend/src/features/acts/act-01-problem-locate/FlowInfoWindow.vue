@@ -43,7 +43,7 @@ const props = defineProps({
 
 const emit = defineEmits(['reveal-done']);
 
-// 定位态镜头：高度 110、FOV 45°，地面可见半高 ≈ 45.6 世界单位
+// 定位态镜头：高度 120、FOV 45°，地面可见半高 ≈ 49.7 世界单位
 const HOLD_VISIBLE_HALF = Math.tan(((PROJECTION.holdCamFovDeg / 2) * Math.PI) / 180)
   * PROJECTION.holdCamHeight;
 
