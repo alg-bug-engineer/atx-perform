@@ -4,9 +4,10 @@
  * 阶段：idle → tracing → done → handoff
  *
  * 地图节拍（flowTraceMapBeat，供地图运行时消费）：
- *   null | 'trace' | 'supply' | 'arterial' | 'signal' | 'overflow' | 'clear'
+ *   null | 'trace' | 'supply' | 'downstream' | 'arterial' | 'signal' | 'overflow' | 'clear'
  *   - 'trace'     地图播放上游→汇点流量溯源动画
  *   - 'supply'    供需分析（上游需求流量）
+ *   - 'downstream' 下游关联去向（flow_share_ratio）
  *   - 'arterial'  本口（经十路东西向进口流量）
  *   - 'signal'    绿灯约束
  *   - 'overflow'  溢流风险
@@ -29,9 +30,19 @@ import {
 const VOICE_BEAT_BY_PHASE = {
   trace: 'a2f.trace',
   supply: 'a2f.supply',
+  downstream: 'a2f.downstream',
   arterial: 'a2f.arterial',
   signal: 'a2f.signal',
   overflow: 'a2f.overflow',
+};
+
+const TASK_LABEL_BY_PHASE = {
+  trace: '执行中：上游流量溯源',
+  supply: '执行中：路段供需核验',
+  downstream: '执行中：下游关联去向',
+  arterial: '执行中：经十路主干道研判',
+  signal: '执行中：绿灯约束研判',
+  overflow: '执行中：溢流风险确认',
 };
 
 /**
@@ -43,6 +54,8 @@ export const flowTraceHud = ref({ phase: '', caption: '', text: '', panel: null 
 /** 写入 HUD 状态；phase 变化时同步口播 beat */
 export function setFlowTraceHud(state) {
   flowTraceHud.value = { ...flowTraceHud.value, ...state };
+  if (VOICE_BEAT_BY_PHASE[state?.phase]) setFlowTraceMapBeat(state.phase);
+  if (TASK_LABEL_BY_PHASE[state?.phase]) taskBarLabel.value = TASK_LABEL_BY_PHASE[state.phase];
   const beat = VOICE_BEAT_BY_PHASE[state?.phase];
   if (beat) setBeat(beat);
 }
@@ -144,7 +157,6 @@ export function completeFlowTrace() {
 export function exitFlowTrace(nextHint = {}) {
   flowTracePhase.value = 'handoff';
   taskBarLabel.value = '流量溯源完成，准备进入下一幕';
-  setFlowTraceMapBeat('clear');
   setBeat('a2f.done');
 
   return {

@@ -1,11 +1,17 @@
 <script setup>
-import { computed, defineAsyncComponent, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, watch } from 'vue'
 import { sceneRegistry, getSceneByKey } from '../shared/scene-registry.js'
 import { useSceneRoute } from '../shared/useSceneRoute.js'
 import { playSceneNarration } from '../shared/sceneNarration.js'
 import { broadcastSilent } from '../shared/broadcast-bus.js'
 import { narrativeState } from '../shared/narrative-state.js'
 import { onBeatChanged } from '../shared/act-voice.js'
+import {
+  conclusionSpaceWaitActive,
+  isTypingTarget,
+  resetPlaybackPause,
+  toggleSpacePlayback,
+} from '../shared/act-playback.js'
 import DigitalAvatar from '../shared/components/DigitalAvatar.vue'
 import AppChrome from './AppChrome.vue'
 
@@ -32,6 +38,25 @@ watch(
     onBeatChanged(beatId)
   },
 )
+
+function onSpacePlayback(e) {
+  if (e.code !== 'Space' && e.key !== ' ') return
+  if (e.repeat) return
+  if (e.altKey || e.ctrlKey || e.metaKey) return
+  if (isTypingTarget(e.target)) return
+  if (conclusionSpaceWaitActive.value) return
+  e.preventDefault()
+  toggleSpacePlayback()
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onSpacePlayback)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onSpacePlayback)
+  resetPlaybackPause()
+})
 </script>
 
 <template>

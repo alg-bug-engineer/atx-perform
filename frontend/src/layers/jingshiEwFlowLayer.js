@@ -1,7 +1,8 @@
 /**
- * 幕 2 下游约束：只画经十路东西向 + 奥体西南北向。
+ * 幕 2 下游约束：只画经十路主路东西向 + 奥体西南北向（不含经十路辅路）。
+ * 从路口沿拓扑连续扩展，保证十字路网不断线。
  * 经十路东/西进口均按拥堵绘制；西进口数字为 mock（GAP-WEST-SAT）。
- * 奥体西北向南红、南向北黄；经十路南面（奥体西）绿色。
+ * 奥体西北向南红、南向北黄；经十路南面（奥体西）黄色。
  */
 import * as THREE from 'three';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
@@ -12,7 +13,7 @@ const CLIP_R = 88;
 const C_EW_JAM = new THREE.Color(0xff1800);
 const C_NS_SB = new THREE.Color(0xff1800);
 const C_NS_NB = new THREE.Color(0xffcc00);
-const C_SOUTH = new THREE.Color(0x00cc44);
+const C_SOUTH = new THREE.Color(0xffcc00);
 
 function pathLen(pts) {
   let len = 0;
@@ -56,17 +57,89 @@ function makeArrowGeometry() {
   return geo;
 }
 
-function clipNearAny(coords, origins, maxDist = CLIP_R) {
+function dist2(a, b) {
+  const dx = a[0] - b[0];
+  const dy = a[1] - b[1];
+  return dx * dx + dy * dy;
+}
+
+/** 从靠近路口的一端连续截取，避免逐点过滤把路网裁成断线。 */
+function clipFromNearEnd(coords, originPos, maxDist = CLIP_R) {
+  if (!coords || coords.length < 2 || !originPos) return [];
   const r2 = maxDist * maxDist;
-  const pts = origins.filter((p) => p && Number.isFinite(p[0]));
-  if (!pts.length) return [];
-  return (coords || []).filter(([x, y]) =>
-    pts.some(([ox, oy]) => {
-      const dx = x - ox;
-      const dy = y - oy;
-      return dx * dx + dy * dy <= r2;
-    }),
-  );
+  const startCloser = dist2(coords[0], originPos) <= dist2(coords[coords.length - 1], originPos);
+  const seq = startCloser ? coords : coords.slice().reverse();
+  const out = [];
+  for (const p of seq) {
+    if (dist2(p, originPos) > r2) {
+      if (out.length) out.push(p);
+      break;
+    }
+    out.push(p);
+  }
+  if (out.length < 2) return [];
+  return startCloser ? out : out.reverse();
+}
+
+function isJingshiServiceRoad(names) {
+  return String(names || '').includes('经十路辅路');
+}
+
+function isJingshiMainRoad(names) {
+  const s = String(names || '');
+  if (isJingshiServiceRoad(s)) return false;
+  return /(?:^|,\s*)经十路:/.test(s);
+}
+
+function isAotixiMainRoad(names) {
+  const s = String(names || '');
+  if (s.includes('辅路')) return false;
+  return s.includes('奥体西路');
+}
+
+function roadTouches(road, interId) {
+  return Boolean(interId)
+    && (road.props?.from_inter_id === interId || road.props?.to_inter_id === interId);
+}
+
+function pickConnectedNamedRoads(roads, originInter, namePred, geomPred, maxDist) {
+  const originPos = originInter?.pos;
+  const originId = originInter?.props?.inter_id;
+  if (!originPos) return [];
+
+  const candidates = (roads || []).filter((road) => namePred(String(road.props?.road_names || '')));
+  const seen = new Set();
+  const queue = [];
+
+  const enqueue = (road) => {
+    if (!road || seen.has(road)) return;
+    seen.add(road);
+    queue.push(road);
+  };
+
+  if (originId) {
+    for (const road of candidates) {
+      if (roadTouches(road, originId)) enqueue(road);
+    }
+  } else {
+    for (const road of candidates) enqueue(road);
+  }
+
+  const picked = [];
+  while (queue.length) {
+    const road = queue.shift();
+    const clipped = clipFromNearEnd(road.coords, originPos, maxDist);
+    if (clipped.length < 2) continue;
+    if (geomPred && !geomPred(clipped, road)) continue;
+    picked.push({ road, coords: clipped });
+    for (const nid of [road.props?.from_inter_id, road.props?.to_inter_id]) {
+      if (!nid) continue;
+      for (const next of candidates) {
+        if (roadTouches(next, nid)) enqueue(next);
+      }
+    }
+  }
+  return picked;
 }
 
 function midY(coords) {
@@ -101,38 +174,30 @@ function isSouthbound(coords) {
   return b[1] < a[1];
 }
 
-function pickJingshiEwRoads(roads, originPos) {
-  const picked = [];
-  for (const road of roads) {
-    const names = String(road.props?.road_names || '');
-    if (!names.includes('经十路')) continue;
-    const clipped = clipNearAny(road.coords, [originPos]);
-    if (clipped.length < 2) continue;
-    if (!isEastWest(clipped)) continue;
-    picked.push({
-      road,
-      coords: clipped,
-      primary: isEastToWest(clipped),
-    });
-  }
-  return picked;
+function pickJingshiEwRoads(roads, originInter) {
+  return pickConnectedNamedRoads(
+    roads,
+    originInter,
+    isJingshiMainRoad,
+    (clipped) => isEastWest(clipped),
+    CLIP_R,
+  ).map((item) => ({
+    ...item,
+    primary: isEastToWest(item.coords),
+  }));
 }
 
-function pickAotixiNsRoads(roads, originPos) {
-  const picked = [];
-  for (const road of roads) {
-    const names = String(road.props?.road_names || '');
-    if (!names.includes('奥体西')) continue;
-    const clipped = clipNearAny(road.coords, [originPos], CLIP_R + 24);
-    if (clipped.length < 2) continue;
-    if (!isNorthSouth(clipped)) continue;
-    picked.push({
-      road,
-      coords: clipped,
-      southbound: isSouthbound(road.coords),
-    });
-  }
-  return picked;
+function pickAotixiNsRoads(roads, originInter) {
+  return pickConnectedNamedRoads(
+    roads,
+    originInter,
+    isAotixiMainRoad,
+    (clipped) => isNorthSouth(clipped),
+    CLIP_R + 24,
+  ).map((item) => ({
+    ...item,
+    southbound: isSouthbound(item.road.coords),
+  }));
 }
 
 function classifyNsBand(item, originY) {
@@ -214,12 +279,12 @@ export function createJingshiEwFlowLayer({
   const originPos = originInter?.pos;
   if (!originPos) return group;
 
-  const picked = pickJingshiEwRoads(roads, originPos);
-  const nsRoads = pickAotixiNsRoads(roads, originPos);
+  const picked = pickJingshiEwRoads(roads, originInter);
+  const nsRoads = pickAotixiNsRoads(roads, originInter);
   if (problemRoad?.coords?.length >= 2) {
     const already = nsRoads.some((p) => p.road === problemRoad);
     if (!already) {
-      const clipped = clipNearAny(problemRoad.coords, [originPos], CLIP_R + 24);
+      const clipped = clipFromNearEnd(problemRoad.coords, originPos, CLIP_R + 24);
       if (clipped.length >= 2) {
         nsRoads.push({
           road: problemRoad,
@@ -307,7 +372,7 @@ export function createJingshiEwFlowLayer({
   addArrows(picked, { color: 0xff1800, spacing: 8, speed: 0.2, scale: 1.2, y: 1.45 });
   addArrows(northSb, { color: 0xff1800, spacing: 10, speed: 0.16, scale: 1.05, y: 1.35 });
   addArrows(northNb, { color: 0xffcc00, spacing: 10, speed: 0.16, scale: 1.05, y: 1.35 });
-  addArrows(southNs, { color: 0x00cc44, spacing: 10, speed: 0.16, scale: 1.05, y: 1.35 });
+  addArrows(southNs, { color: 0xffcc00, spacing: 10, speed: 0.16, scale: 1.05, y: 1.35 });
 
   let startTime = null;
   let playing = false;

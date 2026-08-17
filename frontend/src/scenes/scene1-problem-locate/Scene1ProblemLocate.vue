@@ -10,7 +10,7 @@ import { narrativeActive } from '../../shared/narrative-state.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
 import { SCENE_META } from './index.js'
 
-const { setScene } = useSceneRoute()
+const { setScene, advanceScene } = useSceneRoute()
 
 const mapReady = ref(false)
 
@@ -28,7 +28,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="scene-3d" data-testid="scene1-problem-locate">
     <TrafficOriginScene @ready="mapReady = true" />
-    <ProblemLocateStage v-if="mapReady" @exit="setScene('2')" />
+    <ProblemLocateStage v-if="mapReady" @exit="advanceScene('2')" />
 
     <div class="scene-actions">
       <span class="scene-tag">{{ SCENE_META.name }}</span>

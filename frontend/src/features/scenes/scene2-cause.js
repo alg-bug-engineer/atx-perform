@@ -514,7 +514,12 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
                     copy: copyText(dc, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散。'),
                   },
                 });
-                hooks.onComplete?.();
+                after(beatMs(beats, 'overflow', dc.overflow_ms ?? 3600), () => {
+                  frameJingshiEw(target, problemRoad);
+                  after(dc.frame_ms ?? 900, () => {
+                    hooks.onComplete?.();
+                  });
+                });
               });
             });
           });
