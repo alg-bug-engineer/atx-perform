@@ -1,6 +1,6 @@
 /**
  * 幕 2 下游约束：只画经十路主路东西向 + 奥体西南北向（不含经十路辅路）。
- * 从路口沿拓扑连续扩展，保证十字路网不断线。
+ * 只取与目标路口直接相连的双向主路，避免拓扑扩展造成近景重复叠画。
  * 经十路东/西进口均按拥堵绘制；西进口数字为 mock（GAP-WEST-SAT）。
  * 奥体西北向南红、南向北黄；经十路南面（奥体西）黄色。
  */
@@ -108,36 +108,15 @@ function pickConnectedNamedRoads(roads, originInter, namePred, geomPred, maxDist
   if (!originPos) return [];
 
   const candidates = (roads || []).filter((road) => namePred(String(road.props?.road_names || '')));
-  const seen = new Set();
-  const queue = [];
-
-  const enqueue = (road) => {
-    if (!road || seen.has(road)) return;
-    seen.add(road);
-    queue.push(road);
-  };
-
-  if (originId) {
-    for (const road of candidates) {
-      if (roadTouches(road, originId)) enqueue(road);
-    }
-  } else {
-    for (const road of candidates) enqueue(road);
-  }
-
   const picked = [];
-  while (queue.length) {
-    const road = queue.shift();
+  const directRoads = originId
+    ? candidates.filter((road) => roadTouches(road, originId))
+    : candidates;
+  for (const road of directRoads) {
     const clipped = clipFromNearEnd(road.coords, originPos, maxDist);
     if (clipped.length < 2) continue;
     if (geomPred && !geomPred(clipped, road)) continue;
     picked.push({ road, coords: clipped });
-    for (const nid of [road.props?.from_inter_id, road.props?.to_inter_id]) {
-      if (!nid) continue;
-      for (const next of candidates) {
-        if (roadTouches(next, nid)) enqueue(next);
-      }
-    }
   }
   return picked;
 }
@@ -172,6 +151,17 @@ function isSouthbound(coords) {
   const a = coords[0];
   const b = coords[coords.length - 1];
   return b[1] < a[1];
+}
+
+/** 仅把北向奥体西靠近路口的一端接到经十路中心纬度，填北侧空档，不穿十字。 */
+function extendNorthNsToJingshi(coords, originPos) {
+  if (!coords || coords.length < 2 || !originPos) return coords;
+  const originY = originPos[1];
+  const i = coords[0][1] < coords[coords.length - 1][1] ? 0 : coords.length - 1;
+  const end = coords[i];
+  if (end[1] <= originY + 0.35) return coords;
+  const join = [end[0], originY];
+  return i === 0 ? [join, ...coords] : [...coords, join];
 }
 
 function pickJingshiEwRoads(roads, originInter) {
@@ -295,12 +285,16 @@ export function createJingshiEwFlowLayer({
     }
   }
 
+  const originY = originPos[1];
+  const northSb = nsRoads
+    .filter((p) => classifyNsBand(p, originY) === 'north_sb')
+    .map((p) => ({ ...p, coords: extendNorthNsToJingshi(p.coords, originPos) }));
+  const northNb = nsRoads
+    .filter((p) => classifyNsBand(p, originY) === 'north_nb')
+    .map((p) => ({ ...p, coords: extendNorthNsToJingshi(p.coords, originPos) }));
+  const southNs = nsRoads.filter((p) => classifyNsBand(p, originY) === 'south');
   const primaryCoords = picked.filter((p) => p.primary).map((p) => p.coords);
   const secondaryCoords = picked.filter((p) => !p.primary).map((p) => p.coords);
-  const originY = originPos[1];
-  const northSb = nsRoads.filter((p) => classifyNsBand(p, originY) === 'north_sb');
-  const northNb = nsRoads.filter((p) => classifyNsBand(p, originY) === 'north_nb');
-  const southNs = nsRoads.filter((p) => classifyNsBand(p, originY) === 'south');
 
   const meshes = [];
   const addMesh = (coords, color, width, opacity) => {

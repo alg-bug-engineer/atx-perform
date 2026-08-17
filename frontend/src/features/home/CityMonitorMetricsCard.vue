@@ -7,8 +7,9 @@ import {
   resolveMonitorMetrics,
   statusLabel,
 } from '../../services/cityMonitorDemo.js';
+import { DEFAULT_DEMO_QUERY } from '../../services/demoCases.js';
 import { cityMonitorSelection } from '../../shared/home-idle-state.js';
-import { narrativeActive, resetNarrativeToHome } from '../../shared/narrative-state.js';
+import { requestDiagnosisSubmit } from './diagnosisQuickStart.js';
 
 const demo = ref(null);
 
@@ -49,10 +50,9 @@ const showOptimize = computed(() => {
   return sel?.type === 'corridor' && sel?.id === HOME_FOCUS_CORRIDOR_ID;
 });
 
-/** 点击「立即优化」：重置叙事 → 进入第一幕（幕舞台挂载后自动开始问题理解与定位） */
+/** 点击「立即优化」：填入奥体西廊道诊断句并发送（对齐 agent-loop） */
 function onOptimize() {
-  resetNarrativeToHome();
-  narrativeActive.value = true;
+  requestDiagnosisSubmit(DEFAULT_DEMO_QUERY);
 }
 </script>
 
@@ -118,9 +118,10 @@ function onOptimize() {
 }
 
 .metric-cell {
-  padding: 12px 8px 11px;
+  padding: 12px 4px 11px;
   text-align: center;
   border-right: 1px solid rgba(0, 212, 240, 0.1);
+  min-width: 0;
 }
 
 .metric-cell:last-child {
@@ -128,10 +129,11 @@ function onOptimize() {
 }
 
 .metric-val {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 750;
   line-height: 1.2;
-  letter-spacing: 0.2px;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .metric-label {

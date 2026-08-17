@@ -208,7 +208,7 @@ export function resolveCorridorMetrics(target) {
       status: target.status,
       kind: 'corridor',
       stepIndex: 208,
-      stepLabel: 'step 208 · 17:20–17:25',
+      stepLabel: '晚高峰',
       items: [
         { key: 'saturation', label: '实时饱和度', value: '128%', color: '#ff4757' },
         { key: 'flow', label: '实时流量', value: '824 pcu/h', color: '#1a7fff' },

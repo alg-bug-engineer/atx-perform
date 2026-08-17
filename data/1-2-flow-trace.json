@@ -144,35 +144,41 @@
   },
   "map_beats": {
     "trace": {
-      "caption": "正在追溯上游来流，按流量占比还原汇入路径"
+      "caption": "正在追溯上游来流，按流量占比还原汇入路径",
+      "headline": "流量由北向南汇入经十路口"
     },
     "supply": {
       "ms": 3600,
       "clear_ms": 500,
-      "caption": "当前通行量低于车道能力上限，本段仍有承接余量，需继续向下游排查"
+      "caption": "当前通行量低于车道能力上限，本段仍有承接余量，需继续向下游排查",
+      "headline": "本路段通行能力仍有余量"
     },
     "downstream": {
       "ms": 4200,
       "caption": "北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向，占比 85.33%",
       "has_receiving_capacity": true,
-      "conclusion": "下游主通道具备承接余量，当前瓶颈集中在经十路口放行约束"
+      "conclusion": "下游主通道具备承接余量，当前瓶颈集中在经十路口放行约束",
+      "headline": "下游通道具备承接余量"
     },
     "arterial": {
       "ms": 4200,
-      "caption": "经十路东西向通行压力突出，信号优先保障主干道通行"
+      "caption": "经十路东西向通行压力突出，信号优先保障主干道通行",
+      "headline": "经十路东西向优先保障"
     },
     "signal": {
       "ms": 3400,
       "caption": "受主干道优先约束，当前周期内难以再为北向南直行释放有效绿灯窗口",
       "schematic": true,
-      "gap": "相位环非库内绿秒"
+      "gap": "相位环非库内绿秒",
+      "headline": "北向南难以增配有效绿灯"
     },
     "overflow": {
       "ms": 3600,
       "caption": "经十路东西向压力与奥体西路北进口排队叠加，北向南车流短时难以消散，溢流风险成立",
       "queue_m": 270,
       "queue_ratio": 0.8,
-      "gaps": ["GAP-QUEUE-TABLE"]
+      "gaps": ["GAP-QUEUE-TABLE"],
+      "headline": "北向南溢流风险成立"
     }
   }
 }
