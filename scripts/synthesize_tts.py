@@ -150,7 +150,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="预合成各幕讲解 TTS")
     parser.add_argument(
         "--scene",
-        choices=["3", "3b", "4", "5"],
+        choices=["1", "3", "3b", "4", "5"],
         help="只合成指定幕（注意 manifest 会只保留该幕，通常不加此参数）",
     )
     parser.add_argument("--force", action="store_true", help="覆盖已有 wav")

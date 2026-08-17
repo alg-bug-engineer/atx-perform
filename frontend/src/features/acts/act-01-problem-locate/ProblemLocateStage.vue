@@ -1,23 +1,25 @@
 <script setup>
 /**
- * 幕 1 · 问题定位 — 合并舞台（原幕 1 诊断工单 + 幕 2 路网定位，无渠化）
+ * 幕 1 · 问题定位 — 指挥家时间轴舞台
  *
- * 流程：
- *   idle（输入卡）→ parsing（问题理解推理）
- *   → ticket_ready（工单左卡）
- *   → locating（地图飞入三路口走廊，走廊/流向箭头揭示）
- *   → 走廊揭示完成 → 空间对象卡 → 退出进入幕 2
+ * 语音为主轴，四拍严格带动地图与 UI（信息不变，只重排呈现）：
+ *   lock        飞入经十路北入口（语音起 = 镜头起，消灭开头割裂）+ 大字报点题
+ *   metrics     FlowInfoWindow 四指标逐条揭示（substeps 对齐语音）
+ *   upstream    指标窗撤下，镜头沿走廊扫视，上游汇入箭头强调
+ *   conclusion  三路口同框收束 + 诊断对象锚点 + 大字报「问题定位完成」
  *
- * 与主工程地图运行时（TrafficOriginScene）的协作：
- *   act2Phase='locating' → 地图飞入 → 飞入完成回调 markChannelizationReady()
- *   → locateCorridorReady 信号 → 本舞台揭示空间对象卡
+ * 侧板降级为过程信息：左卡紧凑模式（工单→空间对象），
+ * 推理面板缩为左下细条；语音播完即交棒，无尾部干等。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import TicketSpatialCard from './TicketSpatialCard.vue';
 import LocateReasoningPanel from './LocateReasoningPanel.vue';
 import FlowInfoWindow from './FlowInfoWindow.vue';
+import HeadlineOverlay from '../../../shared/components/HeadlineOverlay.vue';
 import { createReadyGate, runExitBarrier } from '../../../shared/act-timing.js';
-import { act1Phase, act2Phase } from '../../../shared/narrative-state.js';
+import { act1Phase, act2Phase, setAct2MapBeat } from '../../../shared/narrative-state.js';
+import { createConductor } from '../../../shared/conductor/conductor.js';
+import { ACT1_BEATS } from './timeline.js';
 import { FLOW_INFO_WINDOWS, INTERSECTIONS } from './fixture.js';
 import {
   beginLocate,
@@ -43,16 +45,14 @@ function clearTimers() {
 }
 
 // ── 可见性 ─────────────────────────────────────────────────────────
-// 左卡：工单落地后显示；走廊揭示后切换为空间对象模式
+// 左卡：工单落地后显示；走廊揭示后切换为空间对象模式（紧凑）
 const leftVisible = computed(
   () => act1Phase.value === 'ticket_ready'
     || act2Phase.value === 'locating'
     || act2Phase.value === 'confirming'
     || act2Phase.value === 'handoff',
 );
-const leftMode = computed(
-  () => (corridorRevealed.value ? 'spatial' : 'ticket'),
-);
+const leftMode = computed(() => (corridorRevealed.value ? 'spatial' : 'ticket'));
 
 const rightVisible = computed(
   () => act1Phase.value === 'parsing'
@@ -61,54 +61,16 @@ const rightVisible = computed(
     || act2Phase.value === 'confirming',
 );
 
-// 走廊揭示状态（诊断对象锚点在走廊揭示时出现）
-const corridorRevealed = ref(false);
-
-// 信息窗口：走廊揭示 600ms 后出现（对齐地图指标脉冲动效）
-const windowsVisible = ref(false);
-
+// ── 指挥家状态 ─────────────────────────────────────────────────────
+const headline = ref(null);              // 大字报（每拍一条要点）
+const corridorRevealed = ref(false);     // 走廊揭示（飞入完成）
+const windowsVisible = ref(false);       // 指标窗口（metrics 拍）
+const visibleMetricCount = ref(0);       // 指标逐条揭示（substeps）
 const showAnchor = computed(() => corridorRevealed.value);
 
-// 锚点坐标映射
-const anchorMap = {
-  jiefang: INTERSECTIONS.jiefang,
-  kunshun: INTERSECTIONS.kunshun,
-  jingshi: INTERSECTIONS.jingshi,
-};
+let metricsBeatOn = false;
 
-// ── 退出栅栏 ───────────────────────────────────────────────────────
-const leftGate = createReadyGate();     // 工单左卡揭示完成
-const windowsGate = createReadyGate();  // 信息窗口揭示完成
-const confirmGate = createReadyGate();  // 空间定位确认态
-let exited = false;
-
-// 定位推理与走廊揭示双就绪后，才切确认态（避免飞入未完成时
-// 地图运行时释放镜头，导致 markChannelizationReady 永不触发）
-let locateDone = false;
-let corridorDone = false;
-
-function maybeConfirm() {
-  if (!locateDone || !corridorDone) return;
-  completeLocateConfirm();
-  confirmGate.signal();
-}
-
-function onParseDone() {
-  completeTicket();
-}
-
-function onTicketRevealDone() {
-  leftGate.signal();
-}
-
-function onLocateDone() {
-  // 定位推理收束：与走廊揭示对齐后切确认态
-  locateDone = true;
-  maybeConfirm();
-}
-
-// 信息窗口：只展示核心问题路段（奥体西路·北向南）流量数据，
-// 去掉其余路口的流量窗口（坤顺上游 / 经十路东西入口）
+// 信息窗口：只展示核心问题路段（奥体西路·北向南）流量数据
 const allWindows = [
   ...FLOW_INFO_WINDOWS.filter((w) => w.core).map((w) => ({
     ...w,
@@ -117,10 +79,59 @@ const allWindows = [
   })),
 ];
 
-function onWindowRevealDone(index) {
-  // 所有窗口都揭示后放行
-  if (index === allWindows.length - 1) {
-    windowsGate.signal();
+const anchorMap = {
+  jiefang: INTERSECTIONS.jiefang,
+  kunshun: INTERSECTIONS.kunshun,
+  jingshi: INTERSECTIONS.jingshi,
+};
+
+// ── 退出栅栏 ───────────────────────────────────────────────────────
+const leftGate = createReadyGate(); // 工单左卡揭示完成
+let exited = false;
+
+function onTicketRevealDone() {
+  leftGate.signal();
+}
+
+// 指标窗口：metrics 拍已开始 + 走廊已揭示（镜头到位）才显示
+function maybeShowWindows() {
+  if (metricsBeatOn && locateCorridorReady.ready && !windowsVisible.value) {
+    windowsVisible.value = true;
+    if (visibleMetricCount.value === 0) visibleMetricCount.value = 1;
+  }
+}
+
+// ── 指挥家分派 ─────────────────────────────────────────────────────
+function onBeatStart(beat) {
+  headline.value = { main: beat.headline, sub: beat.headlineSub };
+  switch (beat.id) {
+    case 's1-lock':
+      // 语音起 = 地图起：问题理解 + 飞入并行，工单紧凑落地
+      beginParse();
+      later(() => completeTicket(), 900);
+      later(() => beginLocate(), 1400);
+      break;
+    case 's1-metrics':
+      metricsBeatOn = true;
+      maybeShowWindows();
+      break;
+    case 's1-upstream':
+      // 镜头沿走廊扫视前先撤指标窗（静态投影窗口不跟随镜头）
+      windowsVisible.value = false;
+      setAct2MapBeat('path');
+      break;
+    case 's1-conclusion':
+      completeLocateConfirm();
+      setAct2MapBeat('settle');
+      break;
+    default:
+      break;
+  }
+}
+
+function onBeatProgress(beat, subIndex) {
+  if (beat.id === 's1-metrics') {
+    visibleMetricCount.value = Math.max(visibleMetricCount.value, subIndex + 1);
   }
 }
 
@@ -129,9 +140,9 @@ function runExitFlow() {
   exited = true;
   runExitBarrier({
     later,
-    barriers: [leftGate.current, windowsGate.current, confirmGate.current],
-    // 等本幕讲解语音播完再跳转幕 2（讲解约 23s，比舞台演绎长，需对齐后再切）
-    waitBroadcast: true,
+    barriers: [leftGate.current],
+    // 语音已随拍对齐（最后一拍播完才 onAllEnd），无需再等播报队列
+    waitBroadcast: false,
     onExit: () => {
       const nextState = exitProblemLocate({ nextAct: 2 });
       emit('exit', nextState);
@@ -139,57 +150,55 @@ function runExitFlow() {
   });
 }
 
-onMounted(async () => {
+let conductor = null;
+
+onMounted(() => {
   enterProblemLocate();
 
-  // 删除手动输入入口：进入后自动开始问题理解
-  later(() => beginParse(), 120);
-
-  // 工单左卡揭示完成 → 进入空间定位
-  leftGate.current.then(() => {
-    later(() => beginLocate(), 350);
-  });
-
-  // 走廊揭示完成 → 信息窗口 + 空间对象卡 + 退出栅栏
   locateCorridorReady.once(() => {
-    corridorDone = true;
     corridorRevealed.value = true;
-    later(() => {
-      windowsVisible.value = true;
-    }, 600);
-    later(() => runExitFlow(), 2600);
-    maybeConfirm();
+    maybeShowWindows();
   });
-  // 无信息窗口时直接放行窗口守门员（当前至少保留 1 个核心窗口，此分支兜底）
-  if (allWindows.length === 0) {
-    windowsGate.signal();
-  }
+
+  conductor = createConductor({
+    beats: ACT1_BEATS,
+    hooks: {
+      onBeatStart,
+      onBeatProgress,
+      // 末拍语音播完即收束交棒（消灭尾部干等）
+      onAllEnd: () => later(runExitFlow, 400),
+    },
+  });
+  conductor.play();
 });
 
 onUnmounted(() => {
+  conductor?.dispose();
+  conductor = null;
   clearTimers();
 });
 </script>
 
 <template>
   <div class="problem-locate-stage">
-    <!-- 左侧：工单 / 空间对象结果卡 -->
+    <!-- 左侧：工单 / 空间对象结果卡（紧凑模式，过程信息） -->
     <transition name="dock-fade">
       <aside v-if="leftVisible" class="act-dock act-dock-left">
         <TicketSpatialCard
           :key="leftMode"
           :mode="leftMode"
+          compact
           @reveal-done="onTicketRevealDone"
         />
       </aside>
     </transition>
 
-    <!-- 右侧：两阶段推理过程 -->
+    <!-- 左下细条：两阶段推理过程（降级，不抢地图主角） -->
     <transition name="dock-fade">
-      <aside v-if="rightVisible" class="act-dock act-dock-right">
+      <aside v-if="rightVisible" class="act-dock act-dock-reason">
         <LocateReasoningPanel
-          @parse-done="onParseDone"
-          @locate-done="onLocateDone"
+          @parse-done="() => {}"
+          @locate-done="() => {}"
         />
       </aside>
     </transition>
@@ -203,7 +212,7 @@ onUnmounted(() => {
       </div>
     </transition>
 
-    <!-- 核心问题路段流量信息窗口（奥体西路·北向南） -->
+    <!-- 核心问题路段流量信息窗口（奥体西路·北向南，指标逐条揭示） -->
     <FlowInfoWindow
       v-for="(win, i) in allWindows"
       :key="win.id"
@@ -217,10 +226,14 @@ onUnmounted(() => {
       :flow-dir="win.flowDir"
       :source="win.source"
       :visible="windowsVisible"
+      :visible-metric-count="visibleMetricCount"
       :offset-x="win.offsetX"
       :offset-y="win.offsetY"
-      @reveal-done="onWindowRevealDone(i)"
+      @reveal-done="() => {}"
     />
+
+    <!-- 大字报讲解（每拍一条要点） -->
+    <HeadlineOverlay :headline="headline" />
   </div>
 </template>
 
@@ -234,7 +247,6 @@ onUnmounted(() => {
 
 .act-dock {
   position: absolute;
-  top: 96px;
   z-index: 37;
   pointer-events: auto;
   padding: 0;
@@ -245,13 +257,19 @@ onUnmounted(() => {
 }
 
 .act-dock-left {
+  top: 96px;
   left: 24px;
-  width: 300px;
+  width: 240px;
 }
 
-.act-dock-right {
-  right: 24px;
-  width: 360px;
+/* 推理面板降级为左下细条 */
+.act-dock-reason {
+  left: 24px;
+  bottom: 26px;
+  top: auto;
+  width: 340px;
+  max-height: 34vh;
+  font-size: 12px;
 }
 
 .map-anchor {

@@ -1,20 +1,44 @@
 {
-  "generated_at": "2026-08-14T17:00:07+0800",
+  "generated_at": "2026-08-17T15:39:17+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000,
   "scenes": {
     "1": {
       "title": "问题定位",
-      "total_duration_sec": 23.48,
+      "total_duration_sec": 22.18,
       "segments": [
         {
-          "id": "s1-main",
-          "file": "scene1/s1-main.wav",
-          "approx_sec": 24,
-          "text": "已锁定经十路与奥体西路北入口，晚高峰北向南直行排队外溢。监测显示：车流量五百二十辆每小时，排队二百七十米、排队比零点七三，延误指数五点二八、拥堵指数一点三二。上游坤顺、解放路口车流持续汇入，下游经十路口饱和度偏高，问题定位完成。",
-          "duration_sec": 23.48,
-          "chars": 114
+          "id": "s1-lock",
+          "file": "scene1/s1-lock.wav",
+          "approx_sec": 7,
+          "text": "已锁定经十路与奥体西路北入口，晚高峰北向南直行排队外溢。",
+          "duration_sec": 5.64,
+          "chars": 28
+        },
+        {
+          "id": "s1-metrics",
+          "file": "scene1/s1-metrics.wav",
+          "approx_sec": 11,
+          "text": "监测显示：车流量五百二十辆每小时，排队二百七十米、排队比零点七三，延误指数五点二八、拥堵指数一点三二。",
+          "duration_sec": 9.32,
+          "chars": 51
+        },
+        {
+          "id": "s1-upstream",
+          "file": "scene1/s1-upstream.wav",
+          "approx_sec": 6,
+          "text": "上游坤顺、解放路口车流持续汇入，下游经十路口饱和度偏高。",
+          "duration_sec": 5.88,
+          "chars": 28
+        },
+        {
+          "id": "s1-conclusion",
+          "file": "scene1/s1-conclusion.wav",
+          "approx_sec": 3,
+          "text": "问题定位完成。",
+          "duration_sec": 1.34,
+          "chars": 7
         }
       ]
     },

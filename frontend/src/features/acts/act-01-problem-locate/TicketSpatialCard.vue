@@ -9,6 +9,8 @@ import { DIAGNOSIS_TICKET, SPATIAL_SCENE, PROBLEM_LINK } from './fixture.js';
 
 const props = defineProps({
   mode: { type: String, default: 'ticket' }, // 'ticket' | 'spatial'
+  /** 紧凑模式（指挥家时间轴：两列密排，降级为过程信息） */
+  compact: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['reveal-done']);
@@ -62,16 +64,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="locate-card">
+  <div class="locate-card" :class="{ compact }">
     <div class="card-header">
       <span class="header-dot"></span>
       <span class="header-title">{{ mode === 'ticket' ? '诊断工单' : '问题定位' }}</span>
     </div>
 
     <template v-if="mode === 'ticket'">
-      <div v-for="f in ticketFields" :key="f.key" class="field-row">
-        <span class="field-label">{{ f.label }}</span>
-        <span class="field-value">{{ f.value }}</span>
+      <div class="ticket-grid">
+        <div v-for="f in ticketFields" :key="f.key" class="field-row">
+          <span class="field-label">{{ f.label }}</span>
+          <span class="field-value">{{ f.value }}</span>
+        </div>
       </div>
     </template>
 
@@ -155,5 +159,32 @@ onMounted(() => {
   color: rgba(0, 212, 240, 0.65);
   letter-spacing: 1.5px;
   margin-bottom: 2px;
+}
+
+/* 紧凑模式：两列密排，降级为过程信息，不抢地图主角 */
+.locate-card.compact {
+  padding: 8px 10px;
+}
+
+.locate-card.compact .ticket-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 10px;
+}
+
+.locate-card.compact .field-row {
+  flex-direction: column;
+  gap: 0;
+  padding: 2px 0;
+}
+
+.locate-card.compact .field-label {
+  width: auto;
+  font-size: 9px;
+}
+
+.locate-card.compact .field-value {
+  font-size: 10px;
+  line-height: 1.35;
 }
 </style>

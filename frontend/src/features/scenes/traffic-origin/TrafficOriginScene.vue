@@ -1019,6 +1019,7 @@ function onResize() {
   act4Congestion?.setResolution?.(W, H);
   act5FlowTrace?.setResolution?.(W, H);
   flowTraceFx?.setResolution?.(W, H);
+  act2Fx?.setResolution?.(W, H);
 }
 
 // 监听全局扫描触发 → 播放页面扫描视觉特效
@@ -2056,10 +2057,10 @@ function ensureAct2FlyToTarget(onArrive) {
   }
   _act2Cam.done.flyIn = true;
   const tw = act2Fx.getTargetWorld();
-  // SceneC：startFly(tx, 120, tz+70, tx, tz) — 从 Act1 结束位连续飞入
+  // SceneC：startFly(tx, 135, tz+70, tx, tz) — 从 Act1 结束位连续飞入
   // 向北微调：相机与目标同步北移，取景整体偏向坤顺上游（世界 z 向南为正，北 = -z）
   const northBias = -10;
-  startAct2Fly(tw.x, 120, tw.z + 70 - northBias, tw.x, tw.z - northBias, onArrive);
+  startAct2Fly(tw.x, 135, tw.z + 70 - northBias, tw.x, tw.z - northBias, onArrive);
 }
 
 function onAct2ChannelArrive() {

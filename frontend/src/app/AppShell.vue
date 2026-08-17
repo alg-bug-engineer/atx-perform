@@ -34,7 +34,7 @@ watch(
   () => narrativeState.beatId,
   (beatId, prev) => {
     if (!beatId || beatId === prev) return
-    // 幕 1（a1.* / a2.*）已改由 sceneNarration 预合成 WAV 播报，跳过逐句 speechSynthesis
+    // 幕 1（a1.* / a2.*）已改由指挥家时间轴分段 WAV 播报，跳过逐句 speechSynthesis
     if (/^a[12]\./.test(beatId)) return
     onBeatChanged(beatId)
   },

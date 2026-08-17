@@ -11,12 +11,15 @@
  *   3. 三路口标记 + 名称标签（坤顺 / 解放 / 经十）
  *   4. 北向南流向人字箭头（沿走廊流动）
  *   5. 上游双路口（解放 / 坤顺）指标脉冲环
- *   6. 路况着色层（高德语义）：直接在 3D 场景内铺贴地色带
- *      —— case 覆盖北入口 + 上游两个路段，红/深红呼吸脉冲
+ *   6. 路况线条层（对齐幕 2 线条形式）：LineSegments2 粗线，
+ *      红/深红呼吸脉冲；case 覆盖北入口 + 上游两个路段
  *
  * 无渠化：不调用 createChannelizationLayer；hasChannelization() 恒为 false。
  */
 import * as THREE from 'three';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 // 复用主工程 geo/loader.js 的投影（对齐 agent-loop 的 project / getRoadClass 机制）
 import { project } from '../../../geo/loader.js';
 import { createCityScan } from '../../../mesh/cityScan.js';
@@ -26,7 +29,6 @@ import {
 } from './fixture.js';
 import {
   fetchCaseTrafficLinks,
-  TRAFFIC_STATE_COLORS,
 } from './trafficColorService.js';
 
 /** 世界坐标（x 东 / y 北 / z=-y，对齐主工程） */
@@ -437,7 +439,7 @@ export const ACT1_PLANNING_BEATS = [
 ];
 
 // ══════════════════════════════════════════════════════════════════
-// 3D 路况着色层（高德语义，直接在场景内铺贴地色带）
+// 3D 路况层数据工具（case 路况 link：Mock=PG 嗅探值 / Live=后端读 PG）
 // ══════════════════════════════════════════════════════════════════
 
 /** case 路况数据（模块级缓存，fx 重建时复用；Mock=PG 嗅探值 / Live=后端读 PG） */
@@ -449,49 +451,141 @@ function ensureTrafficLinks() {
   return trafficLinksPromise;
 }
 
-/**
- * 沿 polyline 构建世界宽度贴地色带（三角形带）。
- * 与 3D 场景同坐标系：天然与道路几何对齐，无屏幕空间换算。
- * @param {Array<{x:number,z:number}>} pts 世界坐标点（x 东 / z 南）
- * @param {number} halfWidth 半宽（世界单位，1 单位 = 10 m）
- * @param {number} y 离地高度
- * @returns {THREE.BufferGeometry}
- */
-function buildRibbonGeometry(pts, halfWidth, y) {
-  const positions = [];
-  const indices = [];
-  for (let i = 0; i < pts.length; i++) {
-    const p = pts[i];
-    let dx = 0;
-    let dz = 0;
-    if (i > 0) { dx += p.x - pts[i - 1].x; dz += p.z - pts[i - 1].z; }
-    if (i < pts.length - 1) { dx += pts[i + 1].x - p.x; dz += pts[i + 1].z - p.z; }
-    const len = Math.hypot(dx, dz) || 1;
-    const px = -dz / len;
-    const pz = dx / len;
-    positions.push(p.x + px * halfWidth, y, p.z + pz * halfWidth);
-    positions.push(p.x - px * halfWidth, y, p.z - pz * halfWidth);
-  }
-  for (let i = 0; i < pts.length - 1; i++) {
-    const a = i * 2;
-    const b = i * 2 + 1;
-    const c = i * 2 + 2;
-    const d = i * 2 + 3;
-    indices.push(a, b, c, b, d, c);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setIndex(indices);
-  return geo;
+// ══════════════════════════════════════════════════════
+// 路况线条层（对齐幕 2 inflowTraceLayer 线条形式：
+// LineSegments2 粗线 + 顶点色渐亮 + 红/深红呼吸，替代原贴地色带）
+// ══════════════════════════════════════════════════════
+
+/** 线条离地高度 / 渐亮参数（对齐幕 2 inflowTraceLayer） */
+const TRAFFIC_LINE_Y = 0.62;
+const TRAFFIC_LINE_FADE = 0.4;
+const TRAFFIC_LINE_TRANS = 0.8;
+/** 暗底色（未揭示；对齐幕 2 C_BASE） */
+const TL_BASE = new THREE.Color(0x001508);
+/** 高德语义终态色（对齐幕 2 线条色板，4 深红沿用幕 1 色板） */
+const TL_STATE_COLORS = {
+  1: new THREE.Color(0x00cc44),
+  2: new THREE.Color(0xffcc00),
+  3: new THREE.Color(0xff5a36),
+  4: new THREE.Color(0xd0021b),
+  null: new THREE.Color(0x56606e),
+};
+
+/** 揭示延迟（秒）：问题路段先亮 → 上游 → 周边 context */
+function linkRevealDelay(link) {
+  if (link.is_problem_link) return 0.2;
+  if (link.role === 'north_entrance') return 0.4;
+  return 0.8;
 }
 
-/** 路况层几何参数（贴地，覆盖车道宽度） */
-const TRAFFIC_RIBBON = {
-  coreY: 0.62,      // 核心色带离地高度（覆盖路面）
-  coreHalfWidth: 0.95,  // 半宽 ≈ 9.5 m（约 5 车道）
-  glowY: 0.55,      // 发光下衬离地高度
-  glowHalfWidth: 1.8,   // 半宽 ≈ 18 m
-};
+/**
+ * 路况线条层：每条 link 一段粗线，走廊揭示后按延迟从暗底渐亮到终态色；
+ * 红/深红 link 呼吸脉冲（对齐幕 1 原色带呼吸语义）。
+ * @param {Array<{ geom: { coordinates: number[][] }, derived_state: number|null, is_problem_link?: boolean, role?: string }>} links
+ * @param {THREE.Vector2} [resolution]
+ */
+function buildTrafficLineLayer(links, resolution) {
+  const posArr = [];
+  const colArr = [];
+  const metas = [];
+  let edgeBase = 0;
+
+  for (const link of links) {
+    const pts = (link.geom?.coordinates || []).map(([lon, lat]) => {
+      const [x, y] = project(lon, lat);
+      return { x, z: -y };
+    });
+    if (pts.length < 2) continue;
+    const delay = linkRevealDelay(link);
+    const final = TL_STATE_COLORS[link.derived_state] ?? TL_STATE_COLORS.null;
+    const startEdge = edgeBase;
+    for (let i = 0; i < pts.length - 1; i++) {
+      posArr.push(pts[i].x, TRAFFIC_LINE_Y, pts[i].z, pts[i + 1].x, TRAFFIC_LINE_Y, pts[i + 1].z);
+      colArr.push(TL_BASE.r, TL_BASE.g, TL_BASE.b, TL_BASE.r, TL_BASE.g, TL_BASE.b);
+      edgeBase++;
+    }
+    metas.push({ startEdge, edges: pts.length - 1, delay, final, state: link.derived_state });
+  }
+
+  const group = new THREE.Group();
+  group.name = 'act1TrafficLines';
+  if (posArr.length < 6) {
+    group.startReveal = () => {};
+    group.updateLines = () => {};
+    group.resetLines = () => {};
+    group.disposeLines = () => {};
+    group.setResolution = () => {};
+    return group;
+  }
+
+  const geo = new LineSegmentsGeometry();
+  geo.setPositions(posArr);
+  geo.setColors(colArr);
+  const colorIBuf = geo.attributes.instanceColorStart.data;
+  const colors = colorIBuf.array;
+
+  const mat = new LineMaterial({
+    linewidth: 4,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    depthTest: false,
+    resolution: resolution ?? new THREE.Vector2(1920, 1080),
+  });
+  const mesh = new LineSegments2(geo, mat);
+  mesh.renderOrder = 41;
+  group.add(mesh);
+
+  let revealStart = null;
+  const tmp = new THREE.Color();
+
+  /**
+   * @param {number} time 当前时间（秒）
+   * @param {number} pulseOn 呼吸强度 0~1（走廊揭示后缓入）
+   */
+  group.updateLines = (time, pulseOn = 1) => {
+    if (revealStart == null) return;
+    const elapsed = time - revealStart;
+    for (const m of metas) {
+      const t = Math.max(0, Math.min(1, (elapsed - m.delay) / (TRAFFIC_LINE_FADE + TRAFFIC_LINE_TRANS)));
+      tmp.copy(TL_BASE).lerp(m.final, t);
+      // 红/深红呼吸（对齐原色带语义；幕 2 无此需求，幕 1 保留强调）
+      if (t > 0.9 && (m.state === 3 || m.state === 4)) {
+        tmp.multiplyScalar((0.78 + 0.22 * Math.sin(time * 2.3)) * pulseOn + (1 - pulseOn));
+      }
+      const base = m.startEdge * 6;
+      for (let e = 0; e < m.edges; e++) {
+        const o = base + e * 6;
+        colors[o] = tmp.r; colors[o + 1] = tmp.g; colors[o + 2] = tmp.b;
+        colors[o + 3] = tmp.r; colors[o + 4] = tmp.g; colors[o + 5] = tmp.b;
+      }
+    }
+    colorIBuf.needsUpdate = true;
+  };
+
+  group.startReveal = (time = performance.now() / 1000) => {
+    if (revealStart == null) revealStart = time;
+  };
+
+  /** clear 拍：回到暗底，下次揭示重来 */
+  group.resetLines = () => {
+    revealStart = null;
+    for (let i = 0; i < colors.length; i += 3) {
+      colors[i] = TL_BASE.r; colors[i + 1] = TL_BASE.g; colors[i + 2] = TL_BASE.b;
+    }
+    colorIBuf.needsUpdate = true;
+  };
+
+  group.setResolution = (w, h) => mat.resolution.set(w, h);
+  group.userData.lineMat = mat;
+  group.disposeLines = () => {
+    geo.dispose();
+    mat.dispose();
+  };
+  return group;
+}
 
 /**
  * Act2 定位态 fx（兼容工厂，无渠化）
@@ -666,60 +760,25 @@ export function createAct2MapFx({ project: _project } = {}) {
     return ring;
   });
 
-  // ── 3D 路况着色层（高德语义：case 覆盖北入口 + 上游两个路段）────────
+  // ── 路况线条层（对齐幕 2 inflowTraceLayer 线条形式：粗线 + 渐亮 + 呼吸）────────
   const trafficGroup = new THREE.Group();
-  trafficGroup.name = 'act2TrafficColorRibbons';
+  trafficGroup.name = 'act2TrafficColorLines';
   trafficGroup.visible = false;
   group.add(trafficGroup);
-  const trafficRibbons = []; // { glow, core, state, link }
+  let trafficLines = null;
   let trafficReady = false;
   let disposed = false;
 
   ensureTrafficLinks().then((links) => {
     if (disposed) return;
-    links.forEach((link) => {
-      const pts = (link.geom?.coordinates || []).map(([lon, lat]) => {
-        const [x, y] = project(lon, lat);
-        return { x, z: -y };
-      });
-      if (pts.length < 2) return;
-
-      const state = link.derived_state;
-      const colorHex = TRAFFIC_STATE_COLORS[state] ?? TRAFFIC_STATE_COLORS.null;
-
-      // 发光下衬
-      const glow = new THREE.Mesh(
-        buildRibbonGeometry(pts, TRAFFIC_RIBBON.glowHalfWidth, TRAFFIC_RIBBON.glowY),
-        new THREE.MeshBasicMaterial({
-          color: new THREE.Color(colorHex),
-          transparent: true,
-          opacity: 0,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
-        }),
-      );
-      glow.renderOrder = 40;
-      trafficGroup.add(glow);
-
-      // 核心色带（覆盖车道宽度）
-      const core = new THREE.Mesh(
-        buildRibbonGeometry(pts, TRAFFIC_RIBBON.coreHalfWidth, TRAFFIC_RIBBON.coreY),
-        new THREE.MeshBasicMaterial({
-          color: new THREE.Color(colorHex),
-          transparent: true,
-          opacity: 0,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
-        }),
-      );
-      core.renderOrder = 41;
-      trafficGroup.add(core);
-
-      trafficRibbons.push({ glow, core, state, link });
-    });
-    trafficReady = trafficRibbons.length > 0;
+    trafficLines = buildTrafficLineLayer(
+      links,
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+    );
+    trafficGroup.add(trafficLines);
+    trafficReady = Boolean(links.length);
+    // 数据晚于走廊揭示到达：补起揭示
+    if (trafficReady && corridorRevealed) trafficLines.startReveal();
   });
 
   // ── 状态机 ───────────────────────────────────────────────────────
@@ -752,7 +811,7 @@ export function createAct2MapFx({ project: _project } = {}) {
     }
 
     if (nextBeat === 'channelization') {
-      // 无渠化：语义 = 走廊揭示（主线 + 三路口 + 轴路名 + 流向箭头 + 路况色带）
+      // 无渠化：语义 = 走廊揭示（主线 + 三路口 + 轴路名 + 流向箭头 + 路况线条）
       corridorRevealed = true;
       corridorLine.visible = true;
       glowLine.visible = true;
@@ -762,6 +821,7 @@ export function createAct2MapFx({ project: _project } = {}) {
       ewChevrons.visible = true;
       weChevrons.visible = true;
       if (trafficReady) trafficGroup.visible = true;
+      trafficLines?.startReveal(time);
       targets.ring = 0.15;
       targets.corridor = 0.85;
       targets.markers = 0.95;
@@ -819,6 +879,7 @@ export function createAct2MapFx({ project: _project } = {}) {
       targets.pulses = 0;
       targets.traffic = 0;
       corridorRevealed = false;
+      trafficLines?.resetLines();
     }
   }
 
@@ -933,22 +994,21 @@ export function createAct2MapFx({ project: _project } = {}) {
       if (ring.material.opacity < 0.02 && pulsesWant <= 0) ring.visible = false;
     });
 
-    // 3D 路况色带：走廊揭示 0.6s 后淡入（对齐信息窗口）；红/深红呼吸脉冲
+    // 路况线条：走廊揭示 0.6s 后渐显（对齐信息窗口）；顶点色渐亮/呼吸由 updateLines 推进
     const trafficWant = corridorRevealed && elapsed > 0.6 && trafficReady ? targets.traffic : 0;
-    trafficRibbons.forEach((r, i) => {
-      const isRed = r.state === 3 || r.state === 4;
-      const pulse = isRed ? 0.78 + 0.22 * Math.sin(time * 2.3 + i * 1.7) : 1;
-      const want = trafficWant * pulse;
-      r.glow.material.opacity = lerp(r.glow.material.opacity, want * 0.35, 0.06);
-      r.core.material.opacity = lerp(r.core.material.opacity, want, 0.06);
-      // 数据晚于揭示到达时补亮；淡出至近乎全隐时隐藏组
-      if (trafficWant > 0 && !trafficGroup.visible) {
-        trafficGroup.visible = true;
+    if (trafficLines) {
+      const lineMat = trafficLines.userData.lineMat;
+      if (lineMat) {
+        lineMat.opacity = lerp(lineMat.opacity, trafficWant, 0.06);
+        // 呼吸强度随揭示缓入，避免刚亮起就闪
+        const pulseOn = Math.max(0, Math.min(1, (elapsed - 1.8) / 1.2));
+        trafficLines.updateLines(time, pulseOn);
       }
-      if (r.core.material.opacity < 0.02 && trafficWant <= 0 && trafficGroup.visible) {
+      if (trafficWant > 0 && !trafficGroup.visible) trafficGroup.visible = true;
+      if (lineMat && lineMat.opacity < 0.02 && trafficWant <= 0 && trafficGroup.visible) {
         trafficGroup.visible = false;
       }
-    });
+    }
   }
 
   function dispose() {
@@ -975,13 +1035,8 @@ export function createAct2MapFx({ project: _project } = {}) {
       r.geometry.dispose();
       r.material.dispose();
     });
-    trafficRibbons.forEach((r) => {
-      r.glow.geometry.dispose();
-      r.glow.material.dispose();
-      r.core.geometry.dispose();
-      r.core.material.dispose();
-    });
-    trafficRibbons.length = 0;
+    trafficLines?.disposeLines?.();
+    trafficLines = null;
   }
 
   return {
@@ -989,6 +1044,8 @@ export function createAct2MapFx({ project: _project } = {}) {
     play,
     update,
     dispose,
+    /** 视口尺寸变化时同步 LineMaterial resolution */
+    setResolution: (w, h) => trafficLines?.setResolution?.(w, h),
     // 兼容主工程调用面：本幕无渠化
     hasChannelization: () => false,
     ensureChannelization: () => null,

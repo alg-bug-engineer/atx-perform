@@ -44,7 +44,9 @@ export function playAudio(audioUrl, { onStart, onEnd, fallbackMs = 0 } = {}) {
   }
   const onEnded = () => finish()
   const onError = (e) => {
-    console.error('[TTS] 本地音频播放失败', audioUrl, e)
+    // 幕间打断会置空 src 触发 media error，属正常路径，不报 error
+    const aborted = !audio.src || audio.src === window.location.href
+    if (!aborted) console.error('[TTS] 本地音频播放失败', audioUrl, e)
     finish()
   }
 

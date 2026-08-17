@@ -36,6 +36,11 @@ const props = defineProps({
   /** 底部数据来源标签 */
   source: { type: String, default: '专家值 · 270 m 排队' },
   visible: { type: Boolean, default: false },
+  /**
+   * 逐条揭示：可见指标条数（指挥家 substeps 驱动）；
+   * 0 = 全部展示（兼容旧用法）。
+   */
+  visibleMetricCount: { type: Number, default: 0 },
   /** 相对地图视口的像素偏移（微调锚点位置用） */
   offsetX: { type: Number, default: 0 },
   offsetY: { type: Number, default: 0 },
@@ -43,7 +48,14 @@ const props = defineProps({
 
 const emit = defineEmits(['reveal-done']);
 
-// 定位态镜头：高度 120、FOV 45°，地面可见半高 ≈ 49.7 世界单位
+/** 指标逐条揭示：visibleMetricCount>0 时只展示前 N 条 */
+const shownMetrics = computed(() => {
+  const n = Number(props.visibleMetricCount) || 0;
+  if (n <= 0) return props.metrics;
+  return props.metrics.slice(0, n);
+});
+
+// 定位态镜头：高度 135、FOV 45°，地面可见半高 ≈ 55.9 世界单位
 const HOLD_VISIBLE_HALF = Math.tan(((PROJECTION.holdCamFovDeg / 2) * Math.PI) / 180)
   * PROJECTION.holdCamHeight;
 
@@ -191,9 +203,9 @@ function onTransitionEnd() {
 
         <div v-else class="fiw-grid">
           <div
-            v-for="m in metrics"
+            v-for="m in shownMetrics"
             :key="m.key"
-            class="fiw-metric"
+            class="fiw-metric fiw-metric-in"
             :class="`fiw-status-${m.status}`"
             :title="m.hint || ''"
           >
@@ -477,5 +489,27 @@ function onTransitionEnd() {
 .flowwin-fade-leave-to {
   opacity: 0;
   transform: translate(-50%, calc(-100% + 10px));
+}
+
+/* 指标逐条揭示：新出现的格子高亮闪入 */
+@keyframes fiw-metric-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+    box-shadow: 0 0 0 rgba(0, 212, 240, 0);
+  }
+  45% {
+    opacity: 1;
+    box-shadow: 0 0 14px rgba(0, 212, 240, 0.45);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(0, 212, 240, 0);
+  }
+}
+
+.fiw-metric-in {
+  animation: fiw-metric-in 0.6s ease both;
 }
 </style>

@@ -61,8 +61,9 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 
-/* 运行时原本给自带 HUD 留的顶距，这里由步骤栏承担，收回给内容 */
-.scene-3d :deep(.act-dock) {
+/* 运行时原本给自带 HUD 留的顶距，这里由步骤栏承担，收回给内容；
+   仅限左卡：左下推理细条由舞台自身定位（bottom），不能被 top 覆盖 */
+.scene-3d :deep(.act-dock-left) {
   top: 12px;
   max-height: calc(100% - 96px);
 }
