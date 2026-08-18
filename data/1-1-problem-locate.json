@@ -35,6 +35,77 @@
       "bind": "jiefang_east_metrics"
     }
   ],
+  "map_beats": {
+    "lock": {
+      "headline": "锁定奥体西路北向南问题路段",
+      "caption": "解放东路至经十路，北向南直行排队外溢",
+      "approx_sec": 8,
+      "panel": {
+        "kind": "lock",
+        "title": "问题路段",
+        "hero": "排队 270 m",
+        "rows": [
+          {
+            "label": "排队长度",
+            "value": "270 m"
+          },
+          {
+            "label": "平均速度",
+            "value": "7.2 km/h"
+          },
+          {
+            "label": "饱和度",
+            "value": "0.84"
+          }
+        ]
+      }
+    },
+    "nodes": {
+      "headline": "锁定上下游路口 · 东西向压力",
+      "caption": "上游解放东路口、下游经十路口东西向车流已标出",
+      "approx_sec": 8,
+      "panel": {
+        "kind": "nodes",
+        "title": "上下游路口",
+        "hero": "解放东 / 经十",
+        "rows": [
+          {
+            "label": "下游经十",
+            "value": "东进口 14.5 km/h"
+          },
+          {
+            "label": "上游解放东",
+            "value": "西进口 6.4 km/h"
+          }
+        ],
+        "note": "西进口/解放东东进口饱和度缺失，采用速度与延时指数降级"
+      }
+    },
+    "conclusion": {
+      "headline": "奥体西北向南溢流风险成立",
+      "caption": "问题定位完成，下一步分析成因",
+      "approx_sec": 4,
+      "panel": {
+        "kind": "conclusion",
+        "title": "问题定位结论",
+        "hero": "溢流风险成立",
+        "rows": [
+          {
+            "label": "问题路段",
+            "value": "解放东路 → 经十路"
+          },
+          {
+            "label": "专家排队",
+            "value": "270 m"
+          },
+          {
+            "label": "治理约束",
+            "value": "避免加重下游拥堵"
+          }
+        ]
+      }
+    }
+  },
   "problem_link_metrics": {
     "link_id": "12wwe28fmwwe28ct01",
     "avg_speed_kmh": 7.201388888888888,

@@ -85,10 +85,18 @@ function isJingshiServiceRoad(names) {
   return String(names || '').includes('经十路辅路');
 }
 
+function isNamedMainRoad(names, prefix) {
+  const s = String(names || '');
+  if (!prefix) return false;
+  if (s.includes('辅路')) return false;
+  const escaped = String(prefix).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?:^|,\\s*)${escaped}:`).test(s);
+}
+
 function isJingshiMainRoad(names) {
   const s = String(names || '');
   if (isJingshiServiceRoad(s)) return false;
-  return /(?:^|,\s*)经十路:/.test(s);
+  return isNamedMainRoad(s, '经十路');
 }
 
 function isAotixiMainRoad(names) {
@@ -164,11 +172,14 @@ function extendNorthNsToJingshi(coords, originPos) {
   return i === 0 ? [join, ...coords] : [...coords, join];
 }
 
-function pickJingshiEwRoads(roads, originInter) {
+function pickJingshiEwRoads(roads, originInter, ewPrefix = '经十路') {
+  const namePred = ewPrefix === '经十路'
+    ? isJingshiMainRoad
+    : (names) => isNamedMainRoad(names, ewPrefix);
   return pickConnectedNamedRoads(
     roads,
     originInter,
-    isJingshiMainRoad,
+    namePred,
     (clipped) => isEastWest(clipped),
     CLIP_R,
   ).map((item) => ({
@@ -263,15 +274,18 @@ export function createJingshiEwFlowLayer({
   originInter,
   problemRoad,
   resolution,
-}) {
+  ewRoadPrefix = '经十路',
+  includeEw = true,
+  includeNs = true,
+} = {}) {
   const group = new THREE.Group();
   group.name = 'jingshiEwFlowLayer';
   const originPos = originInter?.pos;
   if (!originPos) return group;
 
-  const picked = pickJingshiEwRoads(roads, originInter);
-  const nsRoads = pickAotixiNsRoads(roads, originInter);
-  if (problemRoad?.coords?.length >= 2) {
+  const picked = includeEw ? pickJingshiEwRoads(roads, originInter, ewRoadPrefix) : [];
+  const nsRoads = includeNs ? pickAotixiNsRoads(roads, originInter) : [];
+  if (includeNs && problemRoad?.coords?.length >= 2) {
     const already = nsRoads.some((p) => p.road === problemRoad);
     if (!already) {
       const clipped = clipFromNearEnd(problemRoad.coords, originPos, CLIP_R + 24);
@@ -433,5 +447,81 @@ export function createJingshiEwFlowLayer({
   group.bounds = bounds;
   group.worldCenter = new THREE.Vector3(cx, 0, -cy);
 
+  return group;
+}
+
+/**
+ * 单条有向路段：粗线 + 流动箭头，供幕 1 问题路段北向南标红。
+ * @param {{ coords: [number, number][], color?: THREE.Color, resolution?: THREE.Vector2 }} opts
+ */
+export function createDirectedFlowLayer({
+  coords,
+  color = C_NS_SB,
+  resolution,
+} = {}) {
+  const group = new THREE.Group();
+  group.name = 'directedFlowLayer';
+  if (!coords || coords.length < 2) return group;
+
+  const mesh = buildLineMesh([coords], color, 6.4, resolution, 0.86);
+  if (mesh) group.add(mesh);
+
+  const arrowGeo = makeArrowGeometry();
+  const arrowItems = [];
+  const pts = coords.map(([x, y0]) => new THREE.Vector3(x, 1.35, -y0));
+  const len = pathLen(pts);
+  if (len >= 4) {
+    const count = Math.max(5, Math.min(10, Math.round(len / 9)));
+    for (let i = 0; i < count; i += 1) {
+      const arrow = new THREE.Mesh(
+        arrowGeo,
+        new THREE.MeshBasicMaterial({
+          color: color.getHex(),
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+          depthTest: false,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+        }),
+      );
+      arrow.scale.setScalar(1.12);
+      arrow.renderOrder = 56;
+      group.add(arrow);
+      arrowItems.push({ mesh: arrow, pts, offset: i / count, speed: 0.16, y: 1.35 });
+    }
+  }
+
+  let startTime = null;
+  let playing = false;
+  group.play = (at = performance.now() / 1000) => {
+    startTime = at;
+    playing = true;
+  };
+  group.stop = () => { playing = false; };
+  group.update = (time) => {
+    if (!playing || startTime == null) return;
+    const elapsed = time - startTime;
+    const fade = Math.min(1, elapsed / 0.45);
+    for (const ar of arrowItems) {
+      ar.mesh.material.opacity = fade * 0.95;
+      const t = (ar.offset + elapsed * ar.speed) % 1;
+      const { pos, dir } = samplePath(ar.pts, t);
+      ar.mesh.position.copy(pos);
+      ar.mesh.position.y = ar.y;
+      ar.mesh.rotation.set(0, Math.atan2(-dir.z, dir.x), 0);
+    }
+  };
+  group.setResolution = (w, h) => {
+    mesh?.userData.lineMat?.resolution.set(w, h);
+  };
+  group.dispose = () => {
+    group.stop();
+    group.traverse((obj) => {
+      obj.geometry?.dispose?.();
+      obj.material?.dispose?.();
+    });
+    arrowGeo.dispose();
+  };
   return group;
 }

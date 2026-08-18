@@ -23,26 +23,20 @@
         {
           "id": "s1-lock",
           "file": "scene1/s1-lock.wav",
-          "approx_sec": 7,
-          "text": "已锁定经十路与奥体西路北入口，晚高峰北向南直行排队外溢。"
+          "approx_sec": 8,
+          "text": "已锁定奥体西路北向南问题路段，范围为解放东路至经十路。路段排队较长，通行速度偏低。"
         },
         {
-          "id": "s1-metrics",
-          "file": "scene1/s1-metrics.wav",
-          "approx_sec": 11,
-          "text": "监测显示：车流量520辆每小时，排队270米、排队比0.73，延误指数5.28、拥堵指数1.32。"
-        },
-        {
-          "id": "s1-upstream",
-          "file": "scene1/s1-upstream.wav",
-          "approx_sec": 6,
-          "text": "上游坤顺、解放路口车流持续汇入，下游经十路口饱和度偏高。"
+          "id": "s1-nodes",
+          "file": "scene1/s1-nodes.wav",
+          "approx_sec": 8,
+          "text": "锁定上游解放东路口和下游经十路口。经十路东西向压力突出，东进口通行偏慢。"
         },
         {
           "id": "s1-conclusion",
           "file": "scene1/s1-conclusion.wav",
-          "approx_sec": 3,
-          "text": "问题定位完成。"
+          "approx_sec": 4,
+          "text": "问题定位完成，北向南溢流风险成立。"
         }
       ]
     },

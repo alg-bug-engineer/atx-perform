@@ -11,6 +11,8 @@ const props = defineProps({
   mode: { type: String, default: 'ticket' }, // 'ticket' | 'spatial'
   /** 紧凑模式（指挥家时间轴：两列密排，降级为过程信息） */
   compact: { type: Boolean, default: false },
+  /** 幕 2 风格单卡：{ title, hero, rows, note } */
+  panel: { type: Object, default: null },
 });
 
 const emit = defineEmits(['reveal-done']);
@@ -67,10 +69,19 @@ onMounted(() => {
   <div class="locate-card" :class="{ compact }">
     <div class="card-header">
       <span class="header-dot"></span>
-      <span class="header-title">{{ mode === 'ticket' ? '诊断工单' : '问题定位' }}</span>
+      <span class="header-title">{{ panel?.title || (mode === 'ticket' ? '诊断工单' : '问题定位') }}</span>
     </div>
 
-    <template v-if="mode === 'ticket'">
+    <template v-if="panel">
+      <strong v-if="panel.hero" class="panel-hero">{{ panel.hero }}</strong>
+      <div v-for="(row, i) in panel.rows || []" :key="i" class="panel-row">
+        <span>{{ row.label }}</span>
+        <strong>{{ row.value }}</strong>
+      </div>
+      <p v-if="panel.note" class="panel-note">{{ panel.note }}</p>
+    </template>
+
+    <template v-else-if="mode === 'ticket'">
       <div class="ticket-grid">
         <div v-for="f in ticketFields" :key="f.key" class="field-row">
           <span class="field-label">{{ f.label }}</span>
@@ -159,6 +170,41 @@ onMounted(() => {
   color: rgba(0, 212, 240, 0.65);
   letter-spacing: 1.5px;
   margin-bottom: 2px;
+}
+
+.panel-hero {
+  display: block;
+  margin: 2px 0 8px;
+  font-size: 21px;
+  line-height: 1.25;
+  color: #f0fbff;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 11px;
+  color: rgba(160, 195, 215, 0.72);
+}
+
+.panel-row strong {
+  color: rgba(230, 242, 250, 0.95);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-note {
+  margin: 8px 0 0;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+  line-height: 1.5;
+  color: rgba(255, 190, 95, 0.85);
 }
 
 /* 紧凑模式：两列密排，降级为过程信息，不抢地图主角 */

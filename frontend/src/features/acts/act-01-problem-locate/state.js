@@ -10,6 +10,7 @@
  *     - 本幕无渠化，'channelization' 节拍语义 = 走廊揭示
  *     - 走廊后续动效（流向箭头、指标脉冲）由 actMapFx 内部时间轴推进
  */
+import { ref } from 'vue';
 import {
   act1MapBeat,
   act1Phase,
@@ -18,7 +19,6 @@ import {
   captureCamera,
   narrativeState,
   setAct,
-  setAct1MapBeat,
   setAct2MapBeat,
   setBeat,
   setLayerFlags,
@@ -31,6 +31,28 @@ import { DIAGNOSIS_TICKET, SPATIAL_SCENE } from './fixture.js';
 export const PROBLEM_LOCATE_ACT_ID = 1;
 export const PROBLEM_LOCATE_ACT_KEY = 'problem-locate';
 export const PROBLEM_LOCATE_ACT_NAME = '问题定位';
+
+/** 幕 1 地图/HUD 桥接，结构与幕 2 flowTraceHud 对齐。 */
+export const problemLocateHud = ref({
+  phase: '',
+  caption: '',
+  headline: '',
+  panel: null,
+});
+
+export function setProblemLocateHud(next = {}) {
+  problemLocateHud.value = { ...problemLocateHud.value, ...next };
+  if (next.phase) taskBarLabel.value = `执行中：${next.panel?.title || '问题定位'}`;
+}
+
+export function resetProblemLocateHud() {
+  problemLocateHud.value = {
+    phase: '',
+    caption: '',
+    headline: '',
+    panel: null,
+  };
+}
 
 /**
  * 幕内就绪信号（Stage 订阅）：
@@ -72,6 +94,7 @@ export function enterProblemLocate(prevState = null) {
   taskBarVisible.value = false;
   taskBarLabel.value = '';
   writeTicket(DIAGNOSIS_TICKET);
+  resetProblemLocateHud();
   locateCorridorReady.reset();
   locateCorridorReady.clear();
 
@@ -97,8 +120,6 @@ export function beginParse() {
   act1Phase.value = 'parsing';
   taskBarVisible.value = true;
   taskBarLabel.value = '执行中：问题理解';
-  // 地图：上游双路口搜索态脉冲
-  setAct1MapBeat('scan');
 }
 
 /** 工单落地 */
@@ -115,7 +136,6 @@ export function beginLocate() {
   act2Phase.value = 'locating';
   taskBarVisible.value = true;
   taskBarLabel.value = '执行中：问题定位';
-  setAct2MapBeat('fly_in');
 }
 
 /**

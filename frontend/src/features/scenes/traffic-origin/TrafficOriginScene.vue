@@ -844,7 +844,7 @@ async function initInner() {
   {
     const { createAct2MapFx } = getActFxCompat();
     if (createAct2MapFx) {
-      act2Fx = createAct2MapFx({ project });
+        act2Fx = createAct2MapFx({ project, roads: allRoads, intersections: allIntersections });
       scene.add(act2Fx.group);
     }
   }
@@ -1154,8 +1154,15 @@ function startAct2Fly(px, py, pz, lx, lz, onComplete = null) {
   _act2Cam.mode = 'fly';
   _act2Cam.lerp = 0.065;
   controls.enabled = false;
+  controls.minPolarAngle = 0;
   controls.minDistance = Math.min(controls.minDistance, 50);
   controls.maxDistance = Math.max(controls.maxDistance, 4500);
+}
+
+/** 幕 1 正俯视平移：高度不变，镜头垂直对准地面目标，不做 2.5D 侧倾。 */
+function startAct2Pan(lx, lz, onComplete = null, { height } = {}) {
+  const y = Number.isFinite(height) ? height : camera.position.y;
+  startAct2Fly(lx, y, lz, lx, lz, onComplete);
 }
 
 function beginAct2PathSweep() {
@@ -1998,6 +2005,7 @@ function updateAct2Camera(t) {
   if (_act2Cam.mode === 'fly') {
     camera.position.lerp(_act2Cam.posTarget, _act2Cam.lerp);
     controls.target.lerp(_act2Cam.lookTarget, _act2Cam.lerp);
+    camera.up.set(0, 0, -1);
     camera.lookAt(controls.target);
     const done =
       camera.position.distanceTo(_act2Cam.posTarget) < 2
@@ -2005,6 +2013,7 @@ function updateAct2Camera(t) {
     if (done) {
       camera.position.copy(_act2Cam.posTarget);
       controls.target.copy(_act2Cam.lookTarget);
+      camera.up.set(0, 0, -1);
       camera.lookAt(controls.target);
       const cb = _act2Cam.onComplete;
       _act2Cam.onComplete = null;
@@ -2019,15 +2028,12 @@ function updateAct2Camera(t) {
     const e = easeInOutQuint(raw);
     camera.position.lerpVectors(_act2Cam.sweepFrom, _act2Cam.sweepTo, e);
     controls.target.lerpVectors(_act2Cam.sweepLookFrom, _act2Cam.sweepLookTo, e);
+    camera.up.set(0, 0, -1);
     camera.lookAt(controls.target);
     if (raw >= 1) {
       // 扫完就地回稳：轻微拉回，不飞回远处「起点」重播
       const tw = act2Fx?.getTargetWorld() || { x: camera.position.x, z: controls.target.z };
-      _act2Cam.posTarget.set(
-        camera.position.x * 0.35 + tw.x * 0.65,
-        Math.min(camera.position.y, 195),
-        camera.position.z * 0.4 + (tw.z + 70) * 0.6,
-      );
+      _act2Cam.posTarget.set(tw.x, camera.position.y, tw.z);
       _act2Cam.lookTarget.set(tw.x, 0, tw.z);
       _act2Cam.onComplete = () => finishAct2Hold({ allowDrift: true });
       _act2Cam.mode = 'fly';
@@ -2039,12 +2045,20 @@ function updateAct2Camera(t) {
   if (_act2Cam.mode === 'hold') {
     const u = t;
     const amp = 2.2;
+    const ox = Math.sin(u * 0.07) * amp;
+    const oz = Math.cos(u * 0.06) * amp * 0.5;
     camera.position.set(
-      _act2Cam.holdPos.x + Math.sin(u * 0.07) * amp,
-      _act2Cam.holdPos.y + Math.sin(u * 0.05) * 1.2,
-      _act2Cam.holdPos.z + Math.cos(u * 0.06) * amp * 0.5,
+      _act2Cam.holdPos.x + ox,
+      _act2Cam.holdPos.y,
+      _act2Cam.holdPos.z + oz,
     );
-    controls.target.copy(_act2Cam.holdTarget);
+    controls.target.set(
+      _act2Cam.holdTarget.x + ox,
+      _act2Cam.holdTarget.y,
+      _act2Cam.holdTarget.z + oz,
+    );
+    camera.up.set(0, 0, -1);
+    camera.lookAt(controls.target);
   }
 }
 
@@ -2056,11 +2070,8 @@ function ensureAct2FlyToTarget(onArrive) {
     return;
   }
   _act2Cam.done.flyIn = true;
-  const tw = act2Fx.getTargetWorld();
-  // SceneC：startFly(tx, 135, tz+70, tx, tz) — 从 Act1 结束位连续飞入
-  // 向北微调：相机与目标同步北移，取景整体偏向坤顺上游（世界 z 向南为正，北 = -z）
-  const northBias = -10;
-  startAct2Fly(tw.x, 135, tw.z + 70 - northBias, tw.x, tw.z - northBias, onArrive);
+  const tw = act2Fx.getProblemWorld?.() || act2Fx.getTargetWorld();
+  startAct2Pan(tw.x, tw.z, onArrive, { height: 135 });
 }
 
 function onAct2ChannelArrive() {
@@ -2204,13 +2215,13 @@ watch(act1MapBeat, (beat) => {
 watch(act1Phase, (phase) => {
   if (phase === 'parsing') {
     if (focusMode.value) clearFocus();
-    startAct1Drift();
+    // 幕 1 改为单轨镜头：不再启动 10.8s Act1 dive，定位 fly-in 从当前机位直接接管。
+    stopAct1Drift();
   } else if (phase === 'idle') {
     stopAct1Drift();
     act1Fx?.play('clear', performance.now() / 1000);
   } else if (phase === 'ticket_ready' || phase === 'handoff') {
-    // 工单落地：收敛特效，保留极弱漂移至 Act2
-    act1Fx?.play('settle', performance.now() / 1000);
+    act1Fx?.play('clear', performance.now() / 1000);
   }
 });
 
@@ -2224,11 +2235,11 @@ watch(act2MapBeat, (beat) => {
     return;
   }
 
-  if (beat === 'fly_in') {
-    // 清除 Act1 搜索态，承接镜头飞入目标口（只播一次）
+  if (beat === 'fly_in' || beat === 'lock') {
+    // 清除 Act1 搜索态，承接镜头飞入问题路段
     stopAct1Camera();
     act1Fx?.play('clear', t);
-    act2Fx.play('fly_in', t, { scene });
+    act2Fx.play('lock', t, { scene });
     if (!_act2Cam.done.flyIn) {
       ensureAct2FlyToTarget(() => {
         onAct2ChannelArrive();
@@ -2240,12 +2251,34 @@ watch(act2MapBeat, (beat) => {
     return;
   }
 
-  if (beat === 'channelization') {
-    act2Fx.play('channelization', t, { scene });
+  if (beat === 'channelization' || beat === 'metrics') {
+    act2Fx.play('lock', t, { scene });
     if (!act2Fx.hasChannelization()) {
       if (_act2Cam.mode === 'hold' || _act2Cam.mode === 'idle' || _act2Cam.done.flyIn) {
         onAct2ChannelArrive();
       }
+    }
+    return;
+  }
+
+  if (beat === 'nodes' || beat === 'downstream' || beat === 'upstream') {
+    act2Fx.play('nodes', t, { scene });
+    const point = act2Fx.getNodesWorld?.() || act2Fx.getProblemWorld?.();
+    if (point) {
+      startAct2Pan(point.x, point.z, () => {
+        finishAct2Hold({ allowDrift: true });
+      });
+    }
+    return;
+  }
+
+  if (beat === 'conclusion') {
+    act2Fx.play('conclusion', t, { scene });
+    const point = act2Fx.getProblemWorld?.();
+    if (point) {
+      startAct2Pan(point.x, point.z, () => {
+        finishAct2Hold({ allowDrift: false });
+      });
     }
     return;
   }
@@ -2672,8 +2705,9 @@ watch(act2Phase, (phase, prev) => {
     {
       const { createAct2MapFx } = getActFxCompat();
       if (createAct2MapFx) {
-        act2Fx = createAct2MapFx({ project });
+        act2Fx = createAct2MapFx({ project, roads: allRoads, intersections: allIntersections });
         scene.add(act2Fx.group);
+        act2Fx.group.visible = true;
       }
     }
 
@@ -2682,7 +2716,9 @@ watch(act2Phase, (phase, prev) => {
     _act2Cam.done.sweep = false;
     _act2Cam.pendingSweep = false;
     enterAct2ParticleMode();
-    setAct2MapBeat('fly_in');
+    act1Fx?.play('clear', performance.now() / 1000);
+    if (act1Fx?.group) act1Fx.group.visible = false;
+    setAct2MapBeat('lock');
   } else if (phase === 'confirming' || phase === 'handoff') {
     act2Fx?.play('dim', performance.now() / 1000, { scene });
     releaseAct2CameraForUser();
