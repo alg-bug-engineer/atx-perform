@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""预合成各幕讲解语音（Qwen TTS Realtime → 本地 WAV）。
+"""预合成各幕讲解语音（Qwen3-TTS 最新非实时 API → 本地 WAV）。
 
 用法（项目根目录）：
-  references/agent-loop-project/.venv/bin/python scripts/synthesize_tts.py
-  references/agent-loop-project/.venv/bin/python scripts/synthesize_tts.py --scene 3
-  references/agent-loop-project/.venv/bin/python scripts/synthesize_tts.py --force
+  python3 scripts/synthesize_tts.py
+  python3 scripts/synthesize_tts.py --scene 3
+  python3 scripts/synthesize_tts.py --force
 
-依赖：.env 中的 DASHSCOPE_API_KEY / QWEN_TTS_*；dashscope（agent-loop .venv 已装）。
+依赖：.env 中的 QWEN_API_KEY / QWEN_TTS_*；requests。
+音色统一：meta.voice（默认 Neil，新闻播报男声），全幕同一音色。
 """
 from __future__ import annotations
 
@@ -115,7 +116,8 @@ class _Collector:
 
 
 def synthesize(text: str, *, voice: str, model: str, base_url: str) -> bytes:
-    """通过百炼 MaaS 原生 SpeechSynthesizer 端点（非 WebSocket）合成，返回 WAV 字节。"""
+    """合成音频：优先 Qwen-TTS 最新非实时端点（multimodal-generation），
+    网关不支持时自动回退 Qwen-Audio-TTS 的 SpeechSynthesizer 端点。"""
     import requests
 
     api_key = (
@@ -126,31 +128,42 @@ def synthesize(text: str, *, voice: str, model: str, base_url: str) -> bytes:
     if not api_key:
         raise RuntimeError("缺少 QWEN_API_KEY / DASHSCOPE_API_KEY")
 
-    url = f"{base_url.rstrip('/')}/api/v1/services/audio/tts/SpeechSynthesizer"
-    resp = requests.post(
-        url,
-        headers={"Authorization": f"Bearer {api_key}"},
-        json={"model": model, "input": {"text": text, "voice": voice}},
-        timeout=60,
-    )
-    if resp.status_code != 200:
-        raise RuntimeError(f"TTS 合成失败 {resp.status_code}: {resp.text[:300]}")
-    payload = resp.json()
-    audio_url = payload.get("output", {}).get("audio", {}).get("url")
-    if not audio_url:
-        raise RuntimeError(f"TTS 响应无音频 URL: {resp.text[:300]}")
-
-    audio_resp = requests.get(audio_url, timeout=60)
-    if audio_resp.status_code != 200:
-        raise RuntimeError(f"下载音频失败 {audio_resp.status_code}")
-    return audio_resp.content
+    base = base_url.rstrip('/')
+    endpoints = [
+        f"{base}/api/v1/services/aigc/multimodal-generation/generation",
+        f"{base}/api/v1/services/audio/tts/SpeechSynthesizer",
+    ]
+    last_err: Exception | None = None
+    for url in endpoints:
+        resp = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "model": model,
+                "input": {"text": text, "voice": voice, "language_type": "Chinese"},
+            },
+            timeout=60,
+        )
+        if resp.status_code != 200:
+            last_err = RuntimeError(f"TTS 合成失败 {resp.status_code}: {resp.text[:200]}")
+            continue
+        payload = resp.json()
+        audio_url = payload.get("output", {}).get("audio", {}).get("url")
+        if not audio_url:
+            last_err = RuntimeError(f"TTS 响应无音频 URL: {resp.text[:200]}")
+            continue
+        audio_resp = requests.get(audio_url, timeout=60)
+        if audio_resp.status_code != 200:
+            raise RuntimeError(f"下载音频失败 {audio_resp.status_code}")
+        return audio_resp.content
+    raise last_err or RuntimeError("TTS 合成失败")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="预合成各幕讲解 TTS")
     parser.add_argument(
         "--scene",
-        choices=["1", "3", "3b", "4", "5"],
+        choices=["1", "2", "3", "3b", "4", "5"],
         help="只合成指定幕（注意 manifest 会只保留该幕，通常不加此参数）",
     )
     parser.add_argument("--force", action="store_true", help="覆盖已有 wav")

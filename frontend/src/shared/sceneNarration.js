@@ -3,7 +3,8 @@
  *
  * 幕 1 已改为「指挥家时间轴」分段讲解（conductor 按拍取用
  * getConductorSegments），不再由本模块整段抢播；
- * 幕 2 保持原有 a2f 词槽播报（无预合成音频）；幕 3/3b/4/5 仍走进场整段播报。
+ * 幕 3（成因分析）a2f 逐拍经 narrateBeat 走预合成 WAV（统一音色）；
+ * 幕 3/3b/4/5 仍走进场整段播报。
  */
 import scripts from '@data/tts/scripts.json'
 import manifest from '@data/tts/manifest.json'
@@ -11,6 +12,13 @@ import manifest from '@data/tts/manifest.json'
 import s1Lock from '@data/tts/scene1/s1-lock.wav?url'
 import s1Nodes from '@data/tts/scene1/s1-nodes.wav?url'
 import s1Conclusion from '@data/tts/scene1/s1-conclusion.wav?url'
+import s2Trace from '@data/tts/scene2/s2-trace.wav?url'
+import s2Supply from '@data/tts/scene2/s2-supply.wav?url'
+import s2Downstream from '@data/tts/scene2/s2-downstream.wav?url'
+import s2Arterial from '@data/tts/scene2/s2-arterial.wav?url'
+import s2Signal from '@data/tts/scene2/s2-signal.wav?url'
+import s2Overflow from '@data/tts/scene2/s2-overflow.wav?url'
+import s2Done from '@data/tts/scene2/s2-done.wav?url'
 import s3Main from '@data/tts/scene3/s3-main.wav?url'
 import s3bMain from '@data/tts/scene3b/s3b-main.wav?url'
 import s4Main from '@data/tts/scene4/s4-main.wav?url'
@@ -25,6 +33,13 @@ const AUDIO_BY_FILE = {
   'scene1/s1-lock.wav': s1Lock,
   'scene1/s1-nodes.wav': s1Nodes,
   'scene1/s1-conclusion.wav': s1Conclusion,
+  'scene2/s2-trace.wav': s2Trace,
+  'scene2/s2-supply.wav': s2Supply,
+  'scene2/s2-downstream.wav': s2Downstream,
+  'scene2/s2-arterial.wav': s2Arterial,
+  'scene2/s2-signal.wav': s2Signal,
+  'scene2/s2-overflow.wav': s2Overflow,
+  'scene2/s2-done.wav': s2Done,
   'scene3/s3-main.wav': s3Main,
   'scene3b/s3b-main.wav': s3bMain,
   'scene4/s4-main.wav': s4Main,
@@ -86,4 +101,19 @@ export function playSceneNarration(sceneKey) {
 
 export function sceneHasNarration(sceneKey) {
   return NARRATED.has(String(sceneKey))
+}
+
+/**
+ * 幕 3（成因分析）逐拍口播：a2f.* beat 命中预合成 WAV 则入队播报（统一音色），
+ * 返回是否已处理；未命中（文案未合成）时调用方回退实时 TTS。
+ * @param {string} beatId
+ */
+export function narrateBeat(beatId) {
+  const seg = getConductorSegments('2').find((s) => s.id === beatId)
+  if (!seg || !seg.audioUrl) return false
+  triggerBroadcast(seg.id, seg.text, {
+    audioUrl: seg.audioUrl,
+    durationSec: seg.durationSec || seg.approxSec || 0,
+  })
+  return true
 }

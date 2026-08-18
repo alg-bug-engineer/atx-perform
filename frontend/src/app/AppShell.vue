@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent, onMounted, onUnmounted, watch } from 'vue'
 import { sceneRegistry, getSceneByKey } from '../shared/scene-registry.js'
 import { useSceneRoute } from '../shared/useSceneRoute.js'
-import { playSceneNarration } from '../shared/sceneNarration.js'
+import { playSceneNarration, narrateBeat } from '../shared/sceneNarration.js'
 import { broadcastSilent } from '../shared/broadcast-bus.js'
 import { narrativeActive, narrativeState } from '../shared/narrative-state.js'
 import { onBeatChanged } from '../shared/act-voice.js'
@@ -36,6 +36,8 @@ watch(
     if (!beatId || beatId === prev) return
     // 幕 1（a1.* / a2.*）已改由指挥家时间轴分段 WAV 播报，跳过逐句 speechSynthesis
     if (/^a[12]\./.test(beatId)) return
+    // 幕 3 成因分析（a2f.*）走预合成 WAV 统一音色；未命中再回退词槽 TTS
+    if (/^a2f\./.test(beatId) && narrateBeat(beatId)) return
     onBeatChanged(beatId)
   },
 )

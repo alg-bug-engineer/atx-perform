@@ -1,6 +1,6 @@
 {
   "meta": {
-    "note": "幕 1 指挥家时间轴分段讲解 + 幕 3/3b/4/5 整段讲解；幕 2 无预合成音频（保持原状）。",
+    "note": "幕 1 指挥家时间轴分段讲解 + 幕 3（成因分析）a2f 逐拍分段讲解 + 幕 3/3b/4/5 整段讲解；幕 2 无预合成音频（保持原状）。",
     "voice": "longanlufeng",
     "model": "qwen-audio-3.0-tts-plus",
     "sample_rate": 24000,
@@ -37,6 +37,54 @@
           "file": "scene1/s1-conclusion.wav",
           "approx_sec": 4,
           "text": "问题定位完成，北向南溢流风险成立。"
+        }
+      ]
+    },
+    "2": {
+      "scene_key": "2",
+      "title": "分析成因",
+      "segments": [
+        {
+          "id": "a2f.trace",
+          "file": "scene2/s2-trace.wav",
+          "approx_sec": 5,
+          "text": "正在追溯上游来流，按流量占比还原汇入路径。"
+        },
+        {
+          "id": "a2f.supply",
+          "file": "scene2/s2-supply.wav",
+          "approx_sec": 7,
+          "text": "当前通行量低于车道能力上限，本段仍有承接余量，需继续向下游排查。"
+        },
+        {
+          "id": "a2f.downstream",
+          "file": "scene2/s2-downstream.wav",
+          "approx_sec": 14,
+          "text": "北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向。下游主通道具备承接余量，当前瓶颈集中在经十路口放行约束。"
+        },
+        {
+          "id": "a2f.arterial",
+          "file": "scene2/s2-arterial.wav",
+          "approx_sec": 8,
+          "text": "经十路东西向通行压力突出。作为晚高峰通勤主干道，信号优先保障东西向通行。"
+        },
+        {
+          "id": "a2f.signal",
+          "file": "scene2/s2-signal.wav",
+          "approx_sec": 7,
+          "text": "受经十路主干道优先约束，当前周期内难以再为北向南直行释放有效绿灯窗口。"
+        },
+        {
+          "id": "a2f.overflow",
+          "file": "scene2/s2-overflow.wav",
+          "approx_sec": 10,
+          "text": "经十路东西向压力与奥体西路北进口排队叠加，北向南车流短时难以消散，溢流风险成立。"
+        },
+        {
+          "id": "a2f.done",
+          "file": "scene2/s2-done.wav",
+          "approx_sec": 2,
+          "text": "成因分析完成。"
         }
       ]
     },
