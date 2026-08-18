@@ -170,7 +170,7 @@ figcaption strong {
 
 .ax {
   font-size: 9px;
-  fill: rgba(160, 200, 220, 0.5);
+  fill: var(--text);
   font-family: var(--font-mono);
 }
 

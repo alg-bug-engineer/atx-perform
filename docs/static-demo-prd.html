@@ -79,6 +79,8 @@ td.t{color:var(--cyan);white-space:nowrap}
 .tag.warn{color:var(--warn);border-color:rgba(180,83,9,.5)}
 .tag.key{color:var(--cyan);border-color:var(--cyan-bd)}
 .tag.mut{color:var(--mut);border-color:rgba(15,23,42,.25)}
+.dk{background:#0b1524;color:#f0f6ff;padding:1px 6px}
+.tag.dk{color:#f0f6ff;border-color:#0b1524;background:#0b1524}
 .foot{color:var(--mut);font-size:12px;border-top:1px solid var(--cyan-bd);padding-top:12px;margin-top:8px}
 .foot li{margin:3px 0 3px 18px}
 </style>
@@ -88,7 +90,7 @@ td.t{color:var(--cyan);white-space:nowrap}
 <header class="top">
   <div class="brand">济南交管支队信控智能体</div>
   <div class="sub">奥体西路晚高峰治理 · 静态演示 PRD（产品需求规格说明书 · 汇报演示指导版）</div>
-  <div class="meta">场景：周一晚高峰 17:00–19:00 ｜ 走廊：奥体西路 北向南（解放东路 → 经十路）｜ 目标路口：奥体西路与经十路路口 ｜ 上游风险口：奥体西路与解放东路路口 ｜ 本文档为需求规格：规定每幕显示内容、文案逐字稿、语义配色与节拍时序，工程实现须逐帧复现</div>
+  <div class="meta">场景：周一晚高峰 17:00–19:00 ｜ 走廊：奥体西路 北向南（解放东路 → 经十路）｜ 目标路口：奥体西路与经十路路口 ｜ 上游风险口：奥体西路与解放东路路口 ｜ 本文档为需求规格：规定每幕显示内容、文案逐字稿、语义配色与节拍时序，工程实现须逐帧复现 ｜ 编号对齐产品步骤栏：幕 1 = 主动巡检</div>
 </header>
 
 <div class="legend">
@@ -98,15 +100,16 @@ td.t{color:var(--cyan);white-space:nowrap}
   <span class="chip warn">琥珀 · 预警 / 接近边界 / 待确认</span>
   <span class="chip ok">绿 · 达标 / 改善 / 保障 / 增加</span>
   <span class="chip key">青 · 结论 / 关键动作 / 关键标记</span>
+  <span class="chip">产品屏为黑底 · 非数据文字统一白字（语义色仅用于数据/指标/阈值/信号灯）</span>
 </div>
 
 <nav class="flow">
-  <a class="f" href="#act0"><i>幕 0</i><h3>开幕</h3><p>主动巡检发现异常，问题路段标红，镜头锁定双路口</p></a>
-  <a class="f" href="#act1"><i>幕 1</i><h3>问题定位</h3><p>锁定路段与上下游路口，量化溢流风险</p></a>
-  <a class="f" href="#act2"><i>幕 2</i><h3>分析成因</h3><p>溯源车流来去、校核供需、确认下游约束</p></a>
-  <a class="f" href="#act3"><i>幕 3</i><h3>优化方案</h3><p>相位协调 + 干线绿波，左右对比验证</p></a>
-  <a class="f" href="#act4"><i>幕 4</i><h3>效果评估</h3><p>5 周期试运行，三线监测验证达标</p></a>
-  <a class="f" href="#act5"><i>幕 5</i><h3>技能固化</h3><p>处置经验落盘为可复用技能包</p></a>
+  <a class="f" href="#act1"><i>幕 1</i><h3>主动巡检</h3><p>全域扫描发现异常，问题路段标红，镜头锁定双路口</p></a>
+  <a class="f" href="#act2"><i>幕 2</i><h3>问题定位</h3><p>锁定路段与上下游路口，量化溢流风险</p></a>
+  <a class="f" href="#act3"><i>幕 3</i><h3>分析成因</h3><p>溯源车流来去、校核供需、确认下游约束</p></a>
+  <a class="f" href="#act4"><i>幕 4</i><h3>优化方案</h3><p>相位协调 + 干线绿波，上下对照验证</p></a>
+  <a class="f" href="#act5"><i>幕 5</i><h3>效果评估</h3><p>5 周期试运行，三线监测验证达标</p></a>
+  <a class="f" href="#act6"><i>幕 6</i><h3>技能固化</h3><p>处置经验落盘为可复用技能包</p></a>
 </nav>
 
 <!-- ================= §1 规范 ================= -->
@@ -126,20 +129,20 @@ td.t{color:var(--cyan);white-space:nowrap}
     <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">口播载体与时长预算（data/tts/scripts.json）</h4>
     <table>
       <tr><th>幕</th><th>载体</th><th>音频文件 / 时长预算</th></tr>
-      <tr><td>幕 0</td><td>字幕（无音频）</td><td>—</td></tr>
-      <tr><td>幕 1</td><td>预合成语音 · 3 段</td><td><span class="src">scene1/s1-lock.wav</span> 8s ／ <span class="src">s1-nodes.wav</span> 8s ／ <span class="src">s1-conclusion.wav</span> 4s</td></tr>
-      <tr><td>幕 2</td><td>字幕（无音频）</td><td>—</td></tr>
-      <tr><td>幕 3</td><td>预合成语音</td><td><span class="src">scene3/s3-main.wav</span> 14s</td></tr>
-      <tr><td>幕 3b</td><td>预合成语音</td><td><span class="src">scene3b/s3b-main.wav</span> 13s</td></tr>
-      <tr><td>幕 4</td><td>预合成语音</td><td><span class="src">scene4/s4-main.wav</span> 10s</td></tr>
-      <tr><td>幕 5</td><td>预合成语音</td><td><span class="src">scene5/s5-main.wav</span> 8s</td></tr>
+      <tr><td>幕 1</td><td>字幕（无音频）</td><td>—</td></tr>
+      <tr><td>幕 2</td><td>预合成语音 · 3 段</td><td><span class="src">scene1/s1-lock.wav</span> 8s ／ <span class="src">s1-nodes.wav</span> 8s ／ <span class="src">s1-conclusion.wav</span> 4s</td></tr>
+      <tr><td>幕 3</td><td>预合成语音 · 7 段</td><td><span class="src">scene2/s2-trace.wav</span> 5s ／ <span class="src">s2-supply</span> 7s ／ <span class="src">s2-downstream</span> 14s ／ <span class="src">s2-arterial</span> 8s ／ <span class="src">s2-signal</span> 7s ／ <span class="src">s2-overflow</span> 10s ／ <span class="src">s2-done</span> 2s</td></tr>
+      <tr><td>幕 4</td><td>预合成语音</td><td><span class="src">scene3/s3-main.wav</span> 14s</td></tr>
+      <tr><td>幕 4b</td><td>预合成语音</td><td><span class="src">scene3b/s3b-main.wav</span> 13s</td></tr>
+      <tr><td>幕 5</td><td>预合成语音</td><td><span class="src">scene4/s4-main.wav</span> 10s</td></tr>
+      <tr><td>幕 6</td><td>预合成语音</td><td><span class="src">scene5/s5-main.wav</span> 8s</td></tr>
     </table>
   </div>
 </section>
 
 <!-- ================= 幕 0 ================= -->
-<section class="act" id="act0">
-  <div class="act-head"><span class="no">幕 0</span><h2>开幕 — 主动巡检发现异常</h2><span class="goal">工程映射：scenes/scene0-opening/Scene0Opening.vue</span></div>
+<section class="act" id="act1">
+  <div class="act-head"><span class="no">幕 1</span><h2>主动巡检 — 全域扫描发现异常</h2><span class="goal">工程映射：scenes/scene0-opening/Scene0Opening.vue</span></div>
   <div class="act-body">
     <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin-bottom:8px">画面节拍表</h4>
     <table>
@@ -160,8 +163,8 @@ td.t{color:var(--cyan);white-space:nowrap}
 </section>
 
 <!-- ================= 幕 1 ================= -->
-<section class="act" id="act1">
-  <div class="act-head"><span class="no">幕 1</span><h2>问题定位 — 锁定路段与双路口，量化溢流风险</h2><span class="goal">工程映射：scene1-problem-locate/*</span></div>
+<section class="act" id="act2">
+  <div class="act-head"><span class="no">幕 2</span><h2>问题定位 — 锁定路段与双路口，量化溢流风险</h2><span class="goal">工程映射：scene1-problem-locate/*</span></div>
   <div class="act-body">
     <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin-bottom:8px">画面节拍表</h4>
     <table>
@@ -189,8 +192,8 @@ td.t{color:var(--cyan);white-space:nowrap}
           <rect x="166" y="98" width="28" height="234" fill="none" stroke="#0891b2" stroke-width="1" stroke-dasharray="5 4" opacity=".8"/>
           <circle cx="180" cy="90" r="7" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
           <circle cx="180" cy="340" r="7" fill="#ffffff" stroke="#0891b2" stroke-width="2"/>
-          <text x="196" y="94" fill="#0f172a" font-size="12">解放东路路口（上游）</text>
-          <text x="196" y="344" fill="#0f172a" font-size="12">经十路路口（下游）</text>
+          <text x="196" y="94" fill="#0f172a" font-size="12">解放东路口</text>
+          <text x="196" y="344" fill="#0f172a" font-size="12">经十路口</text>
           <text x="204" y="200" fill="#dc2626" font-size="12">问题路段</text>
           <text x="204" y="216" fill="#dc2626" font-size="12">排队 270 m</text>
           <path d="M330 30 l0 -16 m0 0 l-5 7 m5 -7 l5 7" stroke="#0f172a" stroke-width="1.5" fill="none"/>
@@ -207,6 +210,7 @@ td.t{color:var(--cyan);white-space:nowrap}
           <div class="card"><div class="lb">上游解放东 西进口</div><div class="v bad">6.4 km/h</div><div class="sb">延时指数 <span class="bad">4.46</span> · 上游进口同样拥堵</div></div>
         </div>
         <p style="font-size:11.5px;color:var(--warn);margin-top:8px">口径：饱和度数据缺失时，降级为「速度 + 拥堵延时指数」展示。</p>
+        <p style="font-size:11.5px;color:var(--mut);margin-top:4px">视觉口径（对齐最新代码）：指标窗为 canvas 贴片，执行幕 4 卡片规范（深底 rgba(3,14,25,.9)、金色描边 1.75px、圆角 10、hero 数值金色），标题「问题路段指标」；路名/路口注记 13px 淡化 rgba(240,246,255,.55)，锚点贴近路面。</p>
       </div>
     </div>
     <div class="narr">
@@ -224,16 +228,19 @@ td.t{color:var(--cyan);white-space:nowrap}
 </section>
 
 <!-- ================= 幕 2 ================= -->
-<section class="act" id="act2">
-  <div class="act-head"><span class="no">幕 2</span><h2>分析成因 — 车流溯源 · 供需校核 · 下游约束</h2><span class="goal">工程映射：scene2-cause-analysis/*</span></div>
+<section class="act" id="act3">
+  <div class="act-head"><span class="no">幕 3</span><h2>分析成因 — 车流溯源 · 供需校核 · 下游约束</h2><span class="goal">工程映射：scene2-cause-analysis/*</span></div>
   <div class="act-body">
     <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin-bottom:8px">画面节拍表</h4>
     <table>
       <tr><th style="width:110px">时间</th><th>画面动作</th><th>绑定数据</th><th>数据源</th></tr>
-      <tr><td class="t">T+0–6s</td><td>隐去双路口渠化；上游溯源（≤3 跳，水流汇入）</td><td>直行 1 跳：解放东 <span class="n">48.1%</span>、永绥·齐音 <span class="n">47.1%</span></td><td class="src">data/1-2-cause-analysis.json → upstream_traces.by_turn</td></tr>
-      <tr><td class="t">T+6–12s</td><td>下游溯源（≤3 跳，水流出向）</td><td>直行 1 跳：龙奥北路 <span class="n">85.3%</span></td><td class="src">1-2-cause-analysis.json → downstream_traces.by_turn</td></tr>
-      <tr><td class="t">T+12–18s</td><td>路段旁标注需求 / 供给</td><td>需求 <span class="n">520 veh/h</span> vs 供给 <span class="ok">1286 veh/h</span> → <span class="ok">未超过</span></td><td class="src">1-2-cause-analysis.json → demand_supply</td></tr>
-      <tr><td class="t">T+18–24s</td><td>下游约束卡</td><td>经十东西向饱和 <span class="warn">0.76</span> · 路口 LOS <span class="bad">F</span> → <span class="warn">难再给南北加绿</span></td><td class="src">1-2-cause-analysis.json → downstream_constraint</td></tr>
+      <tr><td class="t">T+0–5s</td><td>隐去双路口渠化；上游溯源（≤3 跳，水流汇入）<span class="src">a2f.trace</span></td><td>直行 1 跳：解放东 <span class="n">48.1%</span>、永绥·齐音 <span class="n">47.1%</span></td><td class="src">data/1-2-cause-analysis.json → upstream_traces.by_turn</td></tr>
+      <tr><td class="t">T+5–12s</td><td>路段旁标注需求 / 供给 <span class="src">a2f.supply</span></td><td>需求 <span class="n">520 veh/h</span> vs 供给 <span class="ok">1286 veh/h</span> → <span class="ok">未超过</span></td><td class="src">1-2-cause-analysis.json → demand_supply</td></tr>
+      <tr><td class="t">T+12–26s</td><td>下游溯源 + 主通道承接 <span class="src">a2f.downstream</span></td><td>直行 1 跳：龙奥北路 <span class="n">85.3%</span></td><td class="src">1-2-cause-analysis.json → downstream_traces.by_turn</td></tr>
+      <tr><td class="t">T+26–34s</td><td>经十东西向主干优先 <span class="src">a2f.arterial</span></td><td>东西向直行饱和 <span class="warn">0.76</span></td><td class="src">1-2-cause-analysis.json → downstream_constraint</td></tr>
+      <tr><td class="t">T+34–41s</td><td>信号约束：难再给南北加绿 <span class="src">a2f.signal</span></td><td>路口 LOS <span class="bad">F</span></td><td class="src">1-2-cause-analysis.json → downstream_constraint</td></tr>
+      <tr><td class="t">T+41–51s</td><td>溢流风险收束 <span class="src">a2f.overflow</span></td><td>东西向压力 + 北进口排队叠加 → <span class="bad">溢流风险成立</span></td><td class="src">—（结论拍）</td></tr>
+      <tr><td class="t">T+51–53s</td><td>完成收束 <span class="src">a2f.done</span></td><td>成因分析完成</td><td class="src">—</td></tr>
     </table>
     <div class="grid g3" style="margin-top:14px">
       <div class="frame">
@@ -259,9 +266,14 @@ td.t{color:var(--cyan);white-space:nowrap}
       </div>
     </div>
     <div class="narr">
-      <h4>口播逐字稿 <span class="mode">字幕呈现 · 无音频</span></h4>
-      <div class="say"><span class="tc">T+0s</span>溯源显示：北进口直行车流 <span class="n">48%</span> 直接来自上游解放东路口；需求 <span class="n">520 辆/小时</span>，<span class="ok">未超过</span>供给能力 <span class="ok">1286 辆/小时</span>。</div>
-      <div class="say"><span class="tc">T+12s</span>但经十路承担东西向通勤保障，东西向饱和度已达 <span class="warn">0.76</span>，周期内无法再给南北向加绿。</div>
+      <h4>口播逐字稿 <span class="mode">预合成语音 · 7 段 · 预算 5+7+14+8+7+10+2s</span></h4>
+      <div class="say"><span class="tc">0–5s</span>正在追溯上游来流，按流量占比还原汇入路径。</div>
+      <div class="say"><span class="tc">5–12s</span>当前通行量低于车道能力上限，本段<span class="ok">仍有承接余量</span>，需继续向下游排查。</div>
+      <div class="say"><span class="tc">12–26s</span>北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向。下游主通道<span class="ok">具备承接余量</span>，当前<span class="warn">瓶颈集中在经十路口放行约束</span>。</div>
+      <div class="say"><span class="tc">26–34s</span>经十路<span class="warn">东西向通行压力突出</span>。作为晚高峰通勤主干道，信号优先保障东西向通行。</div>
+      <div class="say"><span class="tc">34–41s</span>受经十路主干道优先约束，当前周期内<span class="warn">难以再为北向南直行释放有效绿灯窗口</span>。</div>
+      <div class="say"><span class="tc">41–51s</span>经十路东西向压力与奥体西路北进口排队叠加，北向南车流短时难以消散，<span class="bad">溢流风险成立</span>。</div>
+      <div class="say"><span class="tc">51–53s</span>成因分析完成。</div>
     </div>
     <div class="concl">结论：成因不是供给不足，而是上下游放行节奏错配 —— 方案应向「协调」要时间，而非向下游要绿灯。</div>
     <div class="acc"><h4>验收标准</h4><ul>
@@ -272,8 +284,8 @@ td.t{color:var(--cyan);white-space:nowrap}
 </section>
 
 <!-- ================= 幕 3 ================= -->
-<section class="act" id="act3">
-  <div class="act-head"><span class="no">幕 3</span><h2>优化方案 — 相位协调：经十不动、解放东错峰</h2><span class="goal">工程映射：scene3-optimization/* 与 scene3b-signal-plan/*</span></div>
+<section class="act" id="act4">
+  <div class="act-head"><span class="no">幕 4</span><h2>优化方案 — 相位协调：经十不动、解放东错峰</h2><span class="goal">工程映射：scene3-optimization/* 与 scene3b-signal-plan/*</span></div>
   <div class="act-body">
     <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin-bottom:8px">画面节拍表</h4>
     <table>
@@ -321,6 +333,7 @@ td.t{color:var(--cyan);white-space:nowrap}
         </div>
       </div>
     </div>
+    <p style="font-size:11.5px;color:var(--mut);margin-top:10px">版式口径（对齐最新代码）：两方案上下对照；配时轴最左侧竖排贯穿两幅并补队尾对照线；绿波时距图与相位相序板并入本幕（放大入口）；步骤栏共六幕，干线协调（原 3b）不再单列。</p>
     <div class="narr">
       <h4>口播逐字稿 <span class="mode">预合成语音 · s3-main.wav · 预算 14s</span></h4>
       <div class="say"><span class="tc">0–14s</span>为保障经十路晚高峰通勤，经十路口配时<span class="ok">全部不变</span>；解放东路口相位差后移 <span class="key">56 秒</span>，北向南直行绿时压缩 <span class="bad">6 秒</span> 轻微截流。现状解放东先放、在经十红灯期汇入导致溢出；优化后经十先放消散队列、解放东再汇入，<span class="ok">溢出消除</span>。</div>
@@ -335,7 +348,7 @@ td.t{color:var(--cyan);white-space:nowrap}
 
 <!-- ================= 幕 3b ================= -->
 <section class="act" id="act3b">
-  <div class="act-head"><span class="no">幕 3b</span><h2>信控方案调节 — 奥体西路干线协调</h2><span class="goal">工程映射：scene3b-signal-plan/*</span></div>
+  <div class="act-head"><span class="no">幕 4b</span><h2>信控方案调节 — 奥体西路干线协调</h2><span class="goal">工程映射：scene3b-signal-plan/*（并入幕 4 呈现）</span></div>
   <div class="act-body">
     <div class="frame">
       <h4>画面规格 · 干线 7 路口 · 周期统一 180s · 反向单向绿波</h4>
@@ -361,8 +374,8 @@ td.t{color:var(--cyan);white-space:nowrap}
 </section>
 
 <!-- ================= 幕 4 ================= -->
-<section class="act" id="act4">
-  <div class="act-head"><span class="no">幕 4</span><h2>效果评估 — 5 周期试运行，三线监测验证达标</h2><span class="goal">工程映射：scene4-effect-eval/*</span></div>
+<section class="act" id="act5">
+  <div class="act-head"><span class="no">幕 5</span><h2>效果评估 — 5 周期试运行，三线监测验证达标</h2><span class="goal">工程映射：scene4-effect-eval/*</span></div>
   <div class="act-body">
     <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin-bottom:8px">画面节拍表</h4>
     <table>
@@ -410,6 +423,7 @@ td.t{color:var(--cyan);white-space:nowrap}
       <div class="cmp okf"><h5><span class="tag ok">达成</span>上游代价可控</h5><p style="font-size:12px">解放东排队比 0.22 → <span class="warn">0.35</span>，未触及回滚线 0.9；路口滞留 <span class="ok">9 → 3 辆</span></p></div>
       <div class="cmp okf"><h5><span class="tag ok">达成</span>路段速度回升</h5><p style="font-size:12px">速度 <span class="ok">7.2 → 22 km/h</span>，延时指数 <span class="ok">5.28 → 2.1</span></p></div>
     </div>
+    <p style="font-size:11.5px;color:var(--mut);margin-top:10px">版式口径（对齐最新代码 / assets/效果评估.png）：左侧周期时间线 + 四张指标卡 + 三条逐周期趋势线 + 末排单周期排队推演对照；方案 chips：共同周期 220 s 不变 ／ 解放东北直放行 绿灯前 26 s → 绿灯后 36 s ／ 解放东北直绿时 −6 s 轻微截流 ／ 经十路配时全盘不动 ／ 蓄车边界 368 m；结论大标题按「指标由 A 变为 B」口径：「排队长度由 270 m 降至 162 m，平均速度由 7.2 提升至 22.0 km/h，峰值排队未超 368 m 蓄车能力」；判定标签「达标结论」。</p>
     <div class="narr">
       <h4>口播逐字稿 <span class="mode">预合成语音 · s4-main.wav · 预算 10s</span></h4>
       <div class="say"><span class="tc">0–10s</span>试运行 5 周期达标：排队由 <span class="bad">270 米</span> 回落至 <span class="ok">162 米</span>，速度回升至 <span class="ok">22 公里每小时</span>；上游解放东排队比 <span class="warn">0.35</span>，未触及 <span class="bad">0.9</span> 回滚线，<span class="ok">未触发回滚</span>。</div>
@@ -423,8 +437,8 @@ td.t{color:var(--cyan);white-space:nowrap}
 </section>
 
 <!-- ================= 幕 5 ================= -->
-<section class="act" id="act5">
-  <div class="act-head"><span class="no">幕 5</span><h2>技能固化 — 把本轮处置经验写成可复用技能包</h2><span class="goal">工程映射：scene5-skill-solidify/*</span></div>
+<section class="act" id="act6">
+  <div class="act-head"><span class="no">幕 6</span><h2>技能固化 — 把本轮处置经验写成可复用技能包</h2><span class="goal">工程映射：scene5-skill-solidify/*</span></div>
   <div class="act-body">
     <div class="grid g2">
       <div class="frame">
@@ -472,55 +486,55 @@ td.t{color:var(--cyan);white-space:nowrap}
 <section class="act" id="appendix">
   <div class="act-head"><span class="no">附录</span><h2>屏显文字语义配色速查 — 界面所现文字逐条标注</h2><span class="goal">「示例」列按实际颜色渲染</span></div>
   <div class="act-body">
-    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:4px 0 8px">幕 0 · 开幕</h4>
+    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:4px 0 8px">幕 1 · 主动巡检</h4>
     <table>
       <tr><th>屏显文字示例</th><th style="width:110px">颜色</th><th>语义</th></tr>
       <tr><td><span class="bad">问题路段</span>（地图 link 标红闪烁）</td><td><span class="tag bad">红</span></td><td>异常 / 问题</td></tr>
       <tr><td>其余路段按状态着色：<span class="ok">绿</span> / <span class="warn">黄</span> / <span class="bad">红</span></td><td><span class="tag ok">绿</span><span class="tag warn">琥珀</span><span class="tag bad">红</span></td><td>畅通 / 缓行 / 拥堵</td></tr>
     </table>
-    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 1 · 问题定位</h4>
+    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 2 · 问题定位</h4>
     <table>
       <tr><th>屏显文字示例</th><th style="width:110px">颜色</th><th>语义</th></tr>
-      <tr><td><span class="key">锁定奥体西路北向南问题路段</span>（大字报标题）</td><td><span class="tag key">青</span></td><td>关键动作</td></tr>
-      <tr><td><span class="bad">解放东路至经十路，北向南直行排队外溢</span>（大字报副题）</td><td><span class="tag bad">红</span></td><td>问题描述</td></tr>
+      <tr><td><span class="dk">锁定奥体西路北向南问题路段</span>（大字报标题）</td><td><span class="tag dk">白（黑底）</span></td><td>非数据文字</td></tr>
+      <tr><td><span class="dk">解放东路至经十路，北向南直行排队外溢</span>（大字报副题）</td><td><span class="tag dk">白（黑底）</span></td><td>非数据文字</td></tr>
       <tr><td><span class="bad">排队 270 m</span>　<span class="bad">平均速度 7.2 km/h</span>　<span class="bad">拥堵延时指数 5.28</span></td><td><span class="tag bad">红</span></td><td>异常指标</td></tr>
       <tr><td><span class="warn">饱和度 0.84</span>　<span class="warn">下游放行窗口已高负荷</span></td><td><span class="tag warn">琥珀</span></td><td>预警 / 接近边界</td></tr>
       <tr><td><span class="n">蓄车长度 368 m</span>　<span class="n">路网基础数据</span></td><td><span class="tag mut">中性</span></td><td>正常 / 定义口径</td></tr>
       <tr><td><span class="bad">下游经十东进口 14.5 km/h · 延时 5.81</span>　<span class="bad">上游解放东西进口 6.4 km/h · 延时 4.46</span></td><td><span class="tag bad">红</span></td><td>异常指标</td></tr>
-      <tr><td><span class="warn">口径：饱和度数据缺失时，降级为「速度 + 拥堵延时指数」展示</span></td><td><span class="tag warn">琥珀</span></td><td>数据口径提示</td></tr>
-      <tr><td><span class="n">路名 · 速度标注（解放东路西段 6.4 km/h 等）</span>；异常段如 <span class="bad">东段 14.5 km/h</span></td><td><span class="tag mut">中性</span>/<span class="tag bad">红</span></td><td>地图注记按状态取色</td></tr>
-      <tr><td><span class="key">溢流风险成立</span>（结论大字报）</td><td><span class="tag key">青</span></td><td>结论</td></tr>
+      <tr><td><span class="dk">口径：饱和度数据缺失时，降级为「速度 + 拥堵延时指数」展示</span></td><td><span class="tag dk">白（黑底）</span></td><td>非数据文字</td></tr>
+      <tr><td><span class="dk">路名注记（13px 淡化、贴近路面）</span>；速度数值按状态着色，如 <span class="bad">14.5 km/h</span></td><td><span class="tag dk">白（黑底）</span>+语义</td><td>非数据文字白；数据按状态</td></tr>
+      <tr><td><span class="dk">溢流风险成立</span>（结论大字报）</td><td><span class="tag dk">白（黑底）</span></td><td>结论语句 · 非数据文字</td></tr>
     </table>
-    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 2 · 分析成因</h4>
+    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 3 · 分析成因</h4>
     <table>
       <tr><th>屏显文字示例</th><th style="width:110px">颜色</th><th>语义</th></tr>
       <tr><td><span class="n">需求 · 北进口直行流量 520 veh/h</span>　<span class="n">溯源份额 48.1% / 47.1% / 85.3% …</span></td><td><span class="tag mut">中性</span></td><td>正常数据</td></tr>
       <tr><td><span class="ok">供给 · 1286 veh/h</span>　<span class="ok">需求未超供给</span></td><td><span class="tag ok">绿</span></td><td>正面判定</td></tr>
       <tr><td><span class="warn">东西向饱和度 0.76</span>　<span class="warn">周期内难再向南北向分配可用绿灯</span></td><td><span class="tag warn">琥珀</span></td><td>预警 / 约束</td></tr>
       <tr><td><span class="bad">路口最大饱和度 1.29 · 服务水平 F</span></td><td><span class="tag bad">红</span></td><td>异常</td></tr>
-      <tr><td><span class="key">成因不是供给不足，而是上下游放行节奏错配</span>（结论）</td><td><span class="tag key">青</span></td><td>结论</td></tr>
+      <tr><td><span class="dk">成因不是供给不足，而是上下游放行节奏错配</span>（结论）</td><td><span class="tag dk">白（黑底）</span></td><td>结论语句 · 非数据文字</td></tr>
     </table>
-    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 3 / 3b · 优化方案与信控调节</h4>
+    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 4 / 4b · 优化方案与信控调节</h4>
     <table>
       <tr><th>屏显文字示例</th><th style="width:110px">颜色</th><th>语义</th></tr>
       <tr><td><span class="n">经十路口各阶段 ±0</span>　<span class="n">反向单向绿波 · 7 候选方案比选推荐</span></td><td><span class="tag mut">中性</span></td><td>不变 / 定义</td></tr>
-      <tr><td><span class="ok">东西向直行 · 通勤主保障</span>　<span class="ok">回补绿时 +5 s / +6 s</span></td><td><span class="tag ok">绿</span></td><td>保障 / 增加</td></tr>
+      <tr><td><span class="dk">东西向直行 · 通勤主保障</span>　<span class="ok">回补绿时 +5 s / +6 s</span></td><td><span class="tag dk">白（黑底）</span>/<span class="tag ok">绿</span></td><td>非数据文字白；增加绿</td></tr>
       <tr><td><span class="key">相位差 +56 s</span>　<span class="key">公共周期 250/220 → 180 s</span></td><td><span class="tag key">青</span></td><td>关键动作</td></tr>
       <tr><td><span class="bad">北直绿时 −6 s · 轻微截流</span>　<span class="bad">现状配时：提前 26 s 汇入 · 排队 368 m · 溢出 16 s</span></td><td><span class="tag bad">红</span></td><td>减少 / 问题侧</td></tr>
       <tr><td><span class="ok">相位协调：滞后 36 s 汇入 · 201 m · 无溢出</span>　<span class="ok">368→201 m · 16→0 s · 9→3 辆</span>　<span class="ok">−86 s</span></td><td><span class="tag ok">绿</span></td><td>改善</td></tr>
       <tr><td><span class="warn">优化值为专家建议值，需现场验证后下发</span>　<span class="warn">待人工确认</span></td><td><span class="tag warn">琥珀</span></td><td>待确认</td></tr>
-      <tr><td><span class="key">采用相位协调而非大幅截流</span>（结论）</td><td><span class="tag key">青</span></td><td>结论</td></tr>
+      <tr><td><span class="dk">采用相位协调而非大幅截流</span>（结论）</td><td><span class="tag dk">白（黑底）</span></td><td>结论语句 · 非数据文字</td></tr>
     </table>
-    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 4 · 效果评估</h4>
+    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 5 · 效果评估</h4>
     <table>
       <tr><th>屏显文字示例</th><th style="width:110px">颜色</th><th>语义</th></tr>
       <tr><td><span class="ok">排队 270→162 m（比 0.80→0.48）</span>　<span class="ok">速度 7.2→22 km/h · 延时 5.28→2.1</span>　<span class="ok">绿灯利用率 0.62→0.72</span></td><td><span class="tag ok">绿</span></td><td>达标改善</td></tr>
       <tr><td><span class="warn">上游排队比 0.22→0.35</span></td><td><span class="tag warn">琥珀</span></td><td>预警 · 代价可控</td></tr>
       <tr><td><span class="ok">未触及回滚线 0.9 · 未触发回滚</span>　<span class="ok">达成 · 3 项</span></td><td><span class="tag ok">绿</span></td><td>安全 / 达成</td></tr>
       <tr><td><span class="bad">预警 0.8 / 回滚 0.9</span>（阈值虚线）</td><td><span class="tag bad">红</span></td><td>阈值线</td></tr>
-      <tr><td><span class="key">试运行达标，方案可确认后下发</span>（结论）</td><td><span class="tag key">青</span></td><td>结论</td></tr>
+      <tr><td><span class="dk">试运行达标，方案可确认后下发</span>（结论）</td><td><span class="tag dk">白（黑底）</span></td><td>结论语句 · 非数据文字</td></tr>
     </table>
-    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 5 · 技能固化</h4>
+    <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 6 · 技能固化</h4>
     <table>
       <tr><th>屏显文字示例</th><th style="width:110px">颜色</th><th>语义</th></tr>
       <tr><td><span class="n">阶段名（回顾本轮约束 … 打包登记）· 产物文件名 · 技能 ID</span></td><td><span class="tag mut">中性</span></td><td>流程 / 标识符</td></tr>
@@ -528,7 +542,7 @@ td.t{color:var(--cyan);white-space:nowrap}
       <tr><td><span class="n">固化前：手工检索历史工单 / 人工翻阅方案记录</span></td><td><span class="tag mut">中性</span></td><td>旧方式 · 非异常</td></tr>
       <tr><td><span class="bad">固化前：口头传递易遗漏</span></td><td><span class="tag bad">红</span></td><td>明确负面</td></tr>
       <tr><td><span class="ok">固化后：按标签自动命中 / 秒级匹配 / 约束落盘</span></td><td><span class="tag ok">绿</span></td><td>改善</td></tr>
-      <tr><td><span class="key">闭环完成，经验进入技能库</span>（收尾）</td><td><span class="tag key">青</span></td><td>结论</td></tr>
+      <tr><td><span class="dk">闭环完成，经验进入技能库</span>（收尾）</td><td><span class="tag dk">白（黑底）</span></td><td>结论语句 · 非数据文字</td></tr>
     </table>
   </div>
 </section>
