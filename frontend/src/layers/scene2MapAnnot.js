@@ -76,30 +76,54 @@ function pathFromSouth(coords, lengthUnits) {
   return pts;
 }
 
+const CARD_TITLE = 20;
+const CARD_VALUE = 30;
+const CARD_METRIC = 16;
+const CARD_PAD_X = 20;
+const CARD_INSET = 5;
+const CARD_RADIUS = 10;
+const CARD_LINE = 2;
+const CARD_TWO_LINE_H = 108;
+const CARD_THREE_LINE_H = 132;
+const CARD_MIN_W = 260;
+const CARD_WORLD_H = 10.4;
+
+function strokeCard(ctx, cssW, cssH) {
+  ctx.lineWidth = CARD_LINE;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(CARD_INSET, CARD_INSET, cssW - CARD_INSET * 2, cssH - CARD_INSET * 2, CARD_RADIUS);
+  } else {
+    ctx.rect(CARD_INSET, CARD_INSET, cssW - CARD_INSET * 2, cssH - CARD_INSET * 2);
+  }
+  ctx.fill();
+  ctx.stroke();
+}
+
 function makeQueueRatioSprite(ratio) {
   const title = '排队比已达';
   const value = Number(ratio).toFixed(1);
-  const cssW = 220;
-  const cssH = 92;
+  const measure = document.createElement('canvas').getContext('2d');
+  measure.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  let contentW = measure.measureText(title).width;
+  measure.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
+  contentW = Math.max(contentW, measure.measureText(value).width);
+  const cssW = Math.ceil(Math.max(contentW + CARD_PAD_X * 2, CARD_MIN_W));
+  const cssH = CARD_TWO_LINE_H;
   const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
 
   ctx.fillStyle = 'rgba(18, 8, 4, 0.78)';
   ctx.strokeStyle = 'rgba(255, 138, 58, 0.85)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  if (typeof ctx.roundRect === 'function') ctx.roundRect(6, 6, cssW - 12, cssH - 12, 10);
-  else ctx.rect(6, 6, cssW - 12, cssH - 12);
-  ctx.fill();
-  ctx.stroke();
+  strokeCard(ctx, cssW, cssH);
 
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
   ctx.fillStyle = 'rgba(255, 196, 140, 0.95)';
-  ctx.fillText(title, cssW / 2, 30);
-  ctx.font = '700 34px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillText(title, CARD_PAD_X, 34);
+  ctx.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
   ctx.fillStyle = '#ff8a3a';
-  ctx.fillText(value, cssW / 2, 62);
+  ctx.fillText(value, CARD_PAD_X, 74);
 
   const tex = makeLabelTexture(canvas);
   const mat = new THREE.SpriteMaterial({
@@ -110,7 +134,10 @@ function makeQueueRatioSprite(ratio) {
     depthTest: false,
   });
   const spr = new THREE.Sprite(mat);
-  spr.scale.set(22, 9.2, 1);
+  const worldH = CARD_WORLD_H;
+  const worldW = worldH * (cssW / cssH);
+  spr.scale.set(worldW, worldH, 1);
+  spr.userData.baseScale = [worldW, worldH];
   spr.renderOrder = 62;
   spr.visible = false;
   spr.userData.disposeLabel = () => {
@@ -132,41 +159,36 @@ function makeArterialSprite({ title, speed, saturation, flow, delay, accent = '#
   ].filter(Boolean);
 
   const measure = document.createElement('canvas').getContext('2d');
-  measure.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  measure.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
   let contentW = measure.measureText(title).width;
-  measure.font = '700 32px "DIN Alternate","PingFang SC",sans-serif';
+  measure.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
   contentW = Math.max(contentW, measure.measureText(speedText).width);
-  measure.font = '500 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  measure.font = `500 ${CARD_METRIC}px "PingFang SC","Microsoft YaHei",sans-serif`;
   for (const line of rows) contentW = Math.max(contentW, measure.measureText(line).width);
 
-  const padX = 22;
   const padY = 16;
-  const cssW = Math.ceil(Math.max(contentW + padX * 2, 228));
-  const cssH = Math.ceil(padY + 26 + 36 + 8 + rows.length * 22 + padY);
+  const rowH = 22;
+  const cssW = Math.ceil(Math.max(contentW + CARD_PAD_X * 2, CARD_MIN_W));
+  const cssH = Math.ceil(padY + CARD_TITLE + 8 + CARD_VALUE + 8 + rows.length * rowH + padY);
   const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
 
   ctx.fillStyle = 'rgba(3, 14, 25, 0.9)';
   ctx.strokeStyle = accent;
-  ctx.lineWidth = 1.75;
-  ctx.beginPath();
-  if (typeof ctx.roundRect === 'function') ctx.roundRect(5, 5, cssW - 10, cssH - 10, 10);
-  else ctx.rect(5, 5, cssW - 10, cssH - 10);
-  ctx.fill();
-  ctx.stroke();
+  strokeCard(ctx, cssW, cssH);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
   ctx.fillStyle = 'rgba(175,205,220,0.94)';
-  ctx.fillText(title, padX, padY + 13);
-  ctx.font = '700 32px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillText(title, CARD_PAD_X, padY + CARD_TITLE / 2);
+  ctx.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
   ctx.fillStyle = accent;
-  ctx.fillText(speedText, padX, padY + 26 + 18);
+  ctx.fillText(speedText, CARD_PAD_X, padY + CARD_TITLE + 8 + CARD_VALUE / 2);
 
-  ctx.font = '500 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = `500 ${CARD_METRIC}px "PingFang SC","Microsoft YaHei",sans-serif`;
   ctx.fillStyle = 'rgba(205,225,238,0.9)';
-  const rowTop = padY + 26 + 36 + 8;
-  rows.forEach((line, i) => ctx.fillText(line, padX, rowTop + 11 + i * 22));
+  const rowTop = padY + CARD_TITLE + 8 + CARD_VALUE + 8;
+  rows.forEach((line, i) => ctx.fillText(line, CARD_PAD_X, rowTop + rowH / 2 + i * rowH));
 
   const texture = makeLabelTexture(canvas);
   const material = new THREE.SpriteMaterial({
@@ -177,7 +199,7 @@ function makeArterialSprite({ title, speed, saturation, flow, delay, accent = '#
     depthTest: false,
   });
   const sprite = new THREE.Sprite(material);
-  const worldH = 16.8;
+  const worldH = CARD_WORLD_H * (cssH / CARD_TWO_LINE_H);
   sprite.scale.set(worldH * (cssW / cssH), worldH, 1);
   sprite.renderOrder = 63;
   sprite.visible = false;
@@ -186,31 +208,35 @@ function makeArterialSprite({ title, speed, saturation, flow, delay, accent = '#
 }
 
 function makeMetricSprite({ title, value, sub = '', accent = '#00e5ff' }) {
-  const cssW = 320;
-  const cssH = sub ? 126 : 102;
+  const measure = document.createElement('canvas').getContext('2d');
+  measure.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  let contentW = measure.measureText(title).width;
+  measure.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
+  contentW = Math.max(contentW, measure.measureText(String(value)).width);
+  if (sub) {
+    measure.font = `500 ${CARD_METRIC}px "PingFang SC","Microsoft YaHei",sans-serif`;
+    contentW = Math.max(contentW, measure.measureText(sub).width);
+  }
+  const cssW = Math.ceil(Math.max(contentW + CARD_PAD_X * 2, CARD_MIN_W));
+  const cssH = sub ? CARD_THREE_LINE_H : CARD_TWO_LINE_H;
   const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
 
   ctx.fillStyle = 'rgba(3, 14, 25, 0.9)';
   ctx.strokeStyle = accent;
-  ctx.lineWidth = 1.75;
-  ctx.beginPath();
-  if (typeof ctx.roundRect === 'function') ctx.roundRect(6, 6, cssW - 12, cssH - 12, 10);
-  else ctx.rect(6, 6, cssW - 12, cssH - 12);
-  ctx.fill();
-  ctx.stroke();
+  strokeCard(ctx, cssW, cssH);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
   ctx.fillStyle = 'rgba(175,205,220,0.9)';
-  ctx.fillText(title, 20, 28);
-  ctx.font = '700 30px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillText(title, CARD_PAD_X, 34);
+  ctx.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
   ctx.fillStyle = accent;
-  ctx.fillText(value, 20, 67);
+  ctx.fillText(String(value), CARD_PAD_X, 74);
   if (sub) {
-    ctx.font = '500 15px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = `500 ${CARD_METRIC}px "PingFang SC","Microsoft YaHei",sans-serif`;
     ctx.fillStyle = 'rgba(205,225,238,0.82)';
-    ctx.fillText(sub, 20, 101);
+    ctx.fillText(sub, CARD_PAD_X, 108);
   }
 
   const texture = makeLabelTexture(canvas);
@@ -222,7 +248,7 @@ function makeMetricSprite({ title, value, sub = '', accent = '#00e5ff' }) {
     depthTest: false,
   });
   const sprite = new THREE.Sprite(material);
-  const worldH = sub ? 11.8 : 9.6;
+  const worldH = CARD_WORLD_H * (cssH / CARD_TWO_LINE_H);
   const worldW = worldH * (cssW / cssH);
   sprite.scale.set(worldW, worldH, 1);
   sprite.userData.baseScale = [worldW, worldH];
@@ -471,7 +497,7 @@ export function createScene2MapAnnot({
       blending: THREE.AdditiveBlending,
     }),
   );
-  if (targetPos) blockPulse.position.set(targetPos[0], 7, -(targetPos[1] + 10));
+  if (targetPos) blockPulse.position.copy(toWorld(targetPos, 7));
   blockPulse.scale.set(16, 16, 1);
   blockPulse.renderOrder = 59;
   blockPulse.visible = false;
@@ -625,8 +651,8 @@ export function createScene2MapAnnot({
       capacitySpr.material.opacity = capacityAlpha;
       flowSpr.visible = flowAlpha > 0.02;
       capacitySpr.visible = capacityAlpha > 0.02;
-      const [flowW, flowH] = flowSpr.userData.baseScale || [30, 11.8];
-      const [capW, capH] = capacitySpr.userData.baseScale || [30, 11.8];
+      const [flowW, flowH] = flowSpr.userData.baseScale || [32, 12.7];
+      const [capW, capH] = capacitySpr.userData.baseScale || [32, 12.7];
       flowSpr.scale.set(flowW * (0.82 + flowAlpha * 0.18), flowH, 1);
       capacitySpr.scale.set(capW * (0.82 + capacityAlpha * 0.18), capH, 1);
     }
@@ -658,7 +684,8 @@ export function createScene2MapAnnot({
         ratioSpr.material.opacity = grow;
         ratioSpr.visible = grow > 0.02;
         const bob = 1 + 0.04 * Math.sin(time * 3.2);
-        ratioSpr.scale.set(22 * bob, 9.2 * bob, 1);
+        const [rw, rh] = ratioSpr.userData.baseScale || [34, CARD_WORLD_H];
+        ratioSpr.scale.set(rw * bob, rh * bob, 1);
       }
     }
   };

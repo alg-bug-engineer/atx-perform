@@ -73,13 +73,19 @@ function makeShareSprite(name, ratio, primary) {
   const shortName = String(name || '下游关联路口').replace(/路口$/, '');
   const ratioText = `${Number(ratio).toFixed(2)}%`;
   const dpr = 2;
+  const padX = 26;
+  const titleSize = 26;
+  const ratioSize = 38;
+  const metricSize = 22;
+  const cssH = 136;
   const measure = document.createElement('canvas').getContext('2d');
-  measure.font = '500 20px "PingFang SC","Microsoft YaHei",sans-serif';
+  measure.font = `500 ${titleSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
   let contentW = measure.measureText(shortName).width;
-  measure.font = '700 29px "DIN Alternate","PingFang SC",sans-serif';
-  contentW = Math.max(contentW, measure.measureText(ratioText).width + 118);
-  const cssW = Math.ceil(Math.max(contentW + 40, 280));
-  const cssH = 104;
+  measure.font = `700 ${ratioSize}px "DIN Alternate","PingFang SC",sans-serif`;
+  const ratioW0 = measure.measureText(ratioText).width;
+  measure.font = `500 ${metricSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  contentW = Math.max(contentW, ratioW0 + 16 + measure.measureText('下游关联占比').width);
+  const cssW = Math.ceil(Math.max(contentW + padX * 2, 340));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
@@ -88,25 +94,25 @@ function makeShareSprite(name, ratio, primary) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  roundedRect(ctx, 5, 5, cssW - 10, cssH - 10, 10);
+  roundedRect(ctx, 6, 6, cssW - 12, cssH - 12, 12);
   ctx.fillStyle = 'rgba(3, 15, 26, 0.9)';
   ctx.fill();
   ctx.strokeStyle = primary ? 'rgba(255,204,0,0.92)' : 'rgba(255,204,0,0.72)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.4;
   ctx.stroke();
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = '500 20px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = `500 ${titleSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
   ctx.fillStyle = 'rgba(220,240,250,0.94)';
-  ctx.fillText(shortName, 20, 31);
-  ctx.font = '700 29px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillText(shortName, padX, 42);
+  ctx.font = `700 ${ratioSize}px "DIN Alternate","PingFang SC",sans-serif`;
   ctx.fillStyle = '#ffcc00';
-  ctx.fillText(ratioText, 20, 72);
+  ctx.fillText(ratioText, padX, 94);
   const ratioW = ctx.measureText(ratioText).width;
-  ctx.font = '500 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = `500 ${metricSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
   ctx.fillStyle = 'rgba(150,180,198,0.82)';
-  ctx.fillText('下游关联占比', 20 + ratioW + 14, 72);
+  ctx.fillText('下游关联占比', padX + ratioW + 16, 94);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -122,7 +128,7 @@ function makeShareSprite(name, ratio, primary) {
     depthTest: false,
   });
   const sprite = new THREE.Sprite(material);
-  const worldH = 10.4;
+  const worldH = 13.6;
   sprite.scale.set(worldH * (cssW / cssH), worldH, 1);
   sprite.userData.baseScale = [worldH * (cssW / cssH), worldH];
   sprite.renderOrder = 64;
@@ -261,7 +267,7 @@ export function createDownstreamFlowTraceLayer({
       sprite.material.opacity = alpha;
       sprite.visible = alpha > 0.02;
       const bob = 1 + 0.035 * Math.sin(time * 3.1);
-      const [sx, sy] = sprite.userData.baseScale || [34, 9.8];
+      const [sx, sy] = sprite.userData.baseScale || [36, 13.6];
       sprite.scale.set(sx * bob, sy * bob, 1);
     }
     if (!doneSignaled && elapsed >= holdDur) {
