@@ -9,8 +9,7 @@ import scripts from '@data/tts/scripts.json'
 import manifest from '@data/tts/manifest.json'
 
 import s1Lock from '@data/tts/scene1/s1-lock.wav?url'
-import s1Metrics from '@data/tts/scene1/s1-metrics.wav?url'
-import s1Upstream from '@data/tts/scene1/s1-upstream.wav?url'
+import s1Nodes from '@data/tts/scene1/s1-nodes.wav?url'
 import s1Conclusion from '@data/tts/scene1/s1-conclusion.wav?url'
 import s3Main from '@data/tts/scene3/s3-main.wav?url'
 import s3bMain from '@data/tts/scene3b/s3b-main.wav?url'
@@ -24,8 +23,7 @@ const NARRATED = new Set(['3', '3b', '4', '5'])
 
 const AUDIO_BY_FILE = {
   'scene1/s1-lock.wav': s1Lock,
-  'scene1/s1-metrics.wav': s1Metrics,
-  'scene1/s1-upstream.wav': s1Upstream,
+  'scene1/s1-nodes.wav': s1Nodes,
   'scene1/s1-conclusion.wav': s1Conclusion,
   'scene3/s3-main.wav': s3Main,
   'scene3b/s3b-main.wav': s3bMain,
@@ -41,15 +39,28 @@ const AUDIO_BY_FILE = {
 export function getConductorSegments(sceneKey) {
   const scene = scripts.scenes?.[String(sceneKey)]
   const baked = manifest.scenes?.[String(sceneKey)]
-  const segments = baked?.segments?.length ? baked.segments : (scene?.segments || [])
-  return segments.map((seg) => ({
-    id: seg.id,
-    file: seg.file,
-    text: seg.text || '',
-    approxSec: Number(seg.approx_sec) || 0,
-    durationSec: Number(seg.duration_sec) || Number(seg.approx_sec) || 0,
-    audioUrl: AUDIO_BY_FILE[seg.file] || '',
-  }))
+  const bakedById = new Map((baked?.segments || []).map((seg) => [seg.id, seg]))
+  return (scene?.segments || []).map((seg) => {
+    const bakedSeg = bakedById.get(seg.id)
+    // 文案变化但 WAV 尚未重合成时，必须回退实时 TTS，禁止拿旧录音配新字幕。
+    const audioCurrent = Boolean(
+      bakedSeg
+      && bakedSeg.file === seg.file
+      && bakedSeg.text === seg.text
+      && bakedSeg.audio_stale !== true
+      && AUDIO_BY_FILE[seg.file],
+    )
+    return {
+      id: seg.id,
+      file: seg.file,
+      text: seg.text || '',
+      approxSec: Number(seg.approx_sec) || 0,
+      durationSec: audioCurrent
+        ? Number(bakedSeg.duration_sec) || Number(seg.approx_sec) || 0
+        : Number(seg.approx_sec) || 0,
+      audioUrl: audioCurrent ? AUDIO_BY_FILE[seg.file] : '',
+    }
+  })
 }
 
 /**
@@ -62,16 +73,13 @@ export function playSceneNarration(sceneKey) {
 
   if (!NARRATED.has(String(sceneKey))) return
 
-  const scene = scripts.scenes?.[String(sceneKey)]
-  const baked = manifest.scenes?.[String(sceneKey)]
-  if (!scene?.segments?.length) return
-
-  const segments = baked?.segments?.length ? baked.segments : scene.segments
+  const segments = getConductorSegments(sceneKey)
+  if (!segments.length) return
 
   for (const seg of segments) {
     triggerBroadcast(seg.id, seg.text, {
-      audioUrl: AUDIO_BY_FILE[seg.file] || '',
-      durationSec: seg.duration_sec || seg.approx_sec || 0,
+      audioUrl: seg.audioUrl,
+      durationSec: seg.durationSec || seg.approxSec || 0,
     })
   }
 }

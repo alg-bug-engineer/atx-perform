@@ -42,31 +42,29 @@ watch(
 .headline-overlay {
   position: absolute;
   left: 50%;
-  bottom: 92px;
+  bottom: 48px;
   transform: translateX(-50%);
-  z-index: 39;
-  max-width: min(720px, calc(100vw - 360px));
-  padding: 14px 30px 12px;
+  z-index: 42;
+  max-width: min(820px, calc(100vw - 420px));
+  padding: 10px 28px;
   text-align: center;
-  background: linear-gradient(
-    180deg,
-    rgba(3, 12, 24, 0.62),
-    rgba(3, 12, 24, 0.88)
-  );
+  background: rgba(4, 12, 30, 0.82);
   border: 1px solid rgba(0, 212, 240, 0.4);
-  border-top: 2px solid rgba(0, 212, 240, 0.85);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
   pointer-events: none;
 }
 
 .hl-main {
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 3px;
-  line-height: 1.3;
-  color: #f0fbff;
-  text-shadow: 0 0 18px rgba(0, 212, 240, 0.35);
+  line-height: 1.35;
+  color: #00e5ff;
+  text-shadow:
+    0 0 14px rgba(0, 229, 255, 0.85),
+    0 0 28px rgba(0, 229, 255, 0.35);
 }
 
 .hl-sub {

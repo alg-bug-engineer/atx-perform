@@ -22,6 +22,9 @@ const SCENE_PROBLEM_LINK = sceneObjects.problem_link || {};
 const LOCATE_METRICS = locateData.problem_link_metrics || {};
 const COLOR_LINKS = locateData.traffic_color_links || [];
 
+/** 幕 1 三拍文案 / HUD / 时长，结构与幕 2 map_beats 对齐。 */
+export const PROBLEM_LOCATE_BEATS = locateData.map_beats || {};
+
 function colorLink(linkId) {
   return COLOR_LINKS.find((l) => l.link_id === linkId) || {};
 }
@@ -85,6 +88,9 @@ export const PROBLEM_LINK = {
   northThroughFlowVehH: 520, // 北进口直行流量：库内在幕 2 溯源表，见 docs/data-sniff-report.md
   stateDerived: colorLink(SCENE_PROBLEM_LINK.link_id).derived_state_from_speed ?? 4,
 };
+
+/** 问题路段几何（经纬度），供幕 1 北向南标红。 */
+export const PROBLEM_LINK_COORDS = colorLink(SCENE_PROBLEM_LINK.link_id)?.geom?.coordinates || [];
 
 /** 上游坤顺段（奥体西路:无名道路-解放东路 北向南） */
 const KUNSHUN_LINK_ID = '12wwe28ftwwe28fm01';

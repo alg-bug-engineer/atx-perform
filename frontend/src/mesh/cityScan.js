@@ -59,6 +59,12 @@ export function createCityScan(bounds) {
     mesh.visible = true;
   };
 
+  group.stop = () => {
+    startTime = -Infinity;
+    mesh.visible = false;
+    material.opacity = 0;
+  };
+
   group.update = (time) => {
     const progress = (time - startTime) / duration;
     if (progress < 0 || progress > 1) {

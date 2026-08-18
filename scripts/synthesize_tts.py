@@ -169,13 +169,18 @@ def main() -> int:
 
     scenes = data["scenes"]
     keys = [args.scene] if args.scene else sorted(scenes.keys())
-    manifest: dict[str, Any] = {
+    manifest_path = OUT_DIR / "manifest.json"
+    if args.scene and manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest.setdefault("scenes", {})
+    else:
+        manifest = {"scenes": {}}
+    manifest.update({
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "voice": voice,
         "model": model,
         "sample_rate": sample_rate,
-        "scenes": {},
-    }
+    })
 
     for key in keys:
         scene = scenes[key]
@@ -218,11 +223,11 @@ def main() -> int:
             "segments": rows,
         }
 
-    (OUT_DIR / "manifest.json").write_text(
+    manifest_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    print(f"\nmanifest → {OUT_DIR / 'manifest.json'}")
+    print(f"\nmanifest → {manifest_path}")
     return 0
 
 
