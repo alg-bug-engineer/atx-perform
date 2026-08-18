@@ -102,8 +102,8 @@ function resolveLabelAnchor(spec, { source, via, target }) {
 function buildRoadLabels(flowTrace, { source, via, target }) {
   const specs = flowTrace.road_labels || [
     { name: '经十路', at: 'target', dx: -26, dy: 1 },
-    { name: '奥体西', at: 'problem_mid', dx: -8, dy: 0 },
-    { name: '解放东', at: 'via', dx: 10, dy: 4 },
+    { name: '奥体西路', at: 'problem_mid', dx: -8, dy: 0 },
+    { name: '解放东路', at: 'via', dx: 10, dy: 4 },
     { name: '坤顺路', at: 'source', dx: 10, dy: 4 },
   ];
   return specs
@@ -454,7 +454,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
           caption: '',
           text: '',
         });
-        nameLayer?.setVisibleNames?.(dc.keep_road_labels || ['经十路', '奥体西']);
+        nameLayer?.setVisibleNames?.(dc.keep_road_labels || ['经十路', '奥体西路']);
 
         after(dc.clear_ms ?? 600, () => {
           frameJingshiEw(target, problemRoad);

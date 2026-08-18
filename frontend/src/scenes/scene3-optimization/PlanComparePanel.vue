@@ -194,8 +194,8 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
         <b class="poster-badge">改善</b>
         <strong>
           {{ c.before }}{{ c.unit }} → <em>{{ c.after }}{{ c.unit }}</em>
+          <span class="poster-d">{{ c.delta }}</span>
         </strong>
-        <span class="poster-d">{{ c.delta }}</span>
       </li>
     </ul>
 
@@ -398,20 +398,22 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
 }
 .posters strong {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: baseline;
-  gap: 4px;
+  gap: 8px;
+  min-width: 0;
   font-size: 16px;
   font-weight: 500;
   line-height: 1.2;
   color: var(--text);
+  white-space: nowrap;
 }
 .posters strong em {
   font-style: normal;
   color: var(--text);
 }
 .poster-d {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ok);
 }

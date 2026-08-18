@@ -181,7 +181,7 @@ export function createAct2MapFx({
       pos: { x: jingshiPos[0] - 26, y: 10, z: -(jingshiPos[1] + 1) },
     },
     {
-      name: '奥体西',
+      name: '奥体西路',
       pos: { x: problemMidPos[0] - 8, y: 10, z: -problemMidPos[1] },
     },
     { name: '解放东路口', pos: { x: JIEFANG.x, y: 10, z: JIEFANG.z } },
