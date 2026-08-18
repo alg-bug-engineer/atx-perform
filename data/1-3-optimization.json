@@ -162,7 +162,7 @@
     "source": "expert_proposal",
     "status": "proposed",
     "measure": "phase_coordination",
-    "summary": "为保障经十路晚高峰通勤要求，考虑到该路段需求未超过供给，轻微截流不会导致上游路段溢出，所以在该路口的方案为相位协调。",
+    "summary": "路口的优化方案为相位协调",
     "offset_shift_sec": {
       "intersection": "jiefang",
       "value": 56,
@@ -256,13 +256,13 @@
       {
         "key": "before",
         "title": "现状配时",
-        "subtitle": "解放东在经十红灯期汇入，车流堆成静止排队",
+        "subtitle": "解放东于经十路红灯期间放行汇入，路段形成静止排队",
         "tone": "danger"
       },
       {
         "key": "after",
         "title": "相位协调",
-        "subtitle": "经十先放行消散，解放东等队列跑起来再汇入",
+        "subtitle": "经十路先行放行消散，解放东待车队启动后再汇入",
         "tone": "ok"
       }
     ],
@@ -296,7 +296,7 @@
       },
       {
         "key": "blocked_veh",
-        "label": "解放东路口滞留",
+        "label": "路口滞留车辆",
         "unit": "辆",
         "before": 9,
         "after": 3,

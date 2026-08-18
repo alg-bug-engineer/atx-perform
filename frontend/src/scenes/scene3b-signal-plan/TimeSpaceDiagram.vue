@@ -132,6 +132,8 @@ const tails = computed(() =>
   isEngine.value ? diagram.value.queue_tails.map((p, i) => ({ key: `q${i}`, pts: polyline(p) })) : [],
 )
 
+const clipId = `tsd-plot-${Math.random().toString(36).slice(2, 8)}`
+
 const bands = computed(() =>
   isEngine.value
     ? diagram.value.bands
@@ -144,7 +146,7 @@ const bands = computed(() =>
 <template>
   <svg class="tsd" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="xMidYMid meet">
     <defs>
-      <clipPath id="tsd-plot">
+      <clipPath :id="clipId">
         <rect
           :x="PAD.left - 8"
           :y="PAD.top"
@@ -190,7 +192,7 @@ const bands = computed(() =>
       </text>
     </g>
 
-    <g clip-path="url(#tsd-plot)">
+    <g :clip-path="`url(#${clipId})`">
       <g class="signal">
         <rect
           v-for="r in redBars"

@@ -8,6 +8,8 @@ import StageChannelization from '../scene3b-signal-plan/StageChannelization.vue'
 
 const props = defineProps({
   board: { type: Object, required: true },
+  /** 右侧缩小预览：只演示两张卡（阶段 1 / 阶段 2），完整相序看放大浮层 */
+  compact: { type: Boolean, default: false },
 })
 
 const selectedKey = ref('jiefang')
@@ -24,7 +26,7 @@ const node = computed(
 const cards = computed(() => {
   const n = node.value
   if (!n) return []
-  return (n.stages || [])
+  const mapped = (n.stages || [])
     .filter((s) => s.green_before_s > 0 || s.green_after_s > 0 || (s.movements || []).length)
     .map((s) => {
       const delta = s.green_delta_s || 0
@@ -46,6 +48,9 @@ const cards = computed(() => {
         maxG: s.max_green_sec,
       }
     })
+  if (!props.compact) return mapped
+  const demo = mapped.filter((c) => c.movements.length).slice(0, 2)
+  return demo.map((c, i) => ({ ...c, demoNo: i + 1 }))
 })
 
 function deltaText(d) {
@@ -55,7 +60,7 @@ function deltaText(d) {
 </script>
 
 <template>
-  <section v-if="node" class="phase-board" data-testid="phase-sequence">
+  <section v-if="node" class="phase-board" :class="{ compact }" data-testid="phase-sequence">
     <header class="col-head">
       <h3>相位相序图</h3>
       <div class="picker">
@@ -70,6 +75,7 @@ function deltaText(d) {
           {{ n.key === 'jiefang' ? '解放东' : '经十路' }}
         </button>
       </div>
+      <slot name="head-extra" />
     </header>
 
     <p class="note">{{ node.note }}</p>
@@ -98,7 +104,7 @@ function deltaText(d) {
         :class="[c.tone, { focus: c.focus }]"
       >
         <header>
-          <span class="ph">阶段 {{ c.stageNo }}</span>
+          <span class="ph">阶段 {{ compact ? c.demoNo : c.stageNo }}</span>
           <strong>
             {{ c.before }}s → {{ c.after }}s
             <b>{{ deltaText(c.delta) }}</b>
@@ -141,6 +147,7 @@ h3 {
 .picker {
   display: flex;
   gap: 4px;
+  margin-left: auto;
 }
 .tg {
   padding: 2px 10px;
@@ -253,5 +260,24 @@ h3 {
 }
 .role {
   color: rgba(190, 220, 236, 0.8);
+}
+
+.phase-board.compact {
+  height: auto;
+  flex: none;
+}
+.phase-board.compact .note,
+.phase-board.compact .meta,
+.phase-board.compact .labels,
+.phase-board.compact .role,
+.phase-board.compact .bound {
+  display: none;
+}
+.phase-board.compact .cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+}
+.phase-board.compact .card header strong {
+  font-size: 12px;
 }
 </style>
