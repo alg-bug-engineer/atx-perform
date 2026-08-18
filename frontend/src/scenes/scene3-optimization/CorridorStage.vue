@@ -7,6 +7,8 @@ const props = defineProps({
   sample: { type: Object, default: null },
   /** 对照方案此刻的排队长度：>0 时在本幅画出参考队尾与差值，供上下两幅对读 */
   ghostQueueM: { type: Number, default: 0 },
+  /** 现状幅画出调研排队 270 m 锚点，和前面几幕口径一致 */
+  showExpertQueue: { type: Boolean, default: false },
 })
 
 /**
@@ -94,18 +96,19 @@ const zebra = computed(() =>
 )
 
 const ruler = computed(() => {
+  const L = lengthM.value
   const out = []
-  for (let m = 0; m <= lengthM.value; m += 50) {
-    out.push({ id: m, x: mx(m), label: `${m}` })
+  // 经十路（右）为 0 m，解放东（左）为路段全长
+  out.push({ id: 'jiefang', x: mx(0), label: `${Math.round(L)} m` })
+  for (let d = 50; d < L; d += 50) {
+    out.push({ id: d, x: mx(L - d), label: `${d}` })
   }
-  out.push({ id: 'end', x: mx(lengthM.value), label: `${Math.round(lengthM.value)} m` })
+  out.push({ id: 'jingshi', x: mx(L), label: '0 m' })
   return out
 })
 
 // ---- 动态 ----
 const queueM = computed(() => props.sample?.queueM ?? 0)
-/** 路段被车流占用的长度：判断还有没有蓄车空间看它，排队长度看排得最长的那股流向 */
-const occupiedM = computed(() => props.sample?.occupiedM ?? 0)
 const worstLabel = computed(
   () => ({ left: '左转', through: '直行', right: '右转' })[props.sample?.worstGroup] || '直行',
 )
@@ -124,11 +127,19 @@ const ghost = computed(() => {
     deltaM: Math.round(g - queueM.value),
   }
 })
-const occX = computed(() => mx(Math.max(0, lengthM.value - occupiedM.value)))
 const warnX = computed(() => mx(Math.max(0, lengthM.value - props.model.warningM)))
+const expertX = computed(() => mx(Math.max(0, lengthM.value - 270)))
 
-const VEH_L = 16
-const VEH_H = 14
+const jingshiSig = computed(
+  () => props.sample?.downstreamThrough || { green: false, countdown: 0 },
+)
+const jiefangSig = computed(() => {
+  const list = props.sample?.upstreamSources || []
+  return list.find((s) => s.green) || list.find((s) => s.key === 'north_through') || { green: false, countdown: 0 }
+})
+
+const VEH_L = 20
+const VEH_H = 16
 
 const cars = computed(() => {
   const list = props.sample?.cars || []
@@ -154,7 +165,7 @@ const blockedCars = computed(() => {
   const n = Math.min(12, Math.round((props.sample?.spillQueueM ?? 0) / 7))
   return Array.from({ length: n }, (_, i) => ({
     id: i,
-    x: GEO.jiefangR - 14 - (i % 4) * 15,
+    x: GEO.jiefangR - 16 - (i % 4) * 18,
     y: upCenter(Math.floor(i / 4) % 3) - VEH_H / 2,
   }))
 })
@@ -173,15 +184,14 @@ const inflowArrows = computed(() => {
 <template>
   <figure class="corridor" :class="[`tone-${variant.tone}`, { spilling: spill }]">
     <figcaption class="hd">
-      <span class="badge">{{ variant.key === 'before' ? '现状配时' : '相位协调后' }}</span>
-      <span class="title">{{ variant.title }}</span>
+      <span class="badge">{{ variant.key === 'before' ? '现状配时' : '优化后' }}</span>
       <span class="sub">{{ variant.subtitle }}</span>
-      <span v-if="spill" class="alarm">路口溢出 · 排队压回解放东</span>
+      <span v-if="spill" class="alarm">路口溢出，排队溢至解放东</span>
     </figcaption>
 
     <div class="body">
       <div class="canvas-wrap">
-      <svg class="canvas" :viewBox="`0 0 ${GEO.w} ${GEO.h}`" preserveAspectRatio="none">
+      <svg class="canvas" :viewBox="`0 0 ${GEO.w} ${GEO.h}`" preserveAspectRatio="xMidYMid meet">
         <defs>
           <marker
             :id="`flow-${variant.key}`"
@@ -221,7 +231,10 @@ const inflowArrows = computed(() => {
 
         <!-- 展宽标注 -->
         <line class="widen-tick" :x1="taperEndX" :y1="GEO.downTop + 2" :x2="taperEndX" :y2="GEO.roadBottom + 6" />
-        <text class="widen-label" :x="taperEndX + 6" :y="GEO.downTop + 14">展宽起点 · 距经十路 100 m</text>
+        <text class="widen-label" :x="taperEndX + 6" :y="GEO.downTop + 14">
+          <tspan class="lbl">展宽起点 · 距经十路 </tspan>
+          <tspan class="val">100 m</tspan>
+        </text>
         <text class="widen-label dim" :x="GEO.jiefangR + 8" :y="GEO.upTop - 8">上游 3 车道</text>
 
         <!-- 蓄车边界 / 预警线 -->
@@ -252,7 +265,7 @@ const inflowArrows = computed(() => {
             :y="c.y"
             :width="VEH_L"
             :height="VEH_H"
-            rx="1.5"
+            rx="2"
           />
           <rect
             v-for="c in cars"
@@ -262,7 +275,7 @@ const inflowArrows = computed(() => {
             :y="c.y"
             :width="VEH_L"
             :height="VEH_H"
-            rx="1.5"
+            rx="2"
           />
         </g>
 
@@ -292,15 +305,19 @@ const inflowArrows = computed(() => {
           <text class="up-label" :x="GEO.jiefangR + 10" :y="upCenter(i) + 3">{{ l }}</text>
         </g>
 
-        <!-- 队尾标注：主排队流向的队尾，另标出整段被占用到哪里 -->
-        <g class="occ">
-          <line :x1="occX" :y1="GEO.upTop - 6" :x2="occX" :y2="GEO.roadBottom + 6" />
-          <text :x="occX + 6" :y="GEO.roadBottom + 2">占用 {{ Math.round(occupiedM) }} m</text>
-        </g>
         <g class="tail" :class="queueTone">
           <line :x1="tailX" :y1="GEO.downTop" :x2="tailX" :y2="GEO.roadBottom + 8" />
           <text :x="tailX - 8" :y="GEO.downTop + 14" text-anchor="end">
-            {{ worstLabel }}队尾 {{ Math.round(queueM) }} m
+            <tspan class="lbl">{{ worstLabel }}队尾 </tspan>
+            <tspan class="val">{{ Math.round(queueM) }} m</tspan>
+          </text>
+        </g>
+
+        <g v-if="showExpertQueue" class="expert">
+          <line :x1="expertX" :y1="GEO.upTop - 4" :x2="expertX" :y2="GEO.roadBottom + 6" />
+          <text :x="expertX + 6" :y="GEO.roadBottom + 2">
+            <tspan class="lbl">调研排队 </tspan>
+            <tspan class="val">270 m</tspan>
           </text>
         </g>
 
@@ -308,11 +325,13 @@ const inflowArrows = computed(() => {
         <g v-if="ghost" class="ghost">
           <line :x1="ghost.x" :y1="GEO.downTop" :x2="ghost.x" :y2="GEO.roadBottom + 8" />
           <text :x="ghost.x - 6" :y="GEO.downTop + 14" text-anchor="end">
-            现状队尾 {{ Math.round(ghost.queueM) }} m
+            <tspan class="lbl">对照 现状队尾 </tspan>
+            <tspan class="val">{{ Math.round(ghost.queueM) }} m</tspan>
           </text>
           <line class="span" :x1="ghost.x" :y1="GEO.downTop + 18" :x2="tailX" :y2="GEO.downTop + 18" />
           <text class="span-text" :x="(ghost.x + tailX) / 2" :y="GEO.downTop + 14" text-anchor="middle">
-            缩短 {{ ghost.deltaM }} m
+            <tspan class="lbl">缩短 </tspan>
+            <tspan class="val">{{ ghost.deltaM }} m</tspan>
           </text>
         </g>
 
@@ -325,11 +344,28 @@ const inflowArrows = computed(() => {
           </g>
         </g>
 
-        <!-- 路口名 -->
-        <text class="inter-name" :x="(GEO.jiefangL + GEO.jiefangR) / 2" y="22" text-anchor="middle">解放东路口</text>
-        <text class="inter-name trunk" :x="(GEO.jingshiL + GEO.jingshiR) / 2" y="22" text-anchor="middle">经十路口</text>
+        <!-- 路口名 + 灯态 -->
+        <g class="sig" :transform="`translate(${(GEO.jiefangL + GEO.jiefangR) / 2}, 10)`">
+          <circle r="7" :class="['lamp', jiefangSig.green ? 'g' : 'r']" />
+          <text class="inter-name" y="22" text-anchor="middle">解放东路口</text>
+          <text class="cd" y="34" text-anchor="middle">
+            <tspan :class="jiefangSig.green ? 'g' : 'r'">{{ jiefangSig.green ? '绿灯' : '红灯' }}</tspan>
+            <tspan class="w"> {{ jiefangSig.countdown || 0 }} s</tspan>
+          </text>
+        </g>
+        <g class="sig" :transform="`translate(${(GEO.jingshiL + GEO.jingshiR) / 2}, 10)`">
+          <circle r="7" :class="['lamp', jingshiSig.green ? 'g' : 'r']" />
+          <text class="inter-name trunk" y="22" text-anchor="middle">经十路口</text>
+          <text class="cd" y="34" text-anchor="middle">
+            <tspan :class="jingshiSig.green ? 'g' : 'r'">{{ jingshiSig.green ? '绿灯' : '红灯' }}</tspan>
+            <tspan class="w"> {{ jingshiSig.countdown || 0 }} s</tspan>
+          </text>
+        </g>
       </svg>
       </div>
+    </div>
+    <div v-if="$slots.foot" class="foot">
+      <slot name="foot" />
     </div>
   </figure>
 </template>
@@ -341,45 +377,55 @@ const inflowArrows = computed(() => {
   flex-direction: column;
   min-height: 0;
   gap: 4px;
-  padding: 6px 8px 6px;
+  padding: 4px 8px 6px;
   border: 1px solid var(--cyan-border);
-  border-radius: 4px;
+  border-left: 3px solid var(--cyan-border);
+  border-radius: 2px;
   background: rgba(2, 10, 24, 0.72);
 }
-.corridor.tone-danger { border-color: rgba(255, 68, 68, 0.34); }
-.corridor.tone-ok { border-color: rgba(51, 204, 136, 0.4); }
-.corridor.spilling { box-shadow: inset 0 0 40px rgba(255, 68, 68, 0.1); }
+.corridor.tone-danger { border-left-color: var(--danger); }
+.corridor.tone-ok { border-left-color: var(--ok); }
+.corridor.spilling { box-shadow: inset 0 0 28px rgba(255, 68, 68, 0.08); }
 
 .hd { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; flex: none; }
 .badge {
-  padding: 2px 10px;
+  padding: 1px 8px;
   font-size: 12px;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   border: 1px solid currentColor;
   border-radius: 2px;
   color: var(--danger);
 }
 .tone-ok .badge { color: var(--ok); }
-.title { font-size: 15px; color: var(--text); letter-spacing: 1px; }
-.sub { font-size: 12px; color: var(--text-muted); }
+.sub { font-size: 12px; color: var(--text); }
 .alarm {
   margin-left: auto;
-  padding: 2px 10px;
   font-size: 12px;
-  color: #ff9a9a;
-  border: 1px solid var(--danger);
-  background: rgba(255, 68, 68, 0.15);
-  animation: blink 0.9s ease-in-out infinite;
+  font-weight: 600;
+  color: var(--danger);
 }
 @keyframes blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
+.foot { flex: none; min-width: 0; }
 .body {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: grid;
 }
-.canvas-wrap { position: relative; min-height: 0; height: 100%; }
-.canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.canvas-wrap {
+  position: relative;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 
 .cross { fill: #07182a; stroke: rgba(0, 229, 255, 0.2); }
 .cross.trunk { fill: #082137; }
@@ -394,8 +440,9 @@ const inflowArrows = computed(() => {
 .mark.edge { stroke: rgba(214, 236, 250, 0.42); stroke-width: 1.4; }
 
 .widen-tick { stroke: rgba(0, 229, 255, 0.4); stroke-width: 1; stroke-dasharray: 3 3; }
-.widen-label { font-size: 10px; fill: rgba(0, 229, 255, 0.62); letter-spacing: 0.5px; }
-.widen-label.dim { fill: rgba(150, 190, 212, 0.5); }
+.widen-label { font-size: 10px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 0.4px; }
+.widen-label .val { fill: var(--cyan); }
+.widen-label.dim { fill: rgba(220, 245, 255, 0.92); }
 
 .ghost line {
   stroke: rgba(255, 68, 68, 0.55);
@@ -409,13 +456,12 @@ const inflowArrows = computed(() => {
 }
 .ghost text {
   font-size: 10px;
-  fill: rgba(255, 130, 130, 0.9);
+  fill: rgba(220, 245, 255, 0.92);
   font-family: var(--font-mono);
 }
-.ghost .span-text {
-  fill: var(--ok);
-  font-size: 11px;
-}
+.ghost text .val { fill: var(--danger); }
+.ghost .span-text { fill: rgba(220, 245, 255, 0.92); font-size: 11px; }
+.ghost .span-text .val { fill: var(--ok); }
 
 .ref { stroke-dasharray: 5 4; }
 .ref.warn { stroke: rgba(255, 204, 0, 0.4); stroke-width: 1.2; }
@@ -424,8 +470,8 @@ const inflowArrows = computed(() => {
 .stop-line { stroke: rgba(228, 246, 255, 0.85); stroke-width: 3; }
 .zebra { fill: rgba(214, 236, 250, 0.22); }
 .lane-arrow { fill: none; stroke: rgba(200, 232, 248, 0.5); stroke-width: 1.4; }
-.lane-label { font-size: 10px; fill: rgba(170, 208, 228, 0.8); }
-.up-label { font-size: 9.5px; fill: rgba(170, 208, 228, 0.7); }
+.lane-label { font-size: 10px; fill: rgba(220, 245, 255, 0.88); }
+.up-label { font-size: 9.5px; fill: rgba(220, 245, 255, 0.88); }
 .up-label-bg { fill: rgba(2, 16, 28, 0.82); }
 
 .veh { transition: fill 0.18s linear; }
@@ -451,15 +497,33 @@ const inflowArrows = computed(() => {
 .occ text { font-size: 9.5px; fill: rgba(200, 232, 248, 0.5); font-family: var(--font-mono); }
 
 .tail line { stroke-width: 1.2; stroke-dasharray: 4 4; }
-.tail text { font-size: 12px; font-family: var(--font-mono); }
-.tail.calm line, .tail.calm text { stroke: var(--cyan); fill: var(--cyan); }
-.tail.warn line, .tail.warn text { stroke: var(--warn); fill: var(--warn); }
-.tail.danger line, .tail.danger text { stroke: var(--danger); fill: var(--danger); }
+.tail text { font-size: 12px; font-family: var(--font-mono); fill: rgba(220, 245, 255, 0.92); }
+.tail .lbl { fill: rgba(220, 245, 255, 0.92); }
+.tail.calm line { stroke: var(--cyan); }
+.tail.calm .val { fill: var(--cyan); }
+.tail.warn line { stroke: var(--warn); }
+.tail.warn .val { fill: var(--warn); }
+.tail.danger line { stroke: var(--danger); }
+.tail.danger .val { fill: var(--danger); }
 .tail line { fill: none; }
 
 .ruler line { stroke: rgba(0, 229, 255, 0.24); stroke-width: 1; }
-.ruler text { font-size: 9px; fill: rgba(150, 190, 212, 0.5); font-family: var(--font-mono); }
+.ruler text { font-size: 9px; fill: rgba(220, 245, 255, 0.72); font-family: var(--font-mono); }
 
-.inter-name { font-size: 12px; fill: rgba(160, 200, 220, 0.8); letter-spacing: 1px; }
-.inter-name.trunk { fill: rgba(0, 229, 255, 0.9); }
+.inter-name { font-size: 12px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 1px; }
+.inter-name.trunk { fill: rgba(220, 245, 255, 0.92); }
+.sig .lamp { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1; }
+.sig .lamp.g { fill: #33cc88; }
+.sig .lamp.r { fill: #ff4444; }
+.sig .cd { font-size: 9px; fill: rgba(220, 245, 255, 0.92); font-family: var(--font-mono); }
+.sig .cd .g { fill: var(--ok); }
+.sig .cd .r { fill: var(--danger); }
+.sig .cd .w { fill: rgba(220, 245, 255, 0.92); }
+.expert line {
+  stroke: rgba(255, 204, 0, 0.55);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+.expert text { font-size: 9.5px; fill: rgba(220, 245, 255, 0.92); font-family: var(--font-mono); }
+.expert .val { fill: var(--warn); }
 </style>

@@ -162,3 +162,87 @@ export function queueAt(variant, t) {
   const step = Math.min(r.steps - 1, Math.max(0, Math.round(t / r.dt)))
   return r.queueM[step]
 }
+
+/** 展示周期内某流向的绿灯条：start/dur 单位秒，可能跨过周期末 */
+export function greenBands(plan, displayStartS, cycleLen, dir8, turn) {
+  if (!plan?.windows) return []
+  return plan.windows
+    .filter((w) => hasMovement(w, dir8, turn) && w.green > 0)
+    .map((w) => ({
+      start: ((w.start - displayStartS) % cycleLen + cycleLen) % cycleLen,
+      dur: w.green,
+    }))
+}
+
+function isGreen(windows, absT) {
+  return signalState(windows, absT).green
+}
+
+/** 汇报节拍：在关键秒停住，方便指着讲 */
+export function findBriefingBeats(before, after) {
+  if (!before?.result || !after?.result) return []
+  const dt = before.result.dt
+  const ntWin = (v) => v.result.greens.jiefang.find((g) => g.key === 'north_through')?.windows || []
+  const abs = (v, i) => v.result.absStartS + i * dt
+
+  const first = (v, pred) => {
+    for (let i = 0; i < v.result.steps; i += 1) if (pred(i)) return i * dt
+    return null
+  }
+
+  const beats = []
+  const inflow = first(
+    before,
+    (i) => isGreen(ntWin(before), abs(before, i)) && !isGreen(before.result.greens.through, abs(before, i)),
+  )
+  if (inflow != null) {
+    beats.push({
+      id: 'inflow',
+      t: inflow,
+      hold: 1.8,
+      tag: '现状',
+      text: '解放东先行放行，经十路仍为红灯',
+      tone: 'danger',
+    })
+  }
+  const spill = first(before, (i) => before.result.spill[i] === 1)
+  if (spill != null) {
+    beats.push({
+      id: 'spill',
+      t: spill,
+      hold: 2.4,
+      tag: '现状',
+      text: '排队溢出至解放东路口',
+      tone: 'danger',
+    })
+  }
+  const clear = first(
+    after,
+    (i) => isGreen(after.result.greens.through, abs(after, i)) && !isGreen(ntWin(after), abs(after, i)),
+  )
+  if (clear != null) {
+    beats.push({
+      id: 'clear',
+      t: clear,
+      hold: 1.8,
+      tag: '优化后',
+      text: '经十路先行放行消散，解放东尚未汇入',
+      tone: 'ok',
+    })
+  }
+  const merge = first(
+    after,
+    (i) => isGreen(ntWin(after), abs(after, i)) && isGreen(after.result.greens.through, abs(after, i)),
+  )
+  if (merge != null) {
+    beats.push({
+      id: 'merge',
+      t: merge,
+      hold: 2.2,
+      tag: '优化后',
+      text: '车队启动后再汇入，路段不再溢出',
+      tone: 'ok',
+    })
+  }
+  return beats.sort((a, b) => a.t - b.t)
+}
