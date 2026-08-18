@@ -144,7 +144,7 @@ h4 {
 }
 .coord {
   font-size: 10px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 
 .deltas {
@@ -165,7 +165,7 @@ h4 {
 }
 .deltas strong {
   font-weight: 500;
-  color: var(--cyan);
+  color: var(--text);
 }
 
 .row-head {
@@ -247,7 +247,7 @@ h4 {
   margin-top: 2px;
   font-size: 10px;
   letter-spacing: 1px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 .chan-head em {
   font-style: normal;
@@ -296,7 +296,7 @@ h4 {
   color: var(--text-muted);
 }
 .chan-grid li.coord .no {
-  color: var(--cyan);
+  color: var(--text);
 }
 .chan-grid .g {
   font-size: 9px;

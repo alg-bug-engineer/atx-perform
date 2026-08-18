@@ -275,12 +275,12 @@ function hex(cx, cy, r) {
 .core.sealed .core-pct { fill: var(--ok); }
 .core-pct-u { font-size: 24px; fill: rgba(160, 200, 220, 0.6); }
 .core-label { font-size: 14px; letter-spacing: 6px; fill: rgba(160, 200, 220, 0.7); }
-.core-cap { font-size: 12px; letter-spacing: 5px; fill: rgba(0, 229, 255, 0.45); }
+.core-cap { font-size: 12px; letter-spacing: 5px; fill: rgba(240, 246, 255, 0.6); }
 .halo { animation: breathe 5s ease-in-out infinite; }
 
 .beam { stroke-width: 2; fill: none; }
 .spark circle {
-  fill: rgba(0, 229, 255, 0.9);
+  fill: rgba(240, 246, 255, 0.92);
   filter: drop-shadow(0 0 7px rgba(0, 229, 255, 0.9));
   animation: travel 2.4s linear infinite;
 }
@@ -294,7 +294,7 @@ function hex(cx, cy, r) {
 .pack-frame, .pack-edge { fill: none; stroke: rgba(0, 229, 255, 0.22); stroke-width: 1.2; }
 .pack.sealed .pack-frame { stroke: rgba(51, 204, 136, 0.5); }
 .pack-edge { stroke-dasharray: 4 6; }
-.pack-kicker { font-size: 12px; letter-spacing: 6px; fill: rgba(0, 229, 255, 0.55); }
+.pack-kicker { font-size: 12px; letter-spacing: 6px; fill: rgba(240, 246, 255, 0.7); }
 .pack-id { font-size: 18px; font-family: var(--font-mono); fill: rgba(226, 244, 255, 0.9); }
 .pack.sealed .pack-id { fill: var(--ok); }
 .pack-rule { stroke: rgba(0, 229, 255, 0.16); }

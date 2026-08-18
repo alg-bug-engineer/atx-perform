@@ -73,10 +73,10 @@ export function createProblemLinkAlert(geom) {
   const spanZ = bounds.maxZ - bounds.minZ;
   const span = Math.max(spanX, spanZ, 1);
   const slim = span < 90;
-  // 宽度克制：贴近底图路幅感知，短路段更窄；末端收细成方向楔形
+  // 宽度克制：与幕 2/幕 3 路况线条（LineSegments2 4–6.4px）视觉同级
   const band = buildFlatBand(curve, {
-    halfWidth: slim ? 1.2 : 1.8,
-    casing: 0.35,
+    halfWidth: slim ? 0.45 : 0.7,
+    casing: 0.18,
     color: SEVERE_RED,
     casingColor: CASING_RED,
     y: 0.9,

@@ -185,7 +185,7 @@ onUnmounted(() => {
 .dock-title {
   font-size: 12px;
   letter-spacing: 1px;
-  color: rgba(0, 229, 255, 0.9);
+  color: var(--text);
   margin-bottom: 8px;
 }
 
@@ -201,7 +201,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 12px;
   font-size: 14px;
-  color: rgba(0, 229, 255, 0.72);
+  color: var(--text-muted);
   padding: 3px 0;
 }
 
@@ -214,8 +214,8 @@ onUnmounted(() => {
 .dock-ok {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(0, 229, 255, 0.22);
-  color: #86efac;
+  border-top: 1px solid rgba(240, 246, 255, 0.2);
+  color: var(--text);
   font-size: 13px;
   letter-spacing: 0.4px;
 }
@@ -239,11 +239,11 @@ onUnmounted(() => {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #86efac;
+  color: var(--text);
 }
 
 .dock-hero.warn {
-  color: #ff8a3a;
+  color: var(--text);
 }
 
 .beat-headline {
@@ -258,10 +258,8 @@ onUnmounted(() => {
   font-weight: 700;
   letter-spacing: 3px;
   line-height: 1.35;
-  color: #00e5ff;
-  text-shadow:
-    0 0 14px rgba(0, 229, 255, 0.85),
-    0 0 28px rgba(0, 229, 255, 0.35);
+  color: #f0fbff;
+  text-shadow: none;
   background: rgba(4, 12, 30, 0.82);
   border: 1px solid rgba(0, 229, 255, 0.4);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
@@ -292,7 +290,7 @@ onUnmounted(() => {
 .action-btn {
   border: 1px solid rgba(0, 229, 255, 0.35);
   background: rgba(0, 20, 30, 0.72);
-  color: #00e5ff;
+  color: var(--text);
   font-family: 'Courier New', monospace;
   font-size: 11px;
   letter-spacing: 2px;

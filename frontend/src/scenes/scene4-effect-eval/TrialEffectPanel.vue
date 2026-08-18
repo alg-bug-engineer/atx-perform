@@ -367,7 +367,7 @@ const verdictText = computed(() => {
 }
 .plan-chips li strong { font-weight: 500; color: rgba(190, 220, 236, 0.85); }
 .plan-chips li.on { border-color: rgba(51, 204, 136, 0.5); }
-.plan-chips li.on strong { color: var(--ok); }
+.plan-chips li.on strong { color: var(--text); }
 
 .banner-side {
   display: flex;
@@ -377,7 +377,7 @@ const verdictText = computed(() => {
   flex: none;
 }
 .side-label { font-size: 11px; letter-spacing: 2px; color: var(--text-muted); }
-.side-num { font-size: 30px; font-weight: 500; color: var(--ok); line-height: 1.1; }
+.side-num { font-size: 30px; font-weight: 500; color: var(--text); line-height: 1.1; }
 .side-num small { font-size: 13px; color: var(--text-muted); margin-left: 4px; }
 
 .board {
@@ -402,7 +402,7 @@ const verdictText = computed(() => {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 2px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 .rail-item {
   display: flex;
@@ -420,7 +420,7 @@ const verdictText = computed(() => {
 }
 .rail-item.is-done { color: var(--text); }
 .rail-item.is-done .rail-dot { background: var(--ok); }
-.rail-item.is-active { color: var(--cyan); }
+.rail-item.is-active { color: var(--text); }
 .rail-item.is-active .rail-dot {
   background: var(--cyan);
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
@@ -456,7 +456,7 @@ const verdictText = computed(() => {
   font-size: 26px;
   font-weight: 500;
   line-height: 1.1;
-  color: var(--cyan);
+  color: var(--text);
 }
 .card-v em { font-style: normal; font-size: 12px; margin-left: 0; color: var(--text-muted); }
 .delta {
@@ -480,7 +480,7 @@ const verdictText = computed(() => {
 }
 .card-sub { font-size: 10px; color: rgba(160, 200, 220, 0.55); }
 .card.tone-ok { border-left-color: var(--ok); }
-.card.tone-ok .card-v { color: var(--ok); }
+.card.tone-ok .card-v { color: var(--text); }
 .card.tone-warn { border-left-color: var(--warn); }
 .card.tone-warn .card-v { color: var(--warn); }
 .card.tone-danger { border-left-color: var(--danger); }
@@ -602,7 +602,7 @@ const verdictText = computed(() => {
 .btn.ghost:hover:not(:disabled) {
   background: rgba(0, 229, 255, 0.08);
   border-color: var(--cyan-border-strong);
-  color: var(--cyan);
+  color: var(--text);
 }
 
 @media (max-width: 1500px) {

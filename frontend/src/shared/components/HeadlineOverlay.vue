@@ -61,17 +61,15 @@ watch(
   font-weight: 700;
   letter-spacing: 3px;
   line-height: 1.35;
-  color: #00e5ff;
-  text-shadow:
-    0 0 14px rgba(0, 229, 255, 0.85),
-    0 0 28px rgba(0, 229, 255, 0.35);
+  color: #f0fbff;
+  text-shadow: none;
 }
 
 .hl-sub {
   margin-top: 5px;
   font-size: 14px;
   letter-spacing: 2px;
-  color: rgba(126, 233, 255, 0.85);
+  color: rgba(240, 246, 255, 0.8);
 }
 
 .headline-swap-enter-active {

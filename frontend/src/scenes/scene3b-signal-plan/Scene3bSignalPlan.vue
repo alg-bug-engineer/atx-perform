@@ -69,7 +69,7 @@ onMounted(async () => {
 }
 
 .btn.ghost:hover {
-  color: var(--cyan);
+  color: var(--text);
   border-color: var(--cyan-border-strong);
 }
 </style>

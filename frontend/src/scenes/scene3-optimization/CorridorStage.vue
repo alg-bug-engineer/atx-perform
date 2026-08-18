@@ -394,15 +394,15 @@ const inflowArrows = computed(() => {
   letter-spacing: 1px;
   border: 1px solid currentColor;
   border-radius: 2px;
-  color: var(--danger);
+  color: var(--text);
 }
-.tone-ok .badge { color: var(--ok); }
+.tone-ok .badge { color: var(--text); }
 .sub { font-size: 12px; color: var(--text); }
 .alarm {
   margin-left: auto;
   font-size: 12px;
   font-weight: 600;
-  color: var(--danger);
+  color: var(--text);
 }
 @keyframes blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
@@ -441,7 +441,7 @@ const inflowArrows = computed(() => {
 
 .widen-tick { stroke: rgba(0, 229, 255, 0.4); stroke-width: 1; stroke-dasharray: 3 3; }
 .widen-label { font-size: 10px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 0.4px; }
-.widen-label .val { fill: var(--cyan); }
+.widen-label .val { fill: var(--text); }
 .widen-label.dim { fill: rgba(220, 245, 255, 0.92); }
 
 .ghost line {
@@ -459,9 +459,9 @@ const inflowArrows = computed(() => {
   fill: rgba(220, 245, 255, 0.92);
   font-family: var(--font-mono);
 }
-.ghost text .val { fill: var(--danger); }
+.ghost text .val { fill: var(--text); }
 .ghost .span-text { fill: rgba(220, 245, 255, 0.92); font-size: 11px; }
-.ghost .span-text .val { fill: var(--ok); }
+.ghost .span-text .val { fill: var(--text); }
 
 .ref { stroke-dasharray: 5 4; }
 .ref.warn { stroke: rgba(255, 204, 0, 0.4); stroke-width: 1.2; }
@@ -499,12 +499,12 @@ const inflowArrows = computed(() => {
 .tail line { stroke-width: 1.2; stroke-dasharray: 4 4; }
 .tail text { font-size: 12px; font-family: var(--font-mono); fill: rgba(220, 245, 255, 0.92); }
 .tail .lbl { fill: rgba(220, 245, 255, 0.92); }
-.tail.calm line { stroke: var(--cyan); }
-.tail.calm .val { fill: var(--cyan); }
-.tail.warn line { stroke: var(--warn); }
-.tail.warn .val { fill: var(--warn); }
-.tail.danger line { stroke: var(--danger); }
-.tail.danger .val { fill: var(--danger); }
+.tail.calm line { stroke: var(--text); }
+.tail.calm .val { fill: var(--text); }
+.tail.warn line { stroke: var(--text); }
+.tail.warn .val { fill: var(--text); }
+.tail.danger line { stroke: var(--text); }
+.tail.danger .val { fill: var(--text); }
 .tail line { fill: none; }
 
 .ruler line { stroke: rgba(0, 229, 255, 0.24); stroke-width: 1; }
@@ -516,8 +516,8 @@ const inflowArrows = computed(() => {
 .sig .lamp.g { fill: #33cc88; }
 .sig .lamp.r { fill: #ff4444; }
 .sig .cd { font-size: 9px; fill: rgba(220, 245, 255, 0.92); font-family: var(--font-mono); }
-.sig .cd .g { fill: var(--ok); }
-.sig .cd .r { fill: var(--danger); }
+.sig .cd .g { fill: var(--text); }
+.sig .cd .r { fill: var(--text); }
 .sig .cd .w { fill: rgba(220, 245, 255, 0.92); }
 .expert line {
   stroke: rgba(255, 204, 0, 0.55);
@@ -525,5 +525,5 @@ const inflowArrows = computed(() => {
   stroke-dasharray: 5 4;
 }
 .expert text { font-size: 9.5px; fill: rgba(220, 245, 255, 0.92); font-family: var(--font-mono); }
-.expert .val { fill: var(--warn); }
+.expert .val { fill: var(--text); }
 </style>

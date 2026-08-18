@@ -110,19 +110,7 @@ const style = computed(() => {
   };
 });
 
-/** 指标状态 → 颜色（色板对齐幕 2 dock 卡） */
-function statusColor(status) {
-  switch (status) {
-    case 'warn':
-      return 'var(--win-warn, #ffb020)';
-    case 'danger':
-      return 'var(--win-danger, #fb7185)';
-    case 'gap':
-      return 'var(--win-gap, #ff9800)';
-    default:
-      return 'var(--win-normal, #7ee9ff)';
-  }
-}
+/** 指标状态 → 语义标签（数值统一白/金色，状态只落在小标签上，对齐幕 3 卡片） */
 
 function statusTag(status) {
   switch (status) {
@@ -173,7 +161,7 @@ function onTransitionEnd() {
               :title="t.hint || ''"
             >
               <span class="fiw-turn-label">{{ t.label }}</span>
-              <span class="fiw-turn-value" :style="{ color: statusColor(t.status) }">
+              <span class="fiw-turn-value">
                 {{ t.value }}<span class="fiw-metric-unit">{{ t.unit }}</span>
               </span>
             </div>
@@ -193,29 +181,36 @@ function onTransitionEnd() {
                 {{ it.label }}
                 <span v-if="statusTag(it.status)" class="fiw-metric-tag">{{ statusTag(it.status) }}</span>
               </span>
-              <span class="fiw-impact-value" :style="{ color: statusColor(it.status) }">
+              <span class="fiw-impact-value">
                 {{ it.value }}<span class="fiw-metric-unit">{{ it.unit }}</span>
               </span>
             </div>
           </div>
         </template>
 
-        <div v-else class="fiw-grid">
-          <div
-            v-for="m in shownMetrics"
-            :key="m.key"
-            class="fiw-metric fiw-metric-in"
-            :class="`fiw-status-${m.status}`"
-            :title="m.hint || ''"
-          >
-            <div class="fiw-metric-label">
-              {{ m.label }}
-              <span v-if="statusTag(m.status)" class="fiw-metric-tag">{{ statusTag(m.status) }}</span>
+        <div v-else class="fiw-rows">
+          <template v-for="(m, i) in shownMetrics" :key="m.key">
+            <!-- 首条指标作主值：幕 3 卡片式金色大数 -->
+            <div v-if="i === 0" class="fiw-hero-block fiw-metric-in" :title="m.hint || ''">
+              <div class="fiw-hero">
+                {{ m.value }}<span class="fiw-hero-unit">{{ m.unit }}</span>
+              </div>
+              <div class="fiw-hero-label">
+                {{ m.label }}
+                <span v-if="statusTag(m.status)" class="fiw-metric-tag">{{ statusTag(m.status) }}</span>
+              </div>
             </div>
-            <div class="fiw-metric-value" :style="{ color: statusColor(m.status) }">
-              {{ m.value }}<span class="fiw-metric-unit">{{ m.unit }}</span>
+            <!-- 其余指标：白字行 -->
+            <div v-else class="fiw-row fiw-metric-in" :title="m.hint || ''">
+              <span class="fiw-row-label">
+                {{ m.label }}
+                <span v-if="statusTag(m.status)" class="fiw-metric-tag">{{ statusTag(m.status) }}</span>
+              </span>
+              <span class="fiw-row-value">
+                {{ m.value }}<span class="fiw-metric-unit">{{ m.unit }}</span>
+              </span>
             </div>
-          </div>
+          </template>
         </div>
 
         <div class="fiw-footer">
@@ -233,7 +228,7 @@ function onTransitionEnd() {
   z-index: 46;
   pointer-events: auto;
   transform: translate(-50%, -100%);
-  width: 300px;
+  width: 264px;
 }
 
 .fiw-connector {
@@ -243,21 +238,22 @@ function onTransitionEnd() {
   transform: translateX(-50%);
   width: 2px;
   height: 14px;
-  background: linear-gradient(to bottom, rgba(0, 200, 230, 0.55), rgba(0, 200, 230, 0));
+  background: linear-gradient(to bottom, rgba(240, 246, 255, 0.6), rgba(240, 246, 255, 0));
 }
 
+/* 卡片对齐幕 3 地图卡片：深底 + 金色描边 + 圆角 10 */
 .fiw-card {
-  /* 风格对齐幕 2 dock-card：简边框 + 深底，无顶部粗线与模糊 */
-  background: rgba(6, 14, 26, 0.9);
-  border: 1px solid rgba(0, 200, 230, 0.28);
-  padding: 10px 12px;
+  background: rgba(3, 14, 25, 0.9);
+  border: 1.75px solid rgba(245, 197, 66, 0.85);
+  border-radius: 10px;
+  padding: 12px 18px 10px;
 }
 
 .fiw-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .fiw-titles {
@@ -268,9 +264,9 @@ function onTransitionEnd() {
 }
 
 .fiw-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(0, 229, 255, 0.9);
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(175, 205, 220, 0.94);
   letter-spacing: 1px;
   white-space: nowrap;
   overflow: hidden;
@@ -278,132 +274,113 @@ function onTransitionEnd() {
 }
 
 .fiw-subtitle {
-  font-size: 10px;
-  color: rgba(160, 180, 200, 0.75);
+  font-size: 11px;
+  color: rgba(150, 180, 198, 0.7);
   letter-spacing: 1px;
 }
 
-.fiw-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* 主值：幕 3 卡片式 DIN 金色大数 */
+.fiw-hero-block { margin: 2px 0 8px; }
+.fiw-hero {
+  font-family: 'DIN Alternate', 'PingFang SC', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #f5c542;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.fiw-hero-unit {
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 4px;
+  color: rgba(245, 197, 66, 0.8);
+}
+.fiw-hero-label {
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(150, 180, 198, 0.78);
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 
-.fiw-metric {
-  /* 对齐幕 2 dock 行：简洁块面，状态语义只落在数值颜色上 */
-  padding: 6px 8px;
-  background: rgba(0, 20, 36, 0.5);
-  border: 1px solid rgba(0, 200, 230, 0.12);
-}
-
-.fiw-metric-label {
-  font-size: 10px;
-  color: rgba(160, 180, 200, 0.75);
+/* 其余指标：白字行 */
+.fiw-rows { display: flex; flex-direction: column; gap: 6px; }
+.fiw-row {
   display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.fiw-row-label {
+  color: rgba(205, 225, 238, 0.9);
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 3px;
+  gap: 5px;
+}
+.fiw-row-value {
+  color: rgba(230, 242, 250, 0.95);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fiw-metric-unit {
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 3px;
+  color: rgba(150, 180, 198, 0.65);
 }
 
 .fiw-metric-tag {
-  font-size: 8px;
-  padding: 0 4px;
-  border-radius: 2px;
+  font-size: 9px;
+  padding: 0 5px;
+  border-radius: 3px;
   letter-spacing: 0.5px;
 }
-
-.fiw-status-warn .fiw-metric-tag {
-  background: rgba(255, 176, 32, 0.16);
-  color: #ffb020;
-}
-
-.fiw-status-danger .fiw-metric-tag {
-  background: rgba(251, 113, 133, 0.16);
-  color: #fb7185;
-}
-
-.fiw-status-gap .fiw-metric-tag {
-  background: rgba(255, 152, 0, 0.16);
-  color: #ff9800;
-}
-
-.fiw-metric-value {
-  /* 对齐幕 2 dock-num */
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-}
-
-.fiw-metric-unit {
-  font-size: 10px;
-  font-weight: 400;
-  margin-left: 3px;
-  color: rgba(160, 180, 200, 0.6);
-}
+.fiw-status-warn .fiw-metric-tag { background: rgba(255, 255, 255, 0.12); color: #f0f6ff; }
+.fiw-status-danger .fiw-metric-tag { background: rgba(255, 255, 255, 0.12); color: #f0f6ff; }
+.fiw-status-gap .fiw-metric-tag { background: rgba(255, 255, 255, 0.12); color: #f0f6ff; }
 
 .fiw-section-label {
-  font-size: 9px;
-  color: rgba(0, 229, 255, 0.68);
+  font-size: 10px;
+  color: rgba(240, 246, 255, 0.8);
   letter-spacing: 1px;
-  margin: 9px 0 4px;
-  padding-left: 2px;
+  margin: 8px 0 4px;
 }
 
-.fiw-turns {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-}
-
-.fiw-turn {
-  padding: 6px 4px;
-  text-align: center;
-  background: rgba(0, 20, 36, 0.5);
-  border: 1px solid rgba(0, 200, 230, 0.12);
-}
-
+.fiw-turns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.fiw-turn { text-align: left; }
 .fiw-turn-label {
   display: block;
-  font-size: 10px;
-  color: rgba(160, 180, 200, 0.75);
-  margin-bottom: 3px;
+  font-size: 11px;
+  color: rgba(150, 180, 198, 0.75);
+  margin-bottom: 2px;
 }
-
 .fiw-turn-value {
-  font-size: 15px;
+  font-family: 'DIN Alternate', 'PingFang SC', sans-serif;
+  font-size: 17px;
   font-weight: 700;
+  color: rgba(230, 242, 250, 0.95);
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
 }
 
-.fiw-impact {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
+.fiw-impact { display: flex; flex-direction: column; gap: 4px; }
 .fiw-impact-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 4px 6px;
-  background: rgba(0, 20, 36, 0.5);
-  border: 1px solid rgba(0, 200, 230, 0.1);
-}
-
-.fiw-impact-label {
-  font-size: 10px;
-  color: rgba(160, 180, 200, 0.75);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.fiw-impact-value {
   font-size: 13px;
-  font-weight: 700;
+}
+.fiw-impact-label {
+  color: rgba(205, 225, 238, 0.9);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.fiw-impact-value {
+  font-weight: 600;
+  color: rgba(230, 242, 250, 0.95);
   font-variant-numeric: tabular-nums;
 }
 
@@ -412,54 +389,24 @@ function onTransitionEnd() {
   align-items: center;
   justify-content: space-between;
   margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(0, 229, 255, 0.22);
+  padding-top: 6px;
+  border-top: 1px solid rgba(240, 246, 255, 0.2);
 }
+.fiw-flow-dir { font-size: 10px; color: rgba(240, 246, 255, 0.75); letter-spacing: 1px; }
+.fiw-source { font-size: 9px; color: rgba(150, 180, 198, 0.55); }
 
-.fiw-flow-dir {
-  font-size: 10px;
-  color: rgba(0, 229, 255, 0.72);
-  letter-spacing: 1px;
-}
-
-.fiw-source {
-  font-size: 9px;
-  color: rgba(180, 210, 230, 0.5);
-}
-
-.flowwin-fade-enter-active {
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
-.flowwin-fade-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
+.flowwin-fade-enter-active { transition: opacity 0.4s ease, transform 0.4s ease; }
+.flowwin-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
 .flowwin-fade-enter-from,
 .flowwin-fade-leave-to {
   opacity: 0;
   transform: translate(-50%, calc(-100% + 10px));
 }
 
-/* 指标逐条揭示：新出现的格子高亮闪入 */
+/* 指标逐条揭示：轻量上浮淡入 */
 @keyframes fiw-metric-in {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-    box-shadow: 0 0 0 rgba(0, 212, 240, 0);
-  }
-  45% {
-    opacity: 1;
-    box-shadow: 0 0 14px rgba(0, 212, 240, 0.45);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    box-shadow: 0 0 0 rgba(0, 212, 240, 0);
-  }
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
-
-.fiw-metric-in {
-  animation: fiw-metric-in 0.6s ease both;
-}
+.fiw-metric-in { animation: fiw-metric-in 0.5s ease both; }
 </style>

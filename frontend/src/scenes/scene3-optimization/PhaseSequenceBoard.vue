@@ -142,7 +142,7 @@ h3 {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 1px;
-  color: var(--cyan);
+  color: var(--text);
 }
 .picker {
   display: flex;

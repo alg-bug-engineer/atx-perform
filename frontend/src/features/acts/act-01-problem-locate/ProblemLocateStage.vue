@@ -5,7 +5,6 @@
  * 语音为主轴，三拍带动单轨镜头、问题路段标红、上下游东西向与大字报。
  */
 import { onMounted, onUnmounted, ref } from 'vue';
-import TicketSpatialCard from './TicketSpatialCard.vue';
 import HeadlineOverlay from '../../../shared/components/HeadlineOverlay.vue';
 import { runExitBarrier } from '../../../shared/act-timing.js';
 import { setAct2MapBeat } from '../../../shared/narrative-state.js';
@@ -17,7 +16,6 @@ import {
   completeTicket,
   enterProblemLocate,
   exitProblemLocate,
-  problemLocateHud,
   setProblemLocateHud,
 } from './state.js';
 
@@ -105,16 +103,6 @@ onUnmounted(() => {
 
 <template>
   <div class="problem-locate-stage">
-    <!-- 左侧只保留当前拍结论，详细数字落在地图钉上。 -->
-    <transition name="dock-fade">
-      <aside v-if="problemLocateHud.panel" :key="problemLocateHud.phase" class="act-dock act-dock-left">
-        <TicketSpatialCard
-          :panel="problemLocateHud.panel"
-          compact
-        />
-      </aside>
-    </transition>
-
     <!-- 大字报讲解（每拍一条要点） -->
     <HeadlineOverlay :headline="headline" />
   </div>
@@ -126,33 +114,5 @@ onUnmounted(() => {
   inset: 0;
   pointer-events: none;
   z-index: 36;
-}
-
-.act-dock {
-  position: absolute;
-  z-index: 37;
-  pointer-events: auto;
-  padding: 0;
-  height: auto;
-  max-height: calc(100vh - 96px - 72px);
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.act-dock-left {
-  top: 12px;
-  left: 24px;
-  width: min(280px, calc(100vw - 48px));
-}
-
-.dock-fade-enter-active,
-.dock-fade-leave-active {
-  transition: opacity 0.45s ease, transform 0.45s ease;
-}
-
-.dock-fade-enter-from,
-.dock-fade-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
 }
 </style>

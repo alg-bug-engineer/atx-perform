@@ -458,7 +458,7 @@ defineExpose({ replay: onReplay });
   align-items: center;
   justify-content: center;
   background: rgba(2, 8, 16, 0.92);
-  color: #00e5ff;
+  color: var(--text);
   font-family: 'Courier New', monospace;
 }
 
@@ -482,7 +482,7 @@ defineExpose({ replay: onReplay });
   margin: 0;
   font-size: 12px;
   letter-spacing: 2px;
-  color: rgba(0, 229, 255, 0.85);
+  color: rgba(240, 246, 255, 0.85);
 }
 
 .scene2-dock {
@@ -509,7 +509,7 @@ defineExpose({ replay: onReplay });
 .dock-title {
   font-size: 12px;
   letter-spacing: 1px;
-  color: rgba(0, 229, 255, 0.9);
+  color: rgba(240, 246, 255, 0.9);
   margin-bottom: 8px;
 }
 
@@ -525,7 +525,7 @@ defineExpose({ replay: onReplay });
   justify-content: space-between;
   gap: 12px;
   font-size: 14px;
-  color: rgba(0, 229, 255, 0.72);
+  color: rgba(240, 246, 255, 0.72);
   padding: 3px 0;
 }
 
@@ -606,7 +606,7 @@ defineExpose({ replay: onReplay });
 }
 
 .dock-hero.warn {
-  color: #ff8a3a;
+  color: var(--text);
 }
 
 .scene2-caption {
@@ -661,7 +661,7 @@ defineExpose({ replay: onReplay });
 .action-btn {
   border: 1px solid rgba(0, 229, 255, 0.35);
   background: rgba(0, 20, 30, 0.72);
-  color: #00e5ff;
+  color: var(--text);
   font-family: 'Courier New', monospace;
   font-size: 11px;
   letter-spacing: 2px;

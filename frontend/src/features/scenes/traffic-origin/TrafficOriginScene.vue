@@ -3010,7 +3010,7 @@ canvas:active { cursor: grabbing; }
 .loading-ring {
   width: 52px; height: 52px;
   border: 2px solid rgba(0,229,255,.15);
-  border-top-color: #00e5ff;
+  border-top-color: var(--text);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -3060,14 +3060,14 @@ canvas:active { cursor: grabbing; }
   font-family: 'Courier New', monospace; font-size: 14px;
   padding: 24px 32px; text-align: center; line-height: 2;
 }
-.key-notice code { color: #ffdd88; background: rgba(255,200,0,.1); padding: 2px 6px; }
-.key-notice a { color: #00e5ff; }
+.key-notice code { color: #f0f6ff; background: rgba(255,255,255,.08); padding: 2px 6px; }
+.key-notice a { color: var(--text); }
 
 /* ── HUD ── */
 .hud {
   position: absolute; top: 24px; left: 24px; z-index: 10;
   pointer-events: none; user-select: none;
-  font-family: 'Courier New', monospace; color: #00e5ff;
+  font-family: 'Courier New', monospace; color: var(--text);
 }
 .hud-title { display: flex; flex-direction: column; margin-bottom: 20px; }
 .title-main { font-size: 22px; font-weight: bold; letter-spacing: 3px;
@@ -3097,7 +3097,7 @@ canvas:active { cursor: grabbing; }
   padding: 6px 12px;
   border: 1px solid rgba(0,229,255,.35);
   background: rgba(0,20,30,.52);
-  color: #00e5ff;
+  color: var(--text);
   font-family: 'Courier New', monospace;
   font-size: 11px;
   letter-spacing: 2px;
@@ -3159,7 +3159,7 @@ canvas:active { cursor: grabbing; }
 .timestamp {
   position: absolute; top:24px; right:280px; z-index: 10;
   font-family: 'Courier New', monospace; font-size: 12px;
-  color: rgba(0,229,255,.55); letter-spacing: 2px; pointer-events: none;
+  color: rgba(240,246,255,.7); letter-spacing: 2px; pointer-events: none;
 }
 
 /* ── 过渡 ── */

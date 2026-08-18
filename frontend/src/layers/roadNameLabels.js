@@ -6,7 +6,7 @@ import * as THREE from 'three';
 
 const LABEL_DPR = 2;
 
-export function createRoadNameLabel(text, { accent = '#7ee9ff', fontSize = 22 } = {}) {
+export function createRoadNameLabel(text, { accent = 'rgba(240, 246, 255, 0.6)', fontSize = 13 } = {}) {
   const padX = 8;
   const padY = 6;
   const font = `600 ${fontSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
@@ -43,7 +43,7 @@ export function createRoadNameLabel(text, { accent = '#7ee9ff', fontSize = 22 } 
   ctx.fillStyle = accent;
   ctx.fillText(label, cx, cy);
 
-  ctx.strokeStyle = 'rgba(0, 212, 240, 0.4)';
+  ctx.strokeStyle = 'rgba(240, 246, 255, 0.22)';
   ctx.lineWidth = 1.25;
   ctx.beginPath();
   ctx.moveTo(cx - tw * 0.45, cy + fontSize * 0.55);
@@ -89,7 +89,7 @@ export function createRoadNameLabelLayer(labels) {
     if (!lab?.name || !lab.anchor) continue;
     const ns = lab.name.includes('奥体西');
     const spr = createRoadNameLabel(lab.name, {
-      accent: lab.accent || (ns ? '#9aefff' : '#7ee9ff'),
+      accent: lab.accent || 'rgba(240, 246, 255, 0.6)',
     });
     spr.position.set(lab.anchor.x, lab.anchor.y ?? 10, lab.anchor.z);
     spr.userData.roadName = lab.name;

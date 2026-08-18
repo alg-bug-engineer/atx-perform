@@ -174,7 +174,7 @@ watch(activeContent, () => {
 .build-eyebrow {
   font-size: 10px;
   letter-spacing: 1px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 .build-hd h2 {
   margin: 2px 0;
@@ -194,7 +194,7 @@ watch(activeContent, () => {
 .progress-card strong {
   display: block;
   font-size: 22px;
-  color: var(--ok);
+  color: var(--text);
 }
 .workbench {
   flex: 1;
@@ -207,7 +207,7 @@ watch(activeContent, () => {
 .tree-pane h3 {
   margin: 0 0 8px;
   font-size: 11px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 .timeline-item {
   display: grid;
@@ -322,7 +322,7 @@ watch(activeContent, () => {
   gap: 8px;
 }
 .skill-k {
-  color: var(--cyan-dim);
+  color: var(--text-muted);
   min-width: 48px;
 }
 .skill-v {
@@ -333,10 +333,10 @@ watch(activeContent, () => {
   font-size: 10px;
 }
 .skill-v.tag {
-  color: var(--ok);
+  color: var(--text);
 }
 .skill-v.ok-path {
-  color: var(--ok);
+  color: var(--text);
 }
 .skill-v.fail {
   color: var(--danger);

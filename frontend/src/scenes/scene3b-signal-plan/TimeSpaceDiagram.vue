@@ -262,7 +262,7 @@ const bands = computed(() =>
   text-anchor: middle;
 }
 .cols text.nm.focus {
-  fill: var(--cyan);
+  fill: var(--text);
   font-weight: 600;
 }
 

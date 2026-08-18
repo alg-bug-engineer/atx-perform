@@ -345,7 +345,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
   min-width: 0;
   flex: 1;
 }
-.lead-headline span { color: var(--cyan); }
+.lead-headline span { color: var(--text); }
 
 .tech {
   display: flex;
@@ -408,7 +408,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
 }
 .posters strong em {
   font-style: normal;
-  color: var(--cyan);
+  color: var(--text);
 }
 .poster-d {
   font-size: 11px;
@@ -439,7 +439,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 1.5px;
-  color: var(--cyan);
+  color: var(--text);
 }
 .compare-acts {
   display: flex;
@@ -460,7 +460,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
 .play-btn {
   color: #041020;
   background: var(--cyan);
-  border-color: var(--cyan);
+  border-color: var(--text);
 }
 .play-btn.ghost,
 .diagram-btn {
@@ -470,7 +470,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
 }
 .play-btn:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.45); }
 .diagram-btn:hover {
-  color: var(--cyan);
+  color: var(--text);
   border-color: var(--cyan-border-strong);
 }
 
@@ -486,7 +486,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
   flex: none;
   font-size: 12px;
   font-family: var(--font-mono);
-  color: var(--cyan);
+  color: var(--text);
 }
 .beat-line .clock i {
   margin-right: 6px;
@@ -550,13 +550,13 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
   cursor: pointer;
 }
 .close:hover {
-  color: var(--cyan);
+  color: var(--text);
   border-color: var(--cyan-border-strong);
 }
 .tg.on {
   color: #041020;
   background: var(--cyan);
-  border-color: var(--cyan);
+  border-color: var(--text);
 }
 
 .lightbox {

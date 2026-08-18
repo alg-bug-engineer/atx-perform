@@ -26,29 +26,58 @@ function runtimeOrigin(intersections, spec) {
   return { pos: [x, y], props: { inter_id: spec.interId } };
 }
 
-function createMetricPin(title, lines = [], accent = '#00e5ff') {
-  const width = 430;
-  const lineH = 34;
-  const height = 58 + Math.max(1, lines.length) * lineH;
+function createMetricPin(title, lines = [], accent = '#f5c542') {
+  // 卡片规范对齐幕 3 地图卡片：深底 + accent 描边 1.75 + 圆角 10；
+  // 首行指标作金色 DIN 大数主值，其余白字行
+  const padX = 22;
+  const padY = 16;
+  const [first, ...rest] = lines;
+  const heroParts = first ? first.split(/\s{2,}/) : null;
+  const heroLab = heroParts && heroParts.length > 1 ? heroParts[0] : '';
+  const heroVal = heroParts ? (heroParts.length > 1 ? heroParts.slice(1).join(' ') : heroParts[0]) : '';
+  const rowH = 24;
+  const cssW = 300;
+  const cssH = padY + 26 + (heroVal ? 40 + 20 : 0) + 8 + rest.length * rowH + padY;
+  const dpr = 2;
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(4, 14, 26, 0.92)';
-  ctx.fillRect(0, 0, width, height);
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.62)';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(2, 2, width - 4, height - 4);
-  ctx.fillStyle = accent;
-  ctx.fillRect(0, 0, 5, height);
-  ctx.font = '600 24px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillStyle = accent;
-  ctx.fillText(title, 22, 34);
-  ctx.font = '500 21px "PingFang SC","Microsoft YaHei",sans-serif';
-  lines.forEach((line, i) => {
-    ctx.fillStyle = i === 0 ? '#f0fbff' : 'rgba(205, 225, 238, 0.9)';
-    ctx.fillText(line, 22, 68 + i * lineH);
-  });
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = 'rgba(3, 14, 25, 0.9)';
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.75;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') ctx.roundRect(4, 4, cssW - 8, cssH - 8, 10);
+  else ctx.rect(4, 4, cssW - 8, cssH - 8);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = '500 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(175, 205, 220, 0.94)';
+  ctx.fillText(title, padX, padY + 12);
+
+  let y = padY + 26;
+  if (heroVal) {
+    ctx.font = '700 32px "DIN Alternate","PingFang SC",sans-serif';
+    ctx.fillStyle = accent;
+    ctx.fillText(heroVal, padX, y + 18);
+    y += 40;
+    if (heroLab) {
+      ctx.font = '500 14px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillStyle = 'rgba(150, 180, 198, 0.78)';
+      ctx.fillText(heroLab, padX, y + 8);
+      y += 20;
+    }
+  }
+  y += 8;
+  ctx.font = '500 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(205, 225, 238, 0.9)';
+  rest.forEach((line, i) => ctx.fillText(line, padX, y + 12 + i * rowH));
+
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   const mat = new THREE.SpriteMaterial({
@@ -60,7 +89,7 @@ function createMetricPin(title, lines = [], accent = '#00e5ff') {
     sizeAttenuation: true,
   });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(width * 0.085, height * 0.085, 1);
+  sprite.scale.set(cssW * 0.085, cssH * 0.085, 1);
   sprite.frustumCulled = false;
   sprite.renderOrder = 80;
   sprite.userData.disposePin = () => {
@@ -149,17 +178,17 @@ export function createAct2MapFx({
   [
     {
       name: '经十路',
-      pos: { x: jingshiPos[0] - 36, y: 10, z: -(jingshiPos[1] + 8) },
+      pos: { x: jingshiPos[0] - 26, y: 10, z: -(jingshiPos[1] + 1) },
     },
     {
       name: '奥体西',
-      pos: { x: problemMidPos[0] - 24, y: 10, z: -problemMidPos[1] },
+      pos: { x: problemMidPos[0] - 8, y: 10, z: -problemMidPos[1] },
     },
     { name: '解放东路口', pos: { x: JIEFANG.x, y: 10, z: JIEFANG.z } },
     { name: '经十路口', pos: { x: JINGSHI.x, y: 10, z: JINGSHI.z } },
   ].forEach(({ name, pos }) => {
     const spr = createRoadNameLabel(name, {
-      accent: name.includes('奥体西') ? '#9aefff' : '#7ee9ff',
+      accent: 'rgba(240, 246, 255, 0.6)',
     });
     spr.material.opacity = 0;
     spr.position.set(pos.x, pos.y, pos.z);
@@ -183,26 +212,6 @@ export function createAct2MapFx({
     x: problemMid.x + 26,
     z: problemMid.z,
   }, '#ff8a3a');
-  addPin('nodes', '经十路东进口', ['速度 14.5 km/h', '延时指数 5.81', '直行 1230 辆/h'], {
-    x: JINGSHI.x + 36,
-    z: JINGSHI.z - 10,
-  }, '#ff8a3a');
-  addPin('nodes', '经十路西进口', ['速度 26.2 km/h', '延时指数 3.41', '饱和度缺失 · 降级'], {
-    x: JINGSHI.x - 38,
-    z: JINGSHI.z + 10,
-  }, '#ffb020');
-  addPin('nodes', '解放东西进口', ['西向东 6.4 km/h', '延时指数 4.46'], {
-    x: JIEFANG.x - 32,
-    z: JIEFANG.z + 8,
-  }, '#ff6b4a');
-  addPin('nodes', '解放东东进口', ['速度 —', '饱和度缺失'], {
-    x: JIEFANG.x + 32,
-    z: JIEFANG.z - 8,
-  }, '#9aa8b5');
-  addPin('conclusion', '问题定位结论', rowsOf('conclusion'), {
-    x: problemMid.x + 26,
-    z: problemMid.z,
-  }, '#ff6b4a');
   const pinMats = annotationGroup.children.map((pin) => pin.material);
 
   const targets = { labels: 0, pins: 0 };
@@ -243,7 +252,7 @@ export function createAct2MapFx({
       playFlow(nsLayer, true);
       playFlow(jingshiEw, true);
       playFlow(jiefangEw, true);
-      showPins('nodes');
+      showPins('lock');
       return;
     }
     if (nextBeat === 'settle' || nextBeat === 'conclusion') {
@@ -252,12 +261,12 @@ export function createAct2MapFx({
       playFlow(nsLayer, true);
       playFlow(jingshiEw, true);
       playFlow(jiefangEw, true);
-      showPins('conclusion');
+      showPins('lock');
       return;
     }
     if (nextBeat === 'dim' || nextBeat === 'handoff') {
       targets.labels = 0.35;
-      showPins('conclusion');
+      showPins('lock');
       return;
     }
     if (nextBeat === 'clear') {

@@ -81,7 +81,7 @@ onBeforeUnmount(() => {
 .scene-tag {
   font-size: 11px;
   letter-spacing: 3px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 
 .btn {
@@ -109,7 +109,7 @@ onBeforeUnmount(() => {
 }
 
 .btn.ghost:hover {
-  color: var(--cyan);
+  color: var(--text);
   border-color: var(--cyan-border-strong);
 }
 </style>

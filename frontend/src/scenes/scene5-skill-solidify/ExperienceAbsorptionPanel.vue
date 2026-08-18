@@ -101,7 +101,7 @@ watch(
   color: var(--text);
 }
 .absorption-icon {
-  color: var(--cyan);
+  color: var(--text);
   font-size: 12px;
 }
 .pulse-dot {
@@ -178,7 +178,7 @@ watch(
 .value-title {
   margin: 0 0 6px;
   font-size: 11px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
   letter-spacing: 0.5px;
 }
 .value-table {
@@ -193,7 +193,7 @@ watch(
   text-align: left;
 }
 .value-table th {
-  color: var(--cyan-dim);
+  color: var(--text-muted);
   background: rgba(255, 255, 255, 0.03);
 }
 .value-table td {

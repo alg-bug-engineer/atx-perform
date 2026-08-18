@@ -324,8 +324,8 @@ export function createCityMonitorMapFx({ project }) {
     // 高德式贴地扁平色带：宽度克制 + 末端楔形收细，无圆头/无光晕/无闪烁
     const casingColor = new THREE.Color(color).multiplyScalar(0.42);
     const band = buildFlatBand(curve, {
-      halfWidth: slim ? 1.2 : 1.8,
-      casing: 0.35,
+      halfWidth: slim ? 0.45 : 0.7,
+      casing: 0.18,
       color,
       casingColor: casingColor.getHex(),
       y: 0.9,

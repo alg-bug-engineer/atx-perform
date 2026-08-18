@@ -145,10 +145,8 @@ onUnmounted(() => {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 4px;
-  color: var(--cyan);
-  text-shadow:
-    0 0 14px rgba(0, 229, 255, 0.85),
-    0 0 28px rgba(0, 229, 255, 0.35);
+  color: var(--text);
+  text-shadow: none;
 }
 
 .banner-right {
@@ -161,7 +159,7 @@ onUnmounted(() => {
 .clock {
   font-size: 13px;
   letter-spacing: 1px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -222,7 +220,7 @@ onUnmounted(() => {
 }
 
 .step-line.passed {
-  background: rgba(51, 204, 136, 0.5);
+  background: rgba(240, 246, 255, 0.45);
 }
 
 .step.is-sub .step-badge {
@@ -234,20 +232,20 @@ onUnmounted(() => {
 }
 
 .step.is-done .step-badge {
-  color: var(--ok);
-  border-color: var(--ok);
-  box-shadow: 0 0 8px rgba(51, 204, 136, 0.3);
+  color: var(--text);
+  border-color: rgba(240, 246, 255, 0.6);
+  box-shadow: none;
 }
 
 .step.is-active {
-  color: var(--cyan);
+  color: var(--text);
 }
 
 .step.is-active .step-badge {
   color: #041020;
-  background: var(--cyan);
-  border-color: var(--cyan);
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.65);
+  background: var(--text);
+  border-color: var(--text);
+  box-shadow: none;
 }
 
 .step.is-active .step-label {
@@ -255,7 +253,7 @@ onUnmounted(() => {
 }
 
 .step:hover .step-label {
-  color: var(--cyan);
+  color: var(--text);
 }
 
 .status-strip {
@@ -270,22 +268,22 @@ onUnmounted(() => {
 }
 
 .status-strip.paused {
-  border-color: rgba(255, 193, 74, 0.55);
-  background: rgba(18, 14, 8, 0.88);
+  border-color: rgba(240, 246, 255, 0.5);
+  background: rgba(10, 14, 20, 0.88);
 }
 
 .status-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+  background: #f0f6ff;
+  box-shadow: none;
   animation: blink 1.1s ease-in-out infinite;
 }
 
 .status-strip.paused .status-dot {
-  background: #ffc14a;
-  box-shadow: 0 0 8px rgba(255, 193, 74, 0.55);
+  background: #f0f6ff;
+  box-shadow: none;
   animation: none;
 }
 
@@ -306,8 +304,8 @@ onUnmounted(() => {
 }
 
 .status-kbd.space {
-  color: rgba(255, 193, 74, 0.95);
-  border-color: rgba(255, 193, 74, 0.45);
+  color: rgba(240, 246, 255, 0.9);
+  border-color: rgba(240, 246, 255, 0.4);
 }
 
 @keyframes blink {

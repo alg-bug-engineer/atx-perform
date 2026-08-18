@@ -111,10 +111,10 @@ function resolveLabelAnchor(spec, { source, via, target }) {
 
 function buildRoadLabels(flowTrace, { source, via, target }) {
   const specs = flowTrace.road_labels || [
-    { name: '经十路', at: 'target', dx: -36, dy: 8 },
-    { name: '奥体西', at: 'problem_mid', dx: -24, dy: 0 },
-    { name: '解放东', at: 'via', dx: 18, dy: 7 },
-    { name: '坤顺路', at: 'source', dx: 18, dy: 7 },
+    { name: '经十路', at: 'target', dx: -26, dy: 1 },
+    { name: '奥体西', at: 'problem_mid', dx: -8, dy: 0 },
+    { name: '解放东', at: 'via', dx: 10, dy: 4 },
+    { name: '坤顺路', at: 'source', dx: 10, dy: 4 },
   ];
   return specs
     .map((spec) => {

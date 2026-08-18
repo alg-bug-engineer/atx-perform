@@ -316,7 +316,7 @@ const bandCaption = computed(() => {
   border-right: 1px solid var(--cyan-border);
   font-size: 11px;
   letter-spacing: 2px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 .expect-tag em {
   font-style: normal;
@@ -419,7 +419,7 @@ h3 {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 2px;
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 .hint {
   font-size: 10px;
@@ -444,7 +444,7 @@ h3 {
   cursor: pointer;
 }
 .tg:hover {
-  color: var(--cyan);
+  color: var(--text);
 }
 .tg.on {
   background: var(--cyan);
@@ -453,7 +453,7 @@ h3 {
 }
 .tg.focus:not(.on) {
   border-color: var(--cyan-border-strong);
-  color: var(--cyan-dim);
+  color: var(--text-muted);
 }
 .sep {
   width: 1px;
@@ -496,7 +496,7 @@ h3 {
   color: var(--text-muted);
 }
 .links li.focus .ll {
-  color: var(--cyan);
+  color: var(--text);
 }
 .arw {
   text-align: center;
@@ -511,7 +511,7 @@ h3 {
   color: var(--warn);
 }
 .links.offsets .la {
-  color: var(--cyan);
+  color: var(--text);
 }
 
 .cands li {

@@ -67,10 +67,10 @@
       "panel": {
         "kind": "nodes",
         "title": "上下游路口",
-        "hero": "解放东 / 经十",
+        "hero": "解放东 / 经十路",
         "rows": [
           {
-            "label": "下游经十",
+            "label": "下游经十路",
             "value": "东进口 14.5 km/h"
           },
           {
