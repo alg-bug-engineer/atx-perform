@@ -1,7 +1,7 @@
 /**
  * 幕 0 / 首页 idle：对齐 agent-loop startCityMonitorIntro
- * cityScan(~3.2s) → 揭示左栏 → 聚焦 COR-AOTIXI-JFD-JS → 问题路段标红闪烁 → 拉近镜头
- * 问题路段几何取本地 data/1-scene-objects.json（剧本要求：标红闪烁 + 自动连贯拉近）
+ * cityScan(~3.2s) → 揭示左栏 → 聚焦 COR-AOTIXI-JFD-JS → 问题路段高德式深红实色带 → 拉近镜头
+ * 问题路段几何取本地 data/1-scene-objects.json（剧本要求：拥堵标红 + 自动连贯拉近）
  */
 import sceneObjects from '@data/1-scene-objects.json';
 import { createCityScan } from '../../layers/cityScan.js';
@@ -134,7 +134,7 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
     });
   }
 
-  /** 标红闪烁问题路段，再连贯拉近到路段中心 */
+  /** 问题路段高德式深红实色带，再连贯拉近到路段中心 */
   function alertProblemLink() {
     openingBeat.value = 'alert';
     problemAlert.show();

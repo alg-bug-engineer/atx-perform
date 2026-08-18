@@ -27,10 +27,10 @@ const PACK_X = 872
 const PACK_R = 1252
 
 const SOURCES = [
-  { key: 'locate', act: '幕 1', name: '问题定位', desc: '奥体西 N→S 晚高峰排队 270 m' },
-  { key: 'cause', act: '幕 2', name: '分析成因', desc: '展宽仅 100 m · 上游红灯期汇入' },
-  { key: 'plan', act: '幕 3', name: '优化方案', desc: '解放东相位差 +56 s 协调放行' },
-  { key: 'eval', act: '幕 4', name: '效果评估', desc: '排队 270 → 162 m · 比 0.8 回落' },
+  { key: 'locate', act: '幕 2', name: '问题定位', desc: '奥体西 N→S 晚高峰排队 270 m' },
+  { key: 'cause', act: '幕 3', name: '分析成因', desc: '展宽仅 100 m · 上游红灯期汇入' },
+  { key: 'plan', act: '幕 4', name: '优化方案', desc: '解放东相位差 +56 s 协调放行' },
+  { key: 'eval', act: '幕 5', name: '效果评估', desc: '排队 270 → 162 m · 比 0.8 回落' },
 ]
 
 const sources = computed(() =>

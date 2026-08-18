@@ -38,7 +38,7 @@ onBeforeUnmount(() => {
 
     <div class="scene-actions">
       <span class="scene-tag">{{ SCENE_META.name }}</span>
-      <button type="button" class="btn ghost" @click="setScene('0')">返回开幕</button>
+      <button type="button" class="btn ghost" @click="setScene('0')">返回巡检</button>
       <button type="button" class="btn primary" @click="setScene('2')">分析成因</button>
     </div>
   </div>

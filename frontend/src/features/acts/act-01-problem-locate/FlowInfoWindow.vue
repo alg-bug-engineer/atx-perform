@@ -110,13 +110,13 @@ const style = computed(() => {
   };
 });
 
-/** 指标状态 → 颜色 */
+/** 指标状态 → 颜色（色板对齐幕 2 dock 卡） */
 function statusColor(status) {
   switch (status) {
     case 'warn':
       return 'var(--win-warn, #ffb020)';
     case 'danger':
-      return 'var(--win-danger, #ff5252)';
+      return 'var(--win-danger, #fb7185)';
     case 'gap':
       return 'var(--win-gap, #ff9800)';
     default:
@@ -155,7 +155,6 @@ function onTransitionEnd() {
 
       <div class="fiw-card">
         <div class="fiw-header">
-          <span class="fiw-dot"></span>
           <div class="fiw-titles">
             <div class="fiw-title">{{ title }}</div>
             <div class="fiw-subtitle">{{ subtitle }}</div>
@@ -244,34 +243,21 @@ function onTransitionEnd() {
   transform: translateX(-50%);
   width: 2px;
   height: 14px;
-  background: linear-gradient(to bottom, rgba(0, 212, 240, 0.55), rgba(0, 212, 240, 0));
+  background: linear-gradient(to bottom, rgba(0, 200, 230, 0.55), rgba(0, 200, 230, 0));
 }
 
 .fiw-card {
-  background: rgba(4, 14, 26, 0.88);
-  border: 1px solid rgba(0, 212, 240, 0.35);
-  border-top: 2px solid rgba(0, 212, 240, 0.75);
-  backdrop-filter: blur(8px);
-  padding: 10px 12px 8px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  /* 风格对齐幕 2 dock-card：简边框 + 深底，无顶部粗线与模糊 */
+  background: rgba(6, 14, 26, 0.9);
+  border: 1px solid rgba(0, 200, 230, 0.28);
+  padding: 10px 12px;
 }
 
 .fiw-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-bottom: 7px;
-  border-bottom: 1px solid rgba(0, 212, 240, 0.16);
-  margin-bottom: 7px;
-}
-
-.fiw-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #00d4f0;
-  box-shadow: 0 0 8px rgba(0, 212, 240, 0.6);
-  flex-shrink: 0;
+  margin-bottom: 8px;
 }
 
 .fiw-titles {
@@ -284,8 +270,8 @@ function onTransitionEnd() {
 .fiw-title {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(230, 245, 255, 0.95);
-  letter-spacing: 0.5px;
+  color: rgba(0, 229, 255, 0.9);
+  letter-spacing: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -293,7 +279,7 @@ function onTransitionEnd() {
 
 .fiw-subtitle {
   font-size: 10px;
-  color: rgba(0, 212, 240, 0.7);
+  color: rgba(160, 180, 200, 0.75);
   letter-spacing: 1px;
 }
 
@@ -304,27 +290,15 @@ function onTransitionEnd() {
 }
 
 .fiw-metric {
+  /* 对齐幕 2 dock 行：简洁块面，状态语义只落在数值颜色上 */
   padding: 6px 8px;
-  background: rgba(0, 20, 36, 0.6);
-  border: 1px solid rgba(0, 212, 240, 0.12);
-  border-left: 2px solid rgba(126, 233, 255, 0.4);
-}
-
-.fiw-metric.fiw-status-warn {
-  border-left-color: rgba(255, 176, 32, 0.65);
-}
-
-.fiw-metric.fiw-status-danger {
-  border-left-color: rgba(255, 82, 82, 0.65);
-}
-
-.fiw-metric.fiw-status-gap {
-  border-left-color: rgba(255, 152, 0, 0.6);
+  background: rgba(0, 20, 36, 0.5);
+  border: 1px solid rgba(0, 200, 230, 0.12);
 }
 
 .fiw-metric-label {
   font-size: 10px;
-  color: rgba(180, 210, 230, 0.75);
+  color: rgba(160, 180, 200, 0.75);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -344,8 +318,8 @@ function onTransitionEnd() {
 }
 
 .fiw-status-danger .fiw-metric-tag {
-  background: rgba(255, 82, 82, 0.16);
-  color: #ff5252;
+  background: rgba(251, 113, 133, 0.16);
+  color: #fb7185;
 }
 
 .fiw-status-gap .fiw-metric-tag {
@@ -354,22 +328,24 @@ function onTransitionEnd() {
 }
 
 .fiw-metric-value {
-  font-size: 20px;
+  /* 对齐幕 2 dock-num */
+  font-size: 22px;
   font-weight: 700;
-  font-family: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace;
-  line-height: 1.1;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
 }
 
 .fiw-metric-unit {
   font-size: 10px;
   font-weight: 400;
   margin-left: 3px;
-  color: rgba(180, 210, 230, 0.6);
+  color: rgba(160, 180, 200, 0.6);
 }
 
 .fiw-section-label {
   font-size: 9px;
-  color: rgba(0, 212, 240, 0.68);
+  color: rgba(0, 229, 255, 0.68);
   letter-spacing: 1px;
   margin: 9px 0 4px;
   padding-left: 2px;
@@ -384,34 +360,21 @@ function onTransitionEnd() {
 .fiw-turn {
   padding: 6px 4px;
   text-align: center;
-  background: rgba(0, 20, 36, 0.6);
-  border: 1px solid rgba(0, 212, 240, 0.12);
-  border-top: 2px solid rgba(126, 233, 255, 0.4);
-}
-
-.fiw-turn.fiw-status-warn {
-  border-top-color: rgba(255, 176, 32, 0.65);
-}
-
-.fiw-turn.fiw-status-danger {
-  border-top-color: rgba(255, 82, 82, 0.65);
-}
-
-.fiw-turn.fiw-status-gap {
-  border-top-color: rgba(255, 152, 0, 0.6);
+  background: rgba(0, 20, 36, 0.5);
+  border: 1px solid rgba(0, 200, 230, 0.12);
 }
 
 .fiw-turn-label {
   display: block;
   font-size: 10px;
-  color: rgba(180, 210, 230, 0.75);
+  color: rgba(160, 180, 200, 0.75);
   margin-bottom: 3px;
 }
 
 .fiw-turn-value {
   font-size: 15px;
   font-weight: 700;
-  font-family: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
 
@@ -427,25 +390,12 @@ function onTransitionEnd() {
   justify-content: space-between;
   padding: 4px 6px;
   background: rgba(0, 20, 36, 0.5);
-  border: 1px solid rgba(0, 212, 240, 0.1);
-  border-left: 2px solid rgba(126, 233, 255, 0.4);
-}
-
-.fiw-impact-row.fiw-status-warn {
-  border-left-color: rgba(255, 176, 32, 0.65);
-}
-
-.fiw-impact-row.fiw-status-danger {
-  border-left-color: rgba(255, 82, 82, 0.65);
-}
-
-.fiw-impact-row.fiw-status-gap {
-  border-left-color: rgba(255, 152, 0, 0.6);
+  border: 1px solid rgba(0, 200, 230, 0.1);
 }
 
 .fiw-impact-label {
   font-size: 10px;
-  color: rgba(180, 210, 230, 0.75);
+  color: rgba(160, 180, 200, 0.75);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -454,21 +404,21 @@ function onTransitionEnd() {
 .fiw-impact-value {
   font-size: 13px;
   font-weight: 700;
-  font-family: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .fiw-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 7px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(0, 212, 240, 0.12);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 229, 255, 0.22);
 }
 
 .fiw-flow-dir {
   font-size: 10px;
-  color: #7ee9ff;
+  color: rgba(0, 229, 255, 0.72);
   letter-spacing: 1px;
 }
 

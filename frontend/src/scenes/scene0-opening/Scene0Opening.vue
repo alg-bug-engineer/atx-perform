@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 幕 0 · 开幕（3D）：复用 MapRuntime 的城市监控运行时。
- * 分镜：城市扫描 → 揭示监控 → 问题路段标红闪烁 → 连贯拉近镜头（scene0-opening.js）。
+ * 分镜：城市扫描 → 揭示监控 → 问题路段高德式深红实色带 → 连贯拉近镜头（scene0-opening.js）。
  * 幕内不自行切幕，跳转统一交给顶部步骤栏 / ?scene= 路由。
  */
 import { onBeforeUnmount } from 'vue'

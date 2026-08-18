@@ -1,9 +1,10 @@
 /**
  * Act1 首页：全市监控区域 / 干线 / 路口叠加（Three.js）
  * 交互对齐参考仓 city-demo：overview ↔ focused analysis
- * 路口/干线聚焦视觉：光晕节点、脉冲环、粗光带、流动点、分析标签
+ * 路口/干线聚焦视觉：高德式贴地扁平色带、光晕节点、脉冲环、分析标签
  */
 import * as THREE from 'three';
+import { buildFlatBand } from './flatBand.js';
 
 const STATUS_COLOR = {
   critical: 0xff4757,
@@ -311,86 +312,28 @@ export function createCityMonitorMapFx({ project }) {
       return bounds;
     }
 
-    // —— 聚焦干线：贴合路网的细光带 + 流动点 + 标签 ——
+    // —— 聚焦干线：高德式静态实色带（深色描边 + 圆头端帽，无光晕/无白核/无闪烁）——
     const curve = pathToCurve(path, 1.35);
     if (!curve) return bounds;
 
     const spanX = bounds.maxX - bounds.minX;
     const spanZ = bounds.maxZ - bounds.minZ;
     const span = Math.max(spanX, spanZ, 1);
-    // 短廊道/窄路用更细管径，避免「色块贴纸」盖住底图车道
+    // 短廊道/窄路用更细带宽，避免「色块贴纸」盖住底图车道
     const slim = span < 90;
-    const glowR = slim ? 2.0 : 4.2;
-    const mainR = slim ? 0.95 : 2.0;
-    const coreR = slim ? 0.4 : 0.85;
-    const tubular = Math.max(64, path.length * 14);
-    try {
-      const glowTube = new THREE.Mesh(
-        new THREE.TubeGeometry(curve, tubular, glowR, 12, false),
-        new THREE.MeshBasicMaterial({
-          color: statusColor(corridor.status),
-          transparent: true,
-          opacity: slim ? 0.28 : 0.2,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        }),
-      );
-      glowTube.renderOrder = 28;
-      parent.add(glowTube);
-
-      const mainTube = new THREE.Mesh(
-        new THREE.TubeGeometry(curve, tubular, mainR, 12, false),
-        new THREE.MeshBasicMaterial({
-          color,
-          transparent: true,
-          opacity: 0.92,
-          depthWrite: false,
-        }),
-      );
-      mainTube.renderOrder = 29;
-      parent.add(mainTube);
-
-      const coreTube = new THREE.Mesh(
-        new THREE.TubeGeometry(curve, tubular, coreR, 10, false),
-        new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          transparent: true,
-          opacity: 0.35,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        }),
-      );
-      coreTube.renderOrder = 30;
-      parent.add(coreTube);
-    } catch (err) {
-      console.warn('[cityMonitor] corridor tube failed', err);
-    }
+    // 高德式贴地扁平色带：宽度克制 + 末端楔形收细，无圆头/无光晕/无闪烁
+    const casingColor = new THREE.Color(color).multiplyScalar(0.42);
+    const band = buildFlatBand(curve, {
+      halfWidth: slim ? 1.2 : 1.8,
+      casing: 0.35,
+      color,
+      casingColor: casingColor.getHex(),
+      y: 0.9,
+      taper: 0.78,
+    });
+    parent.add(band.group);
 
     const hot = corridor.status === 'critical' || (corridor.saturation || 0) >= 0.85;
-    const flowCount = 6;
-    for (let i = 0; i < flowCount; i++) {
-      const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glowTex,
-          color: hot ? 0xff4757 : FLOW_TEAL,
-          transparent: true,
-          opacity: 0.95,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        }),
-      );
-      const dotSize = slim ? 7 : 14;
-      sprite.scale.set(dotSize, dotSize, 1);
-      sprite.renderOrder = 40;
-      parent.add(sprite);
-      anims.push({
-        kind: 'flowDot',
-        obj: sprite,
-        curve,
-        offset: i / flowCount,
-        speed: hot ? 0.22 : 0.16,
-      });
-    }
 
     const mid = curve.getPoint(0.5);
     const issueHint = corridor.issues?.[0]?.name || '';

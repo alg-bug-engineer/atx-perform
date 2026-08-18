@@ -55,6 +55,7 @@ import { buildTopology, findBusiestIntersection, findNearestIntersection, traceF
 import { FlowParticles }           from './mesh/particles.js';
 import { createFocusLayer }        from './mesh/focusLayer.js';
 import { clearSelection, setSelection, odZonesVisible } from '../../../shared/event-bus.js';
+import { ROAD_PARTICLES_VISIBLE } from '../../../shared/constants.js';
 import { cityScanTriggered, activeAnalysisTab } from '../../../shared/analysis-state.js';
 import {
   narrativeActive,
@@ -825,11 +826,14 @@ async function initInner() {
   }
 
   // ── 车流粒子：仅主干，严格贴路；Act2 切换为路口廊道局部粒子
-  flowParticles = new FlowParticles(allRoads, 5000, {
-    allowedClasses: ['express', 'arterial'],
-    speedScale: 1.35,
-  });
-  scene.add(flowParticles.mesh);
+  // 开关 ROAD_PARTICLES_VISIBLE（shared/constants.js）控制是否显示
+  if (ROAD_PARTICLES_VISIBLE) {
+    flowParticles = new FlowParticles(allRoads, 5000, {
+      allowedClasses: ['express', 'arterial'],
+      speedScale: 1.35,
+    });
+    scene.add(flowParticles.mesh);
+  }
 
   // Act1 搜索态图层（幕 1 模块注册表特效工厂）
   {
@@ -886,7 +890,7 @@ async function initInner() {
     if (fxCompat.createAct8MapFx) { act8Fx = fxCompat.createAct8MapFx({ project }); scene.add(act8Fx.group); }
   }
 
-  stats.value = { roads: allRoads.length, particles: flowParticles.count };
+  stats.value = { roads: allRoads.length, particles: flowParticles?.count ?? 0 };
 
   scene.traverse(obj => { obj.frustumCulled = false; });
 
@@ -2648,8 +2652,9 @@ function setDecorationPointsVisible(visible) {
   });
 }
 
-/** Act2：关掉建筑轮廓噪点，换路口附近贴路流动粒子 */
+/** Act2：关掉建筑轮廓噪点，换路口附近贴路流动粒子（粒子开关关闭时整体跳过） */
 function enterAct2ParticleMode() {
+  if (!ROAD_PARTICLES_VISIBLE) return;
   setOsmBuildingEdgesVisible(false);
   setDecorationPointsVisible(false);
 
@@ -2675,6 +2680,7 @@ function enterAct2ParticleMode() {
 }
 
 function exitAct2ParticleMode() {
+  if (!ROAD_PARTICLES_VISIBLE) return;
   setOsmBuildingEdgesVisible(true);
   setDecorationPointsVisible(true);
   if (flowParticles) {

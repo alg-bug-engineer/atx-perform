@@ -426,7 +426,7 @@ defineExpose({ replay: onReplay });
         返回首页
       </button>
       <button type="button" class="action-btn" @click="onReplay">
-        {{ showScene2Ui ? '重播溯源' : '重播开幕' }}
+        {{ showScene2Ui ? '重播溯源' : '重播巡检' }}
       </button>
     </div>
   </div>

@@ -6,7 +6,7 @@ export const sceneRegistry = [
   {
     key: '0',
     aliases: ['opening'],
-    name: '开幕',
+    name: '主动巡检',
     component: () => import('../scenes/scene0-opening/Scene0Opening.vue'),
   },
   {

@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 生产壳层：大字报标题 + 顶部步骤栏 + 执行状态
- * 步骤栏覆盖幕 0–5，点选或 ← / → 切幕，与 ?scene= 调试路由同源。
+ * 步骤栏覆盖全部六幕（内部 key 0–5，展示编号 1–6），点选或 ← / → 切幕，与 ?scene= 调试路由同源。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
@@ -35,7 +35,7 @@ const activeScene = computed(() => props.scenes[activeIndex.value] || props.scen
 
 /** 执行状态用处置动作命名，不直接复读幕名 */
 const STATUS_LABEL = {
-  0: '走廊扫描',
+  0: '主动巡检',
   1: '问题定位',
   2: '成因研判',
   3: '方案生成',
@@ -51,12 +51,12 @@ const pausedTone = computed(() => barrierPaused.value || pauseAfterActRequested.
 
 const statusText = computed(() => playbackHint.value || `执行中：${statusLabel.value}`)
 
-/** 编号直接用幕 key，和 ?scene= 调试参数对得上 */
+/** 展示编号 = 步骤序号 + 1（幕0 显示为第一幕）；内部路由仍用 scene.key，与 ?scene= 调试参数对得上 */
 const steps = computed(() =>
   props.scenes.map((scene, i) => ({
     key: scene.key,
     name: scene.name,
-    badge: scene.key,
+    badge: String(i + 1),
     sub: /[a-z]$/i.test(scene.key),
     state: i < activeIndex.value ? 'done' : i === activeIndex.value ? 'active' : 'idle',
   })),
