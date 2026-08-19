@@ -89,15 +89,19 @@ const playX = computed(() => ((props.t % props.cycleLen) + props.cycleLen) % pro
 .align.tone-ok { border-left-color: var(--ok); }
 header {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   min-width: 0;
+  text-align: center;
 }
 header strong {
   flex: none;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  line-height: 1.2;
   color: var(--text);
 }
 .align.tone-danger header strong { color: var(--danger); }
@@ -108,7 +112,7 @@ header span {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  color: var(--text);
+  color: var(--text-muted);
 }
 header em {
   margin-left: 4px;

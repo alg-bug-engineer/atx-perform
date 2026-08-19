@@ -102,24 +102,6 @@ onUnmounted(() => {
 const beforeSample = computed(() => (before.value ? sampleVariant(before.value, clock.value) : null))
 const afterSample = computed(() => (after.value ? sampleVariant(after.value, clock.value) : null))
 
-const resultCards = computed(() => {
-  const list = (demo.value?.kpis || props.payload?.corridor_demo?.kpis || []).filter(
-    (k) => k.key !== 'cycle_end_queue',
-  )
-  return list.map((k) => {
-    const drop = k.before > 0 ? Math.round(((k.before - k.after) / k.before) * 100) : 0
-    const cleared = k.after === 0 && k.before > 0
-    return {
-      key: k.key,
-      label: k.label,
-      unit: k.unit,
-      before: k.before,
-      after: k.after,
-      delta: cleared ? '已消除' : drop > 0 ? `↓ ${drop}%` : '持平',
-    }
-  })
-})
-
 const jingshiBefore = computed(() =>
   before.value
     ? greenBands(before.value.jingshiPlan, before.value.displayStartS, before.value.cycleLen, 0, 2)
@@ -171,6 +153,8 @@ const enlargeLead = computed(() => {
 })
 const cycleLen = computed(() => demo.value?.cycleLen || 220)
 const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value} s`)
+/** 对时条暂隐，车辆模拟占满对比区 */
+const showAlignStrip = false
 </script>
 
 <template>
@@ -187,17 +171,6 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
         </button>
       </div>
     </header>
-
-    <ul class="posters" data-testid="scene3-kpis">
-      <li v-for="c in resultCards" :key="c.key">
-        <span class="poster-k">{{ c.label }}</span>
-        <b class="poster-badge">改善</b>
-        <strong>
-          {{ c.before }}{{ c.unit }} → <em>{{ c.after }}{{ c.unit }}</em>
-          <span class="poster-d">{{ c.delta }}</span>
-        </strong>
-      </li>
-    </ul>
 
     <div class="compare">
       <div class="compare-bar">
@@ -216,10 +189,10 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
           </button>
         </div>
       </div>
-      <div v-if="demo" class="align-row">
+      <div v-if="showAlignStrip && demo" class="align-row">
         <OffsetAlignStrip
           compact
-          title="现状配时"
+          title="现状"
           hint="经十路 / 解放东北直绿窗"
           key-word="错开"
           tone="danger"
@@ -327,7 +300,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
 <style scoped>
 .plan-compare {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
   min-height: 0;
   height: 100%;
@@ -357,65 +330,6 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
   font-size: 12px;
   letter-spacing: 1px;
   color: var(--text-muted);
-}
-
-.posters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.posters li {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 4px 8px 4px;
-  border: 1px solid var(--cyan-border);
-  border-left: 3px solid var(--ok);
-  border-radius: 2px;
-  background: rgba(0, 20, 34, 0.55);
-}
-.poster-k {
-  font-size: 11px;
-  letter-spacing: 0.4px;
-  color: var(--text-muted);
-}
-.poster-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  padding: 1px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  color: var(--ok);
-  border: 1px solid rgba(51, 204, 136, 0.45);
-  border-radius: 2px;
-}
-.posters strong {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.2;
-  color: var(--text);
-  white-space: nowrap;
-}
-.posters strong em {
-  font-style: normal;
-  color: var(--text);
-}
-.poster-d {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ok);
 }
 
 .compare {
@@ -518,7 +432,7 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
 .stage {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 8px;
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
