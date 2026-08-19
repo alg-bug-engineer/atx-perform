@@ -54,6 +54,17 @@ function onBeatStart(beat) {
     case 's1-nodes':
       setAct2MapBeat('nodes');
       break;
+    case 's1-channelization':
+      setAct2MapBeat('channelization');
+      break;
+    case 's1-queue':
+      setAct2MapBeat('queue');
+      break;
+    case 's1-m-queue':
+    case 's1-m-speed':
+    case 's1-m-sat':
+      setAct2MapBeat(beat.mapBeat);
+      break;
     case 's1-conclusion':
       completeLocateConfirm();
       setAct2MapBeat('conclusion');

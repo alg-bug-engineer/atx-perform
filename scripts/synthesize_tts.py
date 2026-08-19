@@ -167,6 +167,11 @@ def main() -> int:
         help="只合成指定幕（注意 manifest 会只保留该幕，通常不加此参数）",
     )
     parser.add_argument("--force", action="store_true", help="覆盖已有 wav")
+    parser.add_argument(
+        "--force-files",
+        default="",
+        help="逗号分隔的 seg file 列表（如 scene1/s1-lock.wav），仅强制重合成这些段",
+    )
     parser.add_argument("--dry-run", action="store_true", help="只打印计划，不调 API")
     args = parser.parse_args()
 
@@ -182,6 +187,7 @@ def main() -> int:
 
     scenes = data["scenes"]
     keys = [args.scene] if args.scene else sorted(scenes.keys())
+    force_files = {f.strip() for f in args.force_files.split(",") if f.strip()}
     manifest_path = OUT_DIR / "manifest.json"
     if args.scene and manifest_path.exists():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -206,7 +212,7 @@ def main() -> int:
             budget = seg.get("approx_sec")
             print(f"- {seg['id']}: {chars} 字 · 预算 ~{budget}s → {out.relative_to(ROOT)}")
 
-            if out.exists() and not args.force:
+            if out.exists() and not args.force and seg["file"] not in force_files:
                 dur = round(wav_duration_sec(out), 2)
                 print(f"  skip existing ({dur}s)")
                 rows.append({**seg, "duration_sec": dur, "chars": chars})

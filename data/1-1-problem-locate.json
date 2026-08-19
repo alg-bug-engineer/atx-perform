@@ -46,16 +46,12 @@
         "hero": "排队 270 m",
         "rows": [
           {
-            "label": "排队长度",
-            "value": "270 m"
+            "label": "路段",
+            "value": "奥体西路·解放东路—经十路"
           },
           {
-            "label": "平均速度",
-            "value": "7.2 km/h"
-          },
-          {
-            "label": "饱和度",
-            "value": "0.84"
+            "label": "流向",
+            "value": "北向南直行"
           }
         ]
       }
@@ -101,6 +97,90 @@
           {
             "label": "治理约束",
             "value": "避免加重下游拥堵"
+          }
+        ]
+      }
+    },
+    "channelization": {
+      "headline": "恢复路口渠化展示",
+      "caption": "目标经十路口，北进口为主问题进口",
+      "approx_sec": 5,
+      "panel": {
+        "kind": "channelization",
+        "title": "路口渠化",
+        "hero": "经十路口",
+        "rows": [
+          {
+            "label": "主问题进口",
+            "value": "北进口直行"
+          }
+        ]
+      }
+    },
+    "queue": {
+      "headline": "排队过程 · 队尾向上游延伸",
+      "caption": "北向南直行车辆逐段排队",
+      "approx_sec": 5,
+      "panel": {
+        "kind": "queue",
+        "title": "排队过程",
+        "hero": "队尾延伸",
+        "rows": [
+          {
+            "label": "排队车辆",
+            "value": "逐段累积"
+          }
+        ]
+      }
+    },
+    "m-queue": {
+      "headline": "排队长度 270 m",
+      "caption": "蓄车 368 m，排队比 0.73 接近预警线",
+      "approx_sec": 7,
+      "panel": {
+        "kind": "m-queue",
+        "title": "排队长度",
+        "hero": "270 m",
+        "rows": [
+          {
+            "label": "蓄车",
+            "value": "368 m"
+          },
+          {
+            "label": "排队比",
+            "value": "0.73"
+          }
+        ]
+      }
+    },
+    "m-speed": {
+      "headline": "平均速度 7.2 km/h",
+      "caption": "通行速度偏低，延时指数 5.28",
+      "approx_sec": 7,
+      "panel": {
+        "kind": "m-speed",
+        "title": "平均速度",
+        "hero": "7.2 km/h",
+        "rows": [
+          {
+            "label": "延时指数",
+            "value": "5.28"
+          }
+        ]
+      }
+    },
+    "m-sat": {
+      "headline": "饱和度 0.84",
+      "caption": "下游经十路口东西向饱和度偏高",
+      "approx_sec": 7,
+      "panel": {
+        "kind": "m-sat",
+        "title": "饱和度",
+        "hero": "0.84",
+        "rows": [
+          {
+            "label": "预警线",
+            "value": "0.8"
           }
         ]
       }

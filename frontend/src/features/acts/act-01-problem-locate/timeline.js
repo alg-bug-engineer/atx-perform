@@ -13,7 +13,7 @@ function seg(id) {
   return SEGS.find((s) => s.id === id) || { text: '', audioUrl: '', durationSec: 0, approxSec: 0 };
 }
 
-const ORDER = ['lock', 'nodes', 'conclusion'];
+const ORDER = ['lock', 'channelization', 'queue', 'm-queue', 'm-speed', 'm-sat', 'nodes', 'conclusion'];
 
 export const ACT1_BEATS = ORDER.map((key) => {
   const config = PROBLEM_LOCATE_BEATS[key] || {};

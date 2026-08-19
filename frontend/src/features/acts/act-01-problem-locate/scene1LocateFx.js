@@ -13,6 +13,20 @@ import {
   PROBLEM_LINK_COORDS,
   PROBLEM_LOCATE_BEATS,
 } from './fixture.js';
+import channelizationData from '@data/1-1-channelization.json';
+import { getConductorSegments } from '../../../shared/sceneNarration.js';
+import {
+  createChannelizationLayer,
+  disposeChannelizationLayer,
+  setChannelizationQueueCarsVisible,
+  setChannelizationQueueProgress,
+} from '../../scenes/scene-c/channelizationLayer.js';
+import {
+  planSegmentChannelization,
+  buildSegmentChannelizationLayer,
+  buildSegmentQueueCars,
+} from '../../scenes/scene-c/segmentChannelizationLayer.js';
+import { channelizationMapToInterItem } from '../../../services/channelizationFromBackend.js';
 
 function worldOf(inter) {
   const [x, y] = project(inter.lon, inter.lat);
@@ -208,23 +222,42 @@ export function createAct2MapFx({
     beatPins[key].push(pin);
   };
 
-  addPin('lock', '问题路段指标', rowsOf('lock'), {
-    x: problemMid.x + 26,
+  addPin('lock', '问题路段锁定', ['路段  奥体西路·解放东路—经十路', '流向  北向南直行'], {
+    x: problemMid.x - 26,
     z: problemMid.z,
   }, '#ff8a3a');
+  addPin('m-queue', '排队长度', ['排队长度  270 m', '蓄车  368 m', '排队比  0.73'], {
+    x: problemMid.x + 26,
+    z: problemMid.z - 26,
+  }, '#ff8a3a');
+  addPin('m-speed', '平均速度', ['平均速度  7.2 km/h', '延时指数  5.28'], {
+    x: problemMid.x + 26,
+    z: problemMid.z,
+  }, '#ffb020');
+  addPin('m-sat', '饱和度', ['饱和度  0.84', '预警线  0.8'], {
+    x: problemMid.x + 26,
+    z: problemMid.z + 26,
+  }, '#ff6b4a');
   const pinMats = annotationGroup.children.map((pin) => pin.material);
 
   const targets = { labels: 0, pins: 0 };
 
-  function showPins(key) {
+  // 累积语义：m-* 拍只加不删；nodes/conclusion 保留全部已展现窗；clear 清空
+  const visibleKeys = new Set();
+  function showPins(key, { cumulative = false } = {}) {
+    if (key) visibleKeys.add(key);
+    if (key === null) visibleKeys.clear();
+    const active = cumulative ? visibleKeys : new Set(key ? [key] : []);
+    let any = false;
     Object.entries(beatPins).forEach(([pinKey, pins]) => {
+      const on = active.has(pinKey);
+      if (on) any = true;
       pins.forEach((pin) => {
-        const on = pinKey === key;
         pin.visible = on;
         if (pin.material) pin.material.opacity = on ? 1 : 0;
       });
     });
-    targets.pins = beatPins[key]?.length ? 1 : 0;
+    targets.pins = any ? 1 : 0;
   }
 
   function playFlow(layer, on) {
@@ -234,9 +267,89 @@ export function createAct2MapFx({
     else layer.stop?.();
   }
 
-  function play(nextBeat) {
+  // ── 渠化 + 排队过程（路段锚点·段中心化，对齐 agent-loop act2MapFx）──────
+  const AXIS_ROADS = { ew_road: '经十路', ns_road: '奥体西路' };
+  let channelGroup = null;
+  let segmentPlan = null;
+  let queueAnim = null;
+
+  function interItemOf(inter) {
+    const raw = channelizationData.by_intersection?.[inter.interId];
+    if (!raw?.arms?.length) return null;
+    return channelizationMapToInterItem(
+      { available: true, links: raw.arms, center: [inter.lon, inter.lat] },
+      { inter_id: inter.interId, intersection_name: inter.name, lng: inter.lon, lat: inter.lat },
+      AXIS_ROADS,
+    );
+  }
+
+  function ensureChannelization() {
+    if (channelGroup) return channelGroup;
+    channelGroup = new THREE.Group();
+    channelGroup.name = 'act2Channelization';
+    const channelOpts = {
+      arrowScale: 1.7,
+      neutralOtherArms: false,
+      showArmRoadNames: false,
+      axisRoads: AXIS_ROADS,
+    };
+    const mainItem = interItemOf(INTERSECTIONS.jingshi);
+    const otherItem = interItemOf(INTERSECTIONS.jiefang);
+    if (mainItem && otherItem) {
+      // 车流北向南（方位角 180）；main=经十路口锚定不动
+      segmentPlan = planSegmentChannelization(mainItem, otherItem, { travelBearing: 180 });
+    }
+    if (segmentPlan) {
+      const layer = buildSegmentChannelizationLayer(segmentPlan, channelOpts);
+      if (layer) {
+        layer.add(buildSegmentQueueCars(segmentPlan, { queueM: 270, satPct: 84 }));
+        channelGroup.add(layer);
+      }
+    }
+    if (!channelGroup.children.length && mainItem) {
+      // 段化数据不足时回退单口渠化
+      const raw = channelizationData.by_intersection?.[INTERSECTIONS.jingshi.interId];
+      const north = (raw?.arms || []).find((a) => a.dir8_label === '北进口' && a.link_role === 'entrance');
+      channelGroup.add(createChannelizationLayer(mainItem, [{ armAngle: north?.approach_angle ?? 0, queueM: 270, satPct: 84 }], {
+        ...channelOpts,
+        showQueueCars: true,
+      }));
+    }
+    setChannelizationQueueCarsVisible(channelGroup, false);
+    channelGroup.visible = false;
+    group.add(channelGroup);
+    return channelGroup;
+  }
+
+  /** 段中心渠化取景：镜头坐车流下游端回望段中点（对齐 agent-loop） */
+  function getSegmentFraming() {
+    if (!segmentPlan) return null;
+    const t = (segmentPlan.segBearing * Math.PI) / 180;
+    const back = segmentPlan.span / 2 + 40;
+    return {
+      midX: segmentPlan.mid.x,
+      midZ: segmentPlan.mid.z,
+      camX: segmentPlan.mid.x + Math.sin(t) * back,
+      camZ: segmentPlan.mid.z - Math.cos(t) * back,
+      alt: Math.max(90, segmentPlan.span * 1.7),
+    };
+  }
+
+  function removeChannelization() {
+    if (!channelGroup) return;
+    channelGroup.children.forEach((layer) => disposeChannelizationLayer(layer));
+    group.remove(channelGroup);
+    channelGroup = null;
+    queueAnim = null;
+  }
+
+  const SEG_DUR = Object.fromEntries(
+    getConductorSegments('1').map((s) => [s.id, s.durationSec || s.approxSec || 5]),
+  );
+
+  function play(nextBeat, timeSec = performance.now() / 1000) {
     group.visible = true;
-    if (nextBeat === 'fly_in' || nextBeat === 'lock' || nextBeat === 'channelization' || nextBeat === 'metrics') {
+    if (nextBeat === 'fly_in' || nextBeat === 'lock' || nextBeat === 'metrics') {
       labelGroup.visible = true;
       targets.labels = 0.9;
       labelMats.forEach((mat) => { mat.opacity = 0.9; });
@@ -246,13 +359,49 @@ export function createAct2MapFx({
       showPins('lock');
       return;
     }
+    if (nextBeat === 'channelization') {
+      labelGroup.visible = true;
+      targets.labels = 0.9;
+      labelMats.forEach((mat) => { mat.opacity = 0.9; });
+      playFlow(nsLayer, true);
+      playFlow(jingshiEw, false);
+      playFlow(jiefangEw, false);
+      ensureChannelization();
+      channelGroup.visible = true;
+      showPins('lock');
+      return;
+    }
+    if (nextBeat === 'queue') {
+      labelGroup.visible = true;
+      targets.labels = 0.9;
+      playFlow(nsLayer, true);
+      ensureChannelization();
+      channelGroup.visible = true;
+      setChannelizationQueueCarsVisible(channelGroup, true);
+      setChannelizationQueueProgress(channelGroup, 0);
+      queueAnim = { start: timeSec, dur: SEG_DUR['s1-queue'] || 5 };
+      showPins('lock');
+      return;
+    }
+    if (nextBeat === 'm-queue' || nextBeat === 'm-speed' || nextBeat === 'm-sat') {
+      labelGroup.visible = true;
+      targets.labels = 0.9;
+      playFlow(nsLayer, true);
+      if (channelGroup) {
+        setChannelizationQueueCarsVisible(channelGroup, true);
+        setChannelizationQueueProgress(channelGroup, 1);
+      }
+      queueAnim = null;
+      showPins(nextBeat, { cumulative: true });
+      return;
+    }
     if (nextBeat === 'nodes' || nextBeat === 'downstream' || nextBeat === 'upstream') {
       labelGroup.visible = true;
       targets.labels = 0.85;
       playFlow(nsLayer, true);
       playFlow(jingshiEw, true);
       playFlow(jiefangEw, true);
-      showPins('lock');
+      showPins(undefined, { cumulative: true });
       return;
     }
     if (nextBeat === 'settle' || nextBeat === 'conclusion') {
@@ -261,12 +410,12 @@ export function createAct2MapFx({
       playFlow(nsLayer, true);
       playFlow(jingshiEw, true);
       playFlow(jiefangEw, true);
-      showPins('lock');
+      showPins(undefined, { cumulative: true });
       return;
     }
     if (nextBeat === 'dim' || nextBeat === 'handoff') {
       targets.labels = 0.35;
-      showPins('lock');
+      showPins(undefined, { cumulative: true });
       return;
     }
     if (nextBeat === 'clear') {
@@ -274,6 +423,8 @@ export function createAct2MapFx({
       playFlow(nsLayer, false);
       playFlow(jingshiEw, false);
       playFlow(jiefangEw, false);
+      if (channelGroup) channelGroup.visible = false;
+      queueAnim = null;
       showPins(null);
     }
   }
@@ -282,6 +433,15 @@ export function createAct2MapFx({
     nsLayer.update?.(time);
     jingshiEw.update?.(time);
     jiefangEw.update?.(time);
+    if (queueAnim && channelGroup) {
+      const t = (time - queueAnim.start) / queueAnim.dur;
+      if (t >= 1) {
+        setChannelizationQueueProgress(channelGroup, 1);
+        queueAnim = null;
+      } else {
+        setChannelizationQueueProgress(channelGroup, Math.max(0, t));
+      }
+    }
     if (labelGroup.visible && labelMats.length) {
       labelMats.forEach((mat) => {
         mat.opacity = lerp(mat.opacity, targets.labels, 0.1);
@@ -302,6 +462,10 @@ export function createAct2MapFx({
     jiefangEw.dispose?.();
     labelGroup.traverse((o) => o.userData?.disposeLabel?.());
     annotationGroup.children.forEach((pin) => pin.userData.disposePin?.());
+    if (channelGroup) {
+      channelGroup.children.forEach((layer) => disposeChannelizationLayer(layer));
+      channelGroup = null;
+    }
   }
 
   return {
@@ -314,11 +478,12 @@ export function createAct2MapFx({
       jingshiEw.setResolution?.(w, h);
       jiefangEw.setResolution?.(w, h);
     },
-    hasChannelization: () => false,
-    ensureChannelization: () => null,
-    removeChannelization: () => {},
+    hasChannelization: () => Boolean(channelGroup),
+    ensureChannelization: () => ensureChannelization(),
+    removeChannelization: () => removeChannelization(),
     detachChannelization: () => null,
-    setQueueCarsVisible: () => {},
+    setQueueCarsVisible: (v) => setChannelizationQueueCarsVisible(channelGroup, v),
+    getSegmentFraming: () => getSegmentFraming(),
     boostArrows: () => {},
     getTargetWorld: () => ({ x: problemMid.x, y: 0, z: problemMid.z }),
     getPathScanTarget: () => ({ x: JIEFANG.x, z: JIEFANG.z }),

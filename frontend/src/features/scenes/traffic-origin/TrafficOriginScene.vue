@@ -2084,6 +2084,11 @@ function onAct2ChannelArrive() {
   act2Fx.play('channelization', performance.now() / 1000, { scene });
   // 注册表兼容导出：幕 1 模块无渠化，语义 = 走廊揭示完成
   getActCompatExports().markChannelizationReady?.();
+  // 段中心渠化取景：镜头坐车流下游端回望段中点（对齐 agent-loop）
+  const fr = act2Fx.getSegmentFraming?.();
+  if (fr && _act2Cam.mode !== 'fly' && _act2Cam.mode !== 'sweep') {
+    startAct2Fly(fr.camX, fr.alt, fr.camZ, fr.midX, fr.midZ, () => finishAct2Hold({ allowDrift: true }));
+  }
 }
 
 /** 返回主页：清空各幕地图图层、渠化箭头、蔓延与叙事镜头（对齐参考 mapResetSeq） */
@@ -2255,7 +2260,22 @@ watch(act2MapBeat, (beat) => {
     return;
   }
 
-  if (beat === 'channelization' || beat === 'metrics') {
+  if (beat === 'channelization') {
+    act2Fx.play('channelization', t, { scene });
+    if (!act2Fx.hasChannelization()) {
+      if (_act2Cam.mode === 'hold' || _act2Cam.mode === 'idle' || _act2Cam.done.flyIn) {
+        onAct2ChannelArrive();
+      }
+    }
+    return;
+  }
+
+  if (beat === 'queue' || beat === 'm-queue' || beat === 'm-speed' || beat === 'm-sat') {
+    act2Fx.play(beat, t, { scene });
+    return;
+  }
+
+  if (beat === 'metrics') {
     act2Fx.play('lock', t, { scene });
     if (!act2Fx.hasChannelization()) {
       if (_act2Cam.mode === 'hold' || _act2Cam.mode === 'idle' || _act2Cam.done.flyIn) {

@@ -6,6 +6,7 @@
  *   2. 方向箭头更大，位置靠近停车线
  *   3. 相邻路臂角点用白色贝塞尔曲线相连
  *   4. 支持模拟车辆排队（可选 queueData 参数）
+ *   5. 臂体沿 link geom 真实走向弯曲（近场 boxR+8 直线锁定，geom 缺失逐臂回退直线）
  *
  * 坐标约定（臂局部空间）：
  *   +Z  = 向路口外部（臂延伸方向）
@@ -22,8 +23,10 @@ import {
 import { applyDisplayNameAlias } from '../../../utils/userFacingCopy.js';
 
 // ── 几何参数 ──────────────────────────────────────────────────────────────────
-const LANE_W  = 2.8;
-const ARM_LEN = 72;
+// LANE_W/ARM_LEN 为渠化总尺寸主控（boxR 随 LANE_W 自动缩放）；
+// act3/act8 的本地 LANE_W 副本必须与本值保持一致，否则排队色块/色带错位
+const LANE_W  = 0.8;
+const ARM_LEN = 37;
 const BASE_Y  = 0.6;
 const MARK_Y  = BASE_Y + 0.12;
 const LINE_Y  = BASE_Y + 0.25;
@@ -189,9 +192,9 @@ function gatherArms(inLinks, outLinks) {
 
 // ── 动态 BOX_R ────────────────────────────────────────────────────────────────
 function calcBoxR(arms) {
-  if (arms.length < 2) return 18;
+  if (arms.length < 2) return 6;
   const sorted = [...arms].sort((a, b) => a.angle - b.angle);
-  let maxR = 16;
+  let maxR = 3;
   for (let i = 0; i < sorted.length; i++) {
     const a1 = sorted[i], a2 = sorted[(i + 1) % sorted.length];
     let dAngle = a2.angle - a1.angle;
@@ -201,9 +204,11 @@ function calcBoxR(arms) {
     const w2half = ((a2.inLink ? parseLaneInfo(a2.inLink).length : 0) + (a2.outLink?.lane_num || 0)) * LANE_W / 2;
     const sinHalf = Math.sin(dAngle * Math.PI / 360);
     if (sinHalf < 0.01) continue;
-    maxR = Math.max(maxR, (w1half + w2half) / sinHalf * 0.55);
+    // 0.5 为相邻臂矩形恰好相切的几何下限（(w1+w2)/(2·sin(θ/2))）；
+    // 低于该值臂宽将超出中心盒，路缘贝塞尔控制点翻转、四角出现外凸钩刺
+    maxR = Math.max(maxR, (w1half + w2half) / sinHalf * 0.5);
   }
-  return Math.min(Math.max(maxR, 16), 90);
+  return Math.min(Math.max(maxR, 3), 90);
 }
 
 // ── 几何辅助 ──────────────────────────────────────────────────────────────────
@@ -383,8 +388,235 @@ function lineIntersect2D(p1x, p1z, d1x, d1z, p2x, p2z, d2x, d2z) {
   return { x: p1x + t * d1x, z: p1z + t * d1z };
 }
 
+// ── 臂中心线：近场直线锁定 + 远端沿 link geom 真实走向（2026-08-11）──────────
+// link geom 与底图 merged_network 同源（点级 0 偏差），沿 geom 弯曲即对齐真实道路。
+// r ≤ boxR+ARM_LOCK_LEN 强制直线（保护盒区衔接/角点曲线/停车线/箭头/Act3 排队锚定），
+// 其后 ARM_BLEND_LEN 区间 smoothstep 混合到真实折线；geom 缺失/异常逐臂回退直线。
+// 混合区取 16U（160m）：过短会把横向偏移的曲率压缩在混合区内形成可见「肘部」（实测 8U 时峰值 7.2°/站）
+const ARM_LOCK_LEN  = 8;
+const ARM_BLEND_LEN = 16;
+
+/** 世界 XZ 向量（相对路口中心）→ 臂局部坐标（armToWorld 的逆变换） */
+function worldToArmLocal(armAngle, wx, wz) {
+  const t = armAngle * Math.PI / 180;
+  return {
+    x: -wx * Math.cos(t) - wz * Math.sin(t),
+    z:  wx * Math.sin(t) - wz * Math.cos(t),
+  };
+}
+
+/** 折线按弧长密集重采样（端点保留），为平滑做准备 */
+function resamplePolyline(pts, step) {
+  const out = [{ ...pts[0] }];
+  let acc = 0;   // 距上一个输出点的弧长
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const segLen = Math.hypot(b.x - a.x, b.z - a.z);
+    if (segLen < 1e-6) continue;
+    let s = step - acc;
+    while (s <= segLen) {
+      const t = s / segLen;
+      out.push({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
+      s += step;
+    }
+    acc = segLen - (s - step);
+  }
+  out.push({ ...pts[pts.length - 1] });
+  return out;
+}
+
+/**
+ * 1-2-1 核邻域平滑（端点固定）：geom 折点稀疏（间距可达 18U），
+ * 直接线性渲染会把折角画成锯齿；平滑消除折角且横向偏移保持在亚单位级
+ */
+function smoothPolyline(pts, passes = 6) {
+  let cur = pts;
+  for (let k = 0; k < passes; k++) {
+    const nxt = cur.map((p) => ({ ...p }));
+    for (let i = 1; i < cur.length - 1; i++) {
+      nxt[i].x = (cur[i - 1].x + 2 * cur[i].x + cur[i + 1].x) / 4;
+      nxt[i].z = (cur[i - 1].z + 2 * cur[i].z + cur[i + 1].z) / 4;
+    }
+    cur = nxt;
+  }
+  return cur;
+}
+
+/**
+ * 臂中心线采样器：沿臂射线弧长 r 等距采样，输出横向偏移站点与单位切向/法向。
+ * 数据源优先级 inLink.geom > outLink.geom（与臂角来源一致）；
+ * 返回 null = 回退直线渲染（geom 缺失/退化/横向偏移异常 >15U）。
+ * @returns {null|{ stations: Array<object>, at: (r:number)=>object }}
+ */
+function buildArmCenterline(arm, boxR, center) {
+  const geom = arm?.inLink?.geom || arm?.outLink?.geom;
+  if (!geom || !center) return null;
+  let ll;
+  try { ll = parseGeomPts(geom); } catch (_) { return null; }
+  if (!Array.isArray(ll) || ll.length < 2) return null;
+
+  // 投影到臂局部空间（+Z 沿臂向外）
+  let pts = ll.map(([lon, lat]) => {
+    const [wx, wz] = project(lon, lat);
+    return worldToArmLocal(arm.angle, wx - center.x, wz - center.z);
+  });
+  // 从路口端向外排序（取离中心更近的一端为起点）
+  const dHead = Math.hypot(pts[0].x, pts[0].z);
+  const dTail = Math.hypot(pts[pts.length - 1].x, pts[pts.length - 1].z);
+  if (dTail < dHead) pts.reverse();
+  if (pts[0].z > boxR + ARM_LEN) return null;   // 几何起点已在臂端之外，数据异常
+
+  // 密集重采样 + 平滑（消除折角；端点固定，锁定区行为不变）
+  pts = smoothPolyline(resamplePolyline(pts, 1.0), 6);
+
+  // 折线弧长表
+  const arc = [0];
+  for (let i = 1; i < pts.length; i++) {
+    arc.push(arc[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z));
+  }
+  const total = arc[arc.length - 1];
+  if (total < 1) return null;
+  const s0 = Math.max(0, pts[0].z);   // 折线起点（路口端）对应的射线弧长
+
+  // 未混合的折线采样（s<0 在几何起点之前 → 贴臂射线；s>total 沿末段切向外推）
+  const rawAt = (r) => {
+    const s = r - s0;
+    if (s <= 0) return { x: 0, z: r };
+    if (s >= total) {
+      const n = pts.length;
+      const dx = pts[n - 1].x - pts[n - 2].x, dz = pts[n - 1].z - pts[n - 2].z;
+      const len = Math.hypot(dx, dz) || 1;
+      return {
+        x: pts[n - 1].x + (dx / len) * (s - total),
+        z: pts[n - 1].z + (dz / len) * (s - total),
+      };
+    }
+    let i = 1;
+    while (i < arc.length - 1 && arc[i] < s) i++;
+    const t = (s - arc[i - 1]) / Math.max(arc[i] - arc[i - 1], 1e-6);
+    return {
+      x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t,
+      z: pts[i - 1].z + (pts[i].z - pts[i - 1].z) * t,
+    };
+  };
+
+  const lockEnd = boxR + ARM_LOCK_LEN;
+  const blendW = (r) => {
+    const u = Math.min(1, Math.max(0, (r - lockEnd) / ARM_BLEND_LEN));
+    return u * u * (3 - 2 * u);
+  };
+  const blendAt = (r) => {
+    const raw = rawAt(r);
+    const w = blendW(r);
+    return { x: raw.x * w, z: r + (raw.z - r) * w };
+  };
+
+  const stations = [];
+  const STEP = 1.5;
+  for (let r = boxR; r < boxR + ARM_LEN; r += STEP) stations.push({ r, ...blendAt(r) });
+  stations.push({ r: boxR + ARM_LEN, ...blendAt(boxR + ARM_LEN) });
+  if (stations.some((p) => Math.abs(p.x) > 15)) return null;  // 横向偏移异常 → 回退直线
+
+  // 切向（中心差分）与法向（+X 侧）
+  for (let i = 0; i < stations.length; i++) {
+    const a = stations[Math.max(0, i - 1)];
+    const b = stations[Math.min(stations.length - 1, i + 1)];
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const len = Math.hypot(dx, dz) || 1;
+    stations[i].tx = dx / len;
+    stations[i].tz = dz / len;
+    stations[i].nx = dz / len;
+    stations[i].nz = -dx / len;
+  }
+
+  /** 任意弧长处插值取点（供路名 Sprite 等摆放） */
+  const at = (r) => {
+    const cl = Math.min(boxR + ARM_LEN, Math.max(boxR, r));
+    let i = 1;
+    while (i < stations.length - 1 && stations[i].r < cl) i++;
+    const a = stations[i - 1], b = stations[i];
+    const t = (cl - a.r) / Math.max(b.r - a.r, 1e-6);
+    return {
+      x:  a.x  + (b.x  - a.x)  * t,
+      z:  a.z  + (b.z  - a.z)  * t,
+      nx: a.nx + (b.nx - a.nx) * t,
+      nz: a.nz + (b.nz - a.nz) * t,
+    };
+  };
+  return { stations, at };
+}
+
+/** 沿中心线的臂路面（triangle strip，替代直线 hPlane） */
+function buildCurvedRoad(curve, xMin, xMax) {
+  const pos = [];
+  for (const p of curve.stations) {
+    pos.push(p.x + p.nx * xMin, BASE_Y, p.z + p.nz * xMin);
+    pos.push(p.x + p.nx * xMax, BASE_Y, p.z + p.nz * xMax);
+  }
+  const idx = [];
+  for (let i = 0; i < curve.stations.length - 1; i++) {
+    const a = i * 2, b = i * 2 + 1, c = i * 2 + 2, d = i * 2 + 3;
+    idx.push(a, b, c, b, d, c);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  const m = new THREE.Mesh(
+    geo,
+    new THREE.MeshBasicMaterial({ color: C_ROAD, side: THREE.DoubleSide }),
+  );
+  m.renderOrder = 10;
+  return m;
+}
+
+/** 沿中心线横向偏移的实线（缘石/中心分隔线），替代直线 zLine */
+function buildCurvedLine(curve, xOff, color, y = LINE_Y) {
+  const pts = [];
+  for (const p of curve.stations) pts.push(p.x + p.nx * xOff, y, p.z + p.nz * xOff);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const l = new THREE.Line(g, lineMat(color));
+  l.renderOrder = 10;
+  return l;
+}
+
+/** 沿中心线横向偏移的虚线（车道分道线），按折线弧长 2.8/2.2 切分，替代 zDash */
+function buildCurvedDash(curve, xOff, color, dashLen = 2.8, gapLen = 2.2) {
+  const pts = [];
+  let remain = dashLen, on = true;
+  const st = curve.stations;
+  for (let i = 0; i < st.length - 1; i++) {
+    const ax = st[i].x + st[i].nx * xOff,     az = st[i].z + st[i].nz * xOff;
+    const bx = st[i + 1].x + st[i + 1].nx * xOff, bz = st[i + 1].z + st[i + 1].nz * xOff;
+    const segLen = Math.hypot(bx - ax, bz - az);
+    if (segLen < 1e-6) continue;
+    let t0 = 0;
+    while (t0 < 1 - 1e-9) {
+      const take = Math.min(remain, (1 - t0) * segLen);
+      const t1 = t0 + take / segLen;
+      if (on) {
+        pts.push(
+          ax + (bx - ax) * t0, LINE_Y, az + (bz - az) * t0,
+          ax + (bx - ax) * t1, LINE_Y, az + (bz - az) * t1,
+        );
+      }
+      remain -= take;
+      t0 = t1;
+      if (remain <= 1e-6) { on = !on; remain = on ? dashLen : gapLen; }
+    }
+  }
+  if (pts.length < 6) return null;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const l = new THREE.LineSegments(g, lineMat(color));
+  l.renderOrder = 10;
+  return l;
+}
+
 // ── 相邻路臂角点白色凹形贝塞尔曲线（模拟转弯半径）───────────────────────────
 // 控制点取两条路缘向路口内侧延伸后的交点，使曲线向内凹（符合真实路口转角）
+// 段中心渠化排除连接臂时角点曲线仍全量绘制：曲线整体位于盒区以内（r ≤ boxR），
+// 其端点恰为段体缘石线起点，缺了会在段体入口两侧留下开口
 function buildCenterCurves(arms, boxR) {
   const group = new THREE.Group();
   if (arms.length < 2) return group;
@@ -478,6 +710,7 @@ function createCarMesh(carLen, carW, bodyColor) {
 function buildQueueCars(arm, boxR, queueInfo) {
   const g = new THREE.Group();
   g.userData.isQueueCars = true;
+  const carList = [];
   const inLanes = arm.inLink ? parseLaneInfo(arm.inLink) : [];
   const nIn = inLanes.length;
   if (nIn === 0) return g;
@@ -526,15 +759,24 @@ function buildQueueCars(arm, boxR, queueInfo) {
       // 车底放在路面标线层上方
       car.position.set(cx, MARK_Y + 0.02, zCenter);
       g.add(car);
+      carList.push({ car, z: zCenter });
     }
   }
 
+  // 排队过程动画用：按距停车线由近及远排序，逐辆揭示
+  carList.sort((a, b) => a.z - b.z);
+  g.userData.queueCarList = carList.map((item) => item.car);
+
   g.rotation.y = bearingToRotY(arm.angle);
+  // 供跨层摘臂：Act4 下游段化时按角度从保留渠化层隐藏主口连接臂
+  g.userData.armAngle = arm.angle;
   return g;
 }
 
 // ── 构建单条路臂 ──────────────────────────────────────────────────────────────
-function buildArm(arm, boxR, { arrowScale = 1.55, axisRoads = null, showArmRoadNames = true } = {}) {
+// center（路口中心世界 XZ）存在且 link 带 geom 时，臂体按真实道路走向弯曲；
+// 近场锁定区内（停车线/箭头/角点）构件保持直线局部坐标不变
+function buildArm(arm, boxR, { arrowScale = 1.55, axisRoads = null, showArmRoadNames = true, center = null } = {}) {
   const g = new THREE.Group();
 
   const inLink  = arm.inLink;
@@ -554,26 +796,40 @@ function buildArm(arm, boxR, { arrowScale = 1.55, axisRoads = null, showArmRoadN
   const z1   = boxR + ARM_LEN;
   const zMid = z0 + ARM_LEN / 2;
 
+  // ── 臂中心线（有 geom 则弯曲，否则回退直线）─────────────────────────────
+  const curve = buildArmCenterline(arm, boxR, center);
+
   // ── 路面 ──────────────────────────────────────────────────────────────────
-  const road = hPlane(totalW, ARM_LEN, C_ROAD);
-  road.position.set(xCenter, BASE_Y, z0 + ARM_LEN / 2);
-  g.add(road);
+  if (curve) {
+    g.add(buildCurvedRoad(curve, xOut, xIn));
+  } else {
+    const road = hPlane(totalW, ARM_LEN, C_ROAD);
+    road.position.set(xCenter, BASE_Y, z0 + ARM_LEN / 2);
+    g.add(road);
+  }
 
   // ── 缘石线 ────────────────────────────────────────────────────────────────
-  if (nIn  > 0) g.add(zLine( xIn,  z0, z1, C_CURB));
-  if (nOut > 0) g.add(zLine( xOut, z0, z1, C_CURB));
+  if (curve) {
+    if (nIn  > 0) g.add(buildCurvedLine(curve, xIn,  C_CURB));
+    if (nOut > 0) g.add(buildCurvedLine(curve, xOut, C_CURB));
+  } else {
+    if (nIn  > 0) g.add(zLine( xIn,  z0, z1, C_CURB));
+    if (nOut > 0) g.add(zLine( xOut, z0, z1, C_CURB));
+  }
 
   // ── 中心分隔线 ────────────────────────────────────────────────────────────
-  if (nIn > 0 && nOut > 0) g.add(zLine(0, z0, z1, C_DIVIDER));
+  if (nIn > 0 && nOut > 0) {
+    g.add(curve ? buildCurvedLine(curve, 0, C_DIVIDER) : zLine(0, z0, z1, C_DIVIDER));
+  }
 
   // ── 进口道车道虚线 ────────────────────────────────────────────────────────
   for (let i = 1; i < nIn; i++) {
-    const d = zDash(i * LANE_W, z0, z1, C_MARKING);
+    const d = curve ? buildCurvedDash(curve, i * LANE_W, C_MARKING) : zDash(i * LANE_W, z0, z1, C_MARKING);
     if (d) g.add(d);
   }
   // ── 出口道车道虚线 ────────────────────────────────────────────────────────
   for (let j = 1; j < nOut; j++) {
-    const d = zDash(-j * LANE_W, z0, z1, C_MARKING);
+    const d = curve ? buildCurvedDash(curve, -j * LANE_W, C_MARKING) : zDash(-j * LANE_W, z0, z1, C_MARKING);
     if (d) g.add(d);
   }
 
@@ -601,8 +857,13 @@ function buildArm(arm, boxR, { arrowScale = 1.55, axisRoads = null, showArmRoadN
     const roadName = pickArmRoadName(arm, axisRoads);
     if (roadName) {
       const label = makeArmRoadNameSprite(roadName);
-      // 放在路臂中段偏外，贴在示意图上方
-      label.position.set(xCenter, MARK_Y + 2.6, z0 + ARM_LEN * 0.55);
+      // 放在路臂中段偏外，贴在示意图上方；弯曲臂贴中心线实际走向
+      if (curve) {
+        const p = curve.at(z0 + ARM_LEN * 0.55);
+        label.position.set(p.x + p.nx * xCenter, MARK_Y + 2.6, p.z + p.nz * xCenter);
+      } else {
+        label.position.set(xCenter, MARK_Y + 2.6, z0 + ARM_LEN * 0.55);
+      }
       label.userData.armCardinal = cardinalKeyFromArmAngle(arm.angle);
       label.userData.armRoadName = roadName;
       g.add(label);
@@ -629,6 +890,9 @@ function buildArm(arm, boxR, { arrowScale = 1.55, axisRoads = null, showArmRoadN
  * @param {boolean}  [opts.neutralOtherArms=true] 无匹配臂是否仍模拟少量排队
  * @param {boolean}  [opts.showArmRoadNames=true] 是否绘制渠化小框路名（Act2 有大号轴路名时关闭）
  * @param {{ ew_road?: string|null, ns_road?: string|null, approaches?: Record<string, string|null> }|null} [opts.axisRoads]
+ * @param {number[]} [opts.excludeArmAngles] 不渲染的臂角（段中心渠化的连接臂）；
+ *   仅跳过臂体路面/标线/箭头/排队车，calcBoxR 与角点曲线仍用全量臂，
+ *   保持 computeChannelGeometry 契约与段体入口角点闭合
  */
 export function createChannelizationLayer(interItem, queueData = null, opts = {}) {
   const {
@@ -637,7 +901,9 @@ export function createChannelizationLayer(interItem, queueData = null, opts = {}
     neutralOtherArms = true,
     showArmRoadNames = true,
     axisRoads = null,
+    excludeArmAngles = [],
   } = opts;
+  const isArmExcluded = (arm) => excludeArmAngles.some((a) => angleDiff(a, arm.angle) < 1);
 
   const group = new THREE.Group();
   group.name        = 'channelization';
@@ -655,7 +921,8 @@ export function createChannelizationLayer(interItem, queueData = null, opts = {}
 
   // ── 路臂几何（每臂独立写道路名，十字口四臂齐全）────────────────────────
   for (const arm of arms) {
-    group.add(buildArm(arm, boxR, { arrowScale, axisRoads, showArmRoadNames }));
+    if (isArmExcluded(arm)) continue;
+    group.add(buildArm(arm, boxR, { arrowScale, axisRoads, showArmRoadNames, center: { x: cx, z: cz } }));
   }
 
   // ── 角点曲线 ──────────────────────────────────────────────────────────────
@@ -664,6 +931,7 @@ export function createChannelizationLayer(interItem, queueData = null, opts = {}
   // ── 车辆排队 ──────────────────────────────────────────────────────────────
   if (showQueueCars) {
     for (const arm of arms) {
+      if (isArmExcluded(arm)) continue;
       if (!arm.inLink) continue;
       // 从 queueData 中查找最匹配的臂数据（角度差 < 30°）
       let qInfo = null;
@@ -690,11 +958,51 @@ export function createChannelizationLayer(interItem, queueData = null, opts = {}
   return group;
 }
 
+/**
+ * 外部消费方（Act3 排队色块等）复用本层的归臂与动态 BOX_R，
+ * 使停车线起点与渠化渲染完全一致，禁止色块落进路口盒。
+ * @param {object} interItem - intersection_links.json / channelizationMapToInterItem 产物
+ * @returns {{ boxR: number, arms: Array<{ angle: number, nIn: number, nOut: number }> }|null}
+ */
+export function computeChannelGeometry(interItem) {
+  const sl = interItem?.surrounding_links;
+  if (!sl) return null;
+  const arms = gatherArms(sl['进入路口的路段'] || [], sl['离开路口的路段'] || []);
+  if (!arms.length) return null;
+  return {
+    boxR: calcBoxR(arms),
+    arms: arms.map((a) => ({
+      angle: a.angle,
+      nIn: a.inLink ? parseLaneInfo(a.inLink).length : 0,
+      inCodes: a.inLink ? parseLaneInfo(a.inLink).map(normalizeLaneMovements) : [],
+      nOut: a.outLink ? (a.outLink.c_lane_num || a.outLink.lane_num || 0) : 0,
+      // geom 透传：段中心渠化的弯曲段体沿真实道路走向（Act3 消费方不读该字段，契约不变）
+      inGeom: a.inLink?.geom || null,
+      outGeom: a.outLink?.geom || null,
+    })),
+  };
+}
+
 /** 显示/隐藏渠化层上的排队小车（Act3 改用色块证据时关闭） */
 export function setChannelizationQueueCarsVisible(group, visible) {
   if (!group) return;
   group.traverse((o) => {
     if (o.userData?.isQueueCars) o.visible = !!visible;
+  });
+}
+
+/**
+ * 排队过程动画：t∈[0,1]，按距停车线由近及远逐辆揭示排队车。
+ * t=1 全部显示；需先 setChannelizationQueueCarsVisible(group, true)。
+ */
+export function setChannelizationQueueProgress(group, t) {
+  if (!group) return;
+  const k = Math.max(0, Math.min(1, t));
+  group.traverse((o) => {
+    const list = o.userData?.queueCarList;
+    if (!o.userData?.isQueueCars || !list?.length) return;
+    const n = Math.ceil(list.length * k);
+    list.forEach((car, i) => { car.visible = i < n; });
   });
 }
 
@@ -727,3 +1035,16 @@ export function disposeChannelizationLayer(group) {
     }
   });
 }
+
+// ── 段中心渠化复用的内部工具（segmentChannelizationLayer.js）──────────────────
+// 与 Act3/Act8 的 LANE_W 本地副本同源，禁止在此改动数值而不同步
+export {
+  LANE_W,
+  C_ROAD, C_DIVIDER, C_MARKING, C_CURB,
+  project, bearingToRotY, angleDiff, geoBearing,
+  hPlane, zLine, zDash, makeArrow,
+  buildArmCenterline,
+  parseGeomPts, resamplePolyline, smoothPolyline,
+  buildCurvedRoad, buildCurvedLine, buildCurvedDash,
+  createCarMesh,
+};

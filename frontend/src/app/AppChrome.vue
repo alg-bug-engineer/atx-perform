@@ -163,17 +163,18 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* 步骤栏与执行状态并排一行，给下方内容让出高度 */
+/* 步骤栏居中放大（大字报风格常驻），执行状态移至其下居中 */
 .step-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  gap: 8px;
 }
 
 .step-bar {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0;
   pointer-events: auto;
   min-width: 0;
@@ -184,14 +185,15 @@ onUnmounted(() => {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
   padding: 3px 0;
-  font-size: 12px;
-  letter-spacing: 1px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 3px;
   white-space: nowrap;
 }
 
@@ -199,22 +201,23 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
   flex: none;
-  font-size: 10px;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0;
-  border-radius: 50%;
+  border-radius: 6px;
   border: 1px solid rgba(160, 200, 220, 0.35);
   color: rgba(160, 200, 220, 0.7);
   background: rgba(4, 12, 30, 0.7);
 }
 
 .step-line {
-  width: 26px;
+  width: 34px;
   height: 1px;
-  margin: 0 8px;
+  margin: 0 12px;
   flex: none;
   background: rgba(0, 229, 255, 0.2);
 }
@@ -229,6 +232,7 @@ onUnmounted(() => {
 
 .step.is-done {
   color: var(--text);
+  opacity: 0.55;
 }
 
 .step.is-done .step-badge {
