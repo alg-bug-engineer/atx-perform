@@ -173,7 +173,7 @@ function hex(cx, cy, r) {
 
       <!-- 落在核心与技能包之间，左边留给左下角讲解头像的字幕气泡 -->
       <text class="caption" x="760" y="792" text-anchor="middle">
-        一次处置的分析思路，正被拆成可检索字段、写成系统可执行的技能
+        一次处置的分析思路，写成系统可执行的技能
       </text>
     </svg>
   </div>

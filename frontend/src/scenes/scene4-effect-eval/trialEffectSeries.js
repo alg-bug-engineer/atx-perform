@@ -192,7 +192,7 @@ export function buildTrialEffectSeries(payload = {}) {
     upstreamSafe,
     speedImproved,
     verdict: success
-      ? `试运行 ${n} 周期达标：问题路段排队缓解，速度回升，上游未造成显著外溢。`
+      ? `试运行 ${n} 周期达标：问题路段排队下降，速度回升，溢出风险消除。`
       : `试运行 ${n} 周期观察结束，请复核监测指标。`,
     successText: trial.success || '缓解目标排队且不加重上游溢出风险',
     rolledBack: Boolean(last?.rolled_back),
