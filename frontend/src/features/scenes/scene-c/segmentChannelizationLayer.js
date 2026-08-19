@@ -154,17 +154,18 @@ export function planSegmentChannelization(mainItem, otherItem, opts = {}) {
  *   Act2 段中心渠化保持直段体——Act3 蓄车锚定沿臂直线假设，弯曲会破坏对齐）
  * @returns {THREE.Group}
  */
-export function buildSegmentBody(plan, { arrowScale = 1.55, curved = false } = {}) {
+export function buildSegmentBody(plan, { arrowScale = 1.55, curved = false, centerToCenter = false, lift = 0 } = {}) {
   if (curved) {
     const curvedBody = buildCurvedSegmentBody(plan, { arrowScale });
     if (curvedBody) return curvedBody;
     // geom 缺失/退化/横向偏移异常 → 回退直段体
   }
-  return buildStraightSegmentBody(plan, { arrowScale });
+  return buildStraightSegmentBody(plan, { arrowScale, centerToCenter, lift });
 }
 
-/** 直段体（原实现）：沿 segBearing 盒缘到盒缘，中心组级旋转定位 */
-function buildStraightSegmentBody(plan, { arrowScale = 1.55 } = {}) {
+/** 直段体（原实现）：沿 segBearing 盒缘到盒缘，中心组级旋转定位；
+ *  centerToCenter=true 时两端延伸至路口中心，填补连接臂排除后的口心开放区缺失。 */
+function buildStraightSegmentBody(plan, { arrowScale = 1.55, centerToCenter = false, lift = 0 } = {}) {
   const {
     nAB, nBA, codesAB, codesBA,
     boxRA, boxRB, bodyLen,
@@ -175,13 +176,16 @@ function buildStraightSegmentBody(plan, { arrowScale = 1.55 } = {}) {
   const dirAB = bearingToWorldDir(segBearing);
   const body = new THREE.Group();
   body.name = 'segmentBody';
-  const halfL = bodyLen / 2;
-  // 段体中心 = A 盒缘与 B 盒缘的中点
-  const startX = worldA.x + dirAB.x * boxRA;
-  const startZ = worldA.z + dirAB.z * boxRA;
-  const endX = worldB.x - dirAB.x * boxRB;
-  const endZ = worldB.z - dirAB.z * boxRB;
-  body.position.set((startX + endX) / 2, 0, (startZ + endZ) / 2);
+  const extA = centerToCenter ? boxRA : 0;
+  const extB = centerToCenter ? boxRB : 0;
+  const fullLen = bodyLen + extA + extB;
+  const halfL = fullLen / 2;
+  // 段体中心 = A/B 延伸端点的中点（centerToCenter 时即两口中心连线中点）
+  const startX = worldA.x + dirAB.x * (boxRA - extA);
+  const startZ = worldA.z + dirAB.z * (boxRA - extA);
+  const endX = worldB.x - dirAB.x * (boxRB - extB);
+  const endZ = worldB.z - dirAB.z * (boxRB - extB);
+  body.position.set((startX + endX) / 2, lift, (startZ + endZ) / 2);
   body.rotation.y = bearingToRotY(segBearing);
 
   const wAB = nAB * LANE_W;
@@ -190,7 +194,7 @@ function buildStraightSegmentBody(plan, { arrowScale = 1.55 } = {}) {
   const xCenter = (wBA - wAB) / 2;
 
   // 路面
-  const road = hPlane(totalW, bodyLen, C_ROAD);
+  const road = hPlane(totalW, fullLen, C_ROAD);
   road.position.set(xCenter, road.position.y, 0);
   body.add(road);
 
@@ -211,7 +215,7 @@ function buildStraightSegmentBody(plan, { arrowScale = 1.55 } = {}) {
 
   // 转向箭头：A→B 半幅近 B 端（车流 +Z，经 rotation.y=π 镜像到 -X 侧、尖端朝 +Z）；
   // B→A 半幅近 A 端（车流 -Z，makeArrow 默认尖端朝 -Z 直接可用）
-  if (bodyLen >= ARROW_INSET * 2 + 2) {
+  if (fullLen >= ARROW_INSET * 2 + 2) {
     const arrowsAB = new THREE.Group();
     arrowsAB.rotation.y = Math.PI;
     codesAB.slice(0, nAB).forEach((code, i) => {
@@ -433,6 +437,11 @@ export function buildSegmentChannelizationLayer(plan, opts = {}) {
     arrowScale = 1.55,
     showArmRoadNames = true,
     axisRoads = null,
+    centerToCenter = false,
+    excludeConnectingArms = true,
+    showQueueCars = false,
+    queueDataFor = null,
+    bodyLift = 0,
   } = opts;
   const {
     itemA, itemB, armA, armB,
@@ -441,22 +450,22 @@ export function buildSegmentChannelizationLayer(plan, opts = {}) {
     segBearing, worldA, worldB, worldMain, worldOther, mid, span,
   } = plan;
 
-  // ── 两端路口盒：排除连接臂渲染 ─────────────────────────────────────────────
+  // ── 两端路口盒：默认排除连接臂；excludeConnectingArms=false 时全臂渲染
+  // （排队车走 agent-loop buildQueueCars 臂上逻辑，段体抬升 bodyLift 覆盖重叠区）
   const boxOpts = {
     arrowScale,
     axisRoads,
     showArmRoadNames,
-    // 叙事链路用 Act3/4 色块表达排队，渠化层不生成绿色排队小车
-    showQueueCars: false,
+    showQueueCars,
     neutralOtherArms: false,
   };
-  const boxA = createChannelizationLayer(itemA, null, {
+  const boxA = createChannelizationLayer(itemA, queueDataFor ? queueDataFor(itemA) : null, {
     ...boxOpts,
-    excludeArmAngles: [armA.angle],
+    excludeArmAngles: excludeConnectingArms ? [armA.angle] : [],
   });
-  const boxB = createChannelizationLayer(itemB, null, {
+  const boxB = createChannelizationLayer(itemB, queueDataFor ? queueDataFor(itemB) : null, {
     ...boxOpts,
-    excludeArmAngles: [armB.angle],
+    excludeArmAngles: excludeConnectingArms ? [armB.angle] : [],
   });
   if (stretched) {
     // 被叙事拉长的 only 是 other 盒；main 盒已在真实坐标
@@ -466,7 +475,7 @@ export function buildSegmentChannelizationLayer(plan, opts = {}) {
   }
 
   // ── 中央段体（局部 +Z = A→B）──────────────────────────────────────────────
-  const body = buildSegmentBody(plan, { arrowScale });
+  const body = buildSegmentBody(plan, { arrowScale, centerToCenter, lift: bodyLift });
 
   // ── 组装 ───────────────────────────────────────────────────────────────────
   const group = new THREE.Group();
@@ -530,14 +539,28 @@ export function buildSegmentQueueCars(plan, queueInfo = {}) {
   const maxZ = plan.span / 2 - plan.boxRB - 1.2; // B 端停车线
   const minZ = -plan.span / 2 + plan.boxRA + 1.2;
   const carList = [];
-  const lanesX = [-LANE_W * 0.5, -LANE_W * 1.5];
-  for (let lane = 0; lane < lanesX.length; lane++) {
-    const nLane = Math.max(0, nCars + (lane === 0 ? 0 : -1));
+  // 段空间分车道：A→B 半幅在 -X 侧；每车道辆数按 codesAB 转向比标定
+  // （与 agent-loop buildQueueCars 数据逻辑同源：纯左/纯右 40%、组合 65%、其余 100%）
+  const nAB = Math.max(1, plan.nAB || 2);
+  const codes = (plan.codesAB || []).slice(0, nAB);
+  const ratioOf = (code) => {
+    const c = String(code || 'C').toUpperCase();
+    const isOnlyLeft = /^[BAZ]*B[BAZ]*$/.test(c) && !c.includes('C') && !c.includes('D');
+    const isOnlyRight = /^[DEZ]*D[DEZ]*$/.test(c) && !c.includes('C') && !c.includes('B');
+    const isMixed = (c.includes('B') || c.includes('D')) && c.includes('C');
+    return isOnlyLeft || isOnlyRight ? 0.40 : isMixed ? 0.65 : 1.0;
+  };
+  for (let lane = 0; lane < nAB; lane++) {
+    const ratio = ratioOf(codes[lane]);
+    const nLane = Math.max(0, Math.round(nCars * ratio) + ((lane % 3) - 1));
+    const cx = -(lane + 0.5) * LANE_W;
     for (let c = 0; c < nLane; c++) {
       const z = maxZ - carLen / 2 - c * carStep - (lane % 2) * carStep * 0.22;
       if (z < minZ) break;
       const car = createCarMesh(carLen, LANE_W * 0.7, bodyColor);
-      car.position.set(lanesX[lane], 0.74, z);
+      // createCarMesh 车头朝 -Z；段空间 A→B 车流朝 +Z，转 π 对齐行驶方向
+      car.rotation.y = Math.PI;
+      car.position.set(cx, 0.74, z);
       g.add(car);
       carList.push({ car, d: maxZ - z });
     }

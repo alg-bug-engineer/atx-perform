@@ -676,6 +676,71 @@ function buildCenterCurves(arms, boxR) {
   return group;
 }
 
+// ── 口心路面填补（atx-perform）─────────────────────────────
+// agent-loop 依赖 OSM 底图沥青衬底，口心开放不可见；本工程底图为深色裸底，
+// 需自绘口心路面：多边形取各臂内端角点（出口侧→进口侧），与臂体内缘精确对齐。
+function buildCenterFill(arms, boxR) {
+  const g = new THREE.Group();
+  if (arms.length < 2) return g;
+  const sorted = [...arms].sort((a, b) => a.angle - b.angle);
+  // 边界点序列：相邻臂角点之间用与 buildCenterCurves 同源的二次贝塞尔采样，
+  // 保证补片外缘与路缘曲线完全重合，角部不留缺口
+  const pts = [];
+  const N = 20;
+  for (let i = 0; i < sorted.length; i++) {
+    const arm1 = sorted[i];
+    const arm2 = sorted[(i + 1) % sorted.length];
+    const nOut1 = arm1.outLink ? (arm1.outLink.c_lane_num || arm1.outLink.lane_num || 0) : 0;
+    const nIn2 = arm2.inLink ? parseLaneInfo(arm2.inLink).length : 0;
+    const p1 = armToWorld(arm1.angle, -nOut1 * LANE_W, boxR);
+    const p2 = armToWorld(arm2.angle, nIn2 * LANE_W, boxR);
+    const t1 = (arm1.angle * Math.PI) / 180;
+    const t2 = (arm2.angle * Math.PI) / 180;
+    const d1x = -Math.sin(t1), d1z = Math.cos(t1);
+    const d2x = -Math.sin(t2), d2z = Math.cos(t2);
+    let cpX, cpZ;
+    const cp = lineIntersect2D(p1.x, p1.z, d1x, d1z, p2.x, p2.z, d2x, d2z);
+    if (cp) {
+      cpX = cp.x;
+      cpZ = cp.z;
+    } else {
+      const midX = (p1.x + p2.x) / 2, midZ = (p1.z + p2.z) / 2;
+      const midLen = Math.sqrt(midX * midX + midZ * midZ);
+      const scale = midLen > 0.5 ? (midLen * 0.55) / midLen : 0.55;
+      cpX = midX * scale;
+      cpZ = midZ * scale;
+    }
+    // 臂1 出口侧角点直连入边界，随后贝塞尔过渡到臂2 进口侧角点
+    pts.push([p1.x, p1.z]);
+    for (let k = 1; k <= N; k++) {
+      const t = k / N, it = 1 - t;
+      pts.push([
+        it * it * p1.x + 2 * it * t * cpX + t * t * p2.x,
+        it * it * p1.z + 2 * it * t * cpZ + t * t * p2.z,
+      ]);
+    }
+  }
+  const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+  const cz = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+  const y = BASE_Y - 0.03; // 略低于臂体路面，避免共面闪
+  const pos = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    pos.push(cx, y, cz, a[0], y, a[1], b[0], y, b[1]);
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geom.computeVertexNormals();
+  const mesh = new THREE.Mesh(
+    geom,
+    new THREE.MeshBasicMaterial({ color: C_ROAD, side: THREE.DoubleSide }),
+  );
+  mesh.renderOrder = 9;
+  g.add(mesh);
+  return g;
+}
+
 // ── 3D 小汽车模型 ─────────────────────────────────────────────────────────────
 // 车身 + 车顶舱体，坐标原点在车底中心，车头朝 -Z（驶向路口方向）
 function createCarMesh(carLen, carW, bodyColor) {
@@ -744,9 +809,10 @@ function buildQueueCars(arm, boxR, queueInfo) {
     const isMixed     = (code.includes('B') || code.includes('D')) && code.includes('C');
     const ratio = isOnlyLeft || isOnlyRight ? 0.40 : isMixed ? 0.65 : 1.0;
 
-    // 整体 ×2；每条车道再做 -1 / 0 / +1 差异
+    // 数据标定（atx-perform）：每车道辆数 = round(queueM/8 × 转向比)，
+    // 车步长 0.8u=8m → 长队长度精确等于 queueM 实际数据（agent-loop 原版 ×2 为视觉夸大）
     const laneVar   = (lane % 3) - 1;
-    const nCarsLane = Math.max(0, Math.round(nCarsBase * ratio * 2) + laneVar);
+    const nCarsLane = Math.max(0, Math.round(nCarsBase * ratio) + laneVar);
 
     // 车道小偏移，让排队不整齐划一
     const laneOffset = (lane % 2) * (carStep * 0.22);
@@ -926,6 +992,7 @@ export function createChannelizationLayer(interItem, queueData = null, opts = {}
   }
 
   // ── 角点曲线 ──────────────────────────────────────────────────────────────
+  group.add(buildCenterFill(arms, boxR));
   group.add(buildCenterCurves(arms, boxR));
 
   // ── 车辆排队 ──────────────────────────────────────────────────────────────
@@ -1047,4 +1114,7 @@ export {
   parseGeomPts, resamplePolyline, smoothPolyline,
   buildCurvedRoad, buildCurvedLine, buildCurvedDash,
   createCarMesh,
+  buildQueueCars,
+  gatherArms,
+  calcBoxR,
 };

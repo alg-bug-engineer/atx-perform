@@ -21,6 +21,7 @@ import {
   enterScene2,
   resetHomeIdleState,
 } from '../../shared/home-idle-state.js';
+import { act2MapBeat } from '../../shared/narrative-state.js';
 
 /**
  * 分幕调试：本运行时只承担幕 0 开幕（幕 2 已原生化到 act-02）。
@@ -160,6 +161,11 @@ watch(cityMonitorSelection, (sel) => {
   if (activeScene.value !== 'idle') return;
   if (!sel?.type || !sel?.id || !cityMonitorReveal.value || !scene0) return;
   scene0.focusSelection(sel.type, sel.id);
+});
+
+// 幕 1 渠化展示后隐藏问题路段拥堵带（渠化+排队车即拥堵表达载体）
+watch(act2MapBeat, (b) => {
+  if (b === 'channelization') scene0?.hideProblemAlert?.();
 });
 
 // 首页内 scene0 → scene2（分析成因）由 HomeIdleStage 的 enter-scene2 事件触发

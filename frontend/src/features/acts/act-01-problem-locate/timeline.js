@@ -19,6 +19,9 @@ export const ACT1_BEATS = ORDER.map((key) => {
   const config = PROBLEM_LOCATE_BEATS[key] || {};
   return {
     ...seg(`s1-${key}`),
+    // 文档未收录的拍无音频段，seg 回退对象不带 id；
+    // 舞台按 beat.id 分派地图拍，必须显式补齐
+    id: `s1-${key}`,
     beatId: `a1.${key}`,
     mapBeat: key,
     headline: config.headline || '',

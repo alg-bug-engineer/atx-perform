@@ -228,7 +228,7 @@ export function createAct2MapFx({
   }, '#ff8a3a');
   addPin('m-queue', '排队长度', ['排队长度  270 m', '蓄车  368 m', '排队比  0.73'], {
     x: problemMid.x + 26,
-    z: problemMid.z - 26,
+    z: problemMid.z,
   }, '#ff8a3a');
   addPin('m-speed', '平均速度', ['平均速度  7.2 km/h', '延时指数  5.28'], {
     x: problemMid.x + 26,
@@ -236,18 +236,16 @@ export function createAct2MapFx({
   }, '#ffb020');
   addPin('m-sat', '饱和度', ['饱和度  0.84', '预警线  0.8'], {
     x: problemMid.x + 26,
-    z: problemMid.z + 26,
+    z: problemMid.z,
   }, '#ff6b4a');
   const pinMats = annotationGroup.children.map((pin) => pin.material);
 
   const targets = { labels: 0, pins: 0 };
 
-  // 累积语义：m-* 拍只加不删；nodes/conclusion 保留全部已展现窗；clear 清空
-  const visibleKeys = new Set();
-  function showPins(key, { cumulative = false } = {}) {
-    if (key) visibleKeys.add(key);
-    if (key === null) visibleKeys.clear();
-    const active = cumulative ? visibleKeys : new Set(key ? [key] : []);
+  // 依次展示语义：三窗同位、一个消失后下一个出现；keepLock 保留锁定卡
+  function showPins(key, { keepLock = false } = {}) {
+    const active = new Set(key ? [key] : []);
+    if (keepLock) active.add('lock');
     let any = false;
     Object.entries(beatPins).forEach(([pinKey, pins]) => {
       const on = active.has(pinKey);
@@ -302,6 +300,8 @@ export function createAct2MapFx({
     if (segmentPlan) {
       const layer = buildSegmentChannelizationLayer(segmentPlan, channelOpts);
       if (layer) {
+        // 排队车挂段空间：与段体同轴同半幅（-X、A→B 行驶半幅），
+        // 自 B 端停车线向上游逐辆生长；车道数/转向比/270m 定长按实际数据标定
         layer.add(buildSegmentQueueCars(segmentPlan, { queueM: 270, satPct: 84 }));
         channelGroup.add(layer);
       }
@@ -331,7 +331,7 @@ export function createAct2MapFx({
       midZ: segmentPlan.mid.z,
       camX: segmentPlan.mid.x + Math.sin(t) * back,
       camZ: segmentPlan.mid.z - Math.cos(t) * back,
-      alt: Math.max(90, segmentPlan.span * 1.7),
+      alt: Math.max(62, segmentPlan.span * 1.15),
     };
   }
 
@@ -363,7 +363,8 @@ export function createAct2MapFx({
       labelGroup.visible = true;
       targets.labels = 0.9;
       labelMats.forEach((mat) => { mat.opacity = 0.9; });
-      playFlow(nsLayer, true);
+      // 渠化本身即拥堵表达载体，隐藏路段中间红色拥堵带
+      playFlow(nsLayer, false);
       playFlow(jingshiEw, false);
       playFlow(jiefangEw, false);
       ensureChannelization();
@@ -374,7 +375,7 @@ export function createAct2MapFx({
     if (nextBeat === 'queue') {
       labelGroup.visible = true;
       targets.labels = 0.9;
-      playFlow(nsLayer, true);
+      playFlow(nsLayer, false);
       ensureChannelization();
       channelGroup.visible = true;
       setChannelizationQueueCarsVisible(channelGroup, true);
@@ -386,36 +387,36 @@ export function createAct2MapFx({
     if (nextBeat === 'm-queue' || nextBeat === 'm-speed' || nextBeat === 'm-sat') {
       labelGroup.visible = true;
       targets.labels = 0.9;
-      playFlow(nsLayer, true);
+      playFlow(nsLayer, false);
       if (channelGroup) {
         setChannelizationQueueCarsVisible(channelGroup, true);
         setChannelizationQueueProgress(channelGroup, 1);
       }
       queueAnim = null;
-      showPins(nextBeat, { cumulative: true });
+      showPins(nextBeat, { keepLock: true });
       return;
     }
     if (nextBeat === 'nodes' || nextBeat === 'downstream' || nextBeat === 'upstream') {
       labelGroup.visible = true;
       targets.labels = 0.85;
-      playFlow(nsLayer, true);
+      playFlow(nsLayer, false);
       playFlow(jingshiEw, true);
       playFlow(jiefangEw, true);
-      showPins(undefined, { cumulative: true });
+      showPins('lock');
       return;
     }
     if (nextBeat === 'settle' || nextBeat === 'conclusion') {
       labelGroup.visible = true;
       targets.labels = 0.55;
-      playFlow(nsLayer, true);
+      playFlow(nsLayer, false);
       playFlow(jingshiEw, true);
       playFlow(jiefangEw, true);
-      showPins(undefined, { cumulative: true });
+      showPins('lock');
       return;
     }
     if (nextBeat === 'dim' || nextBeat === 'handoff') {
       targets.labels = 0.35;
-      showPins(undefined, { cumulative: true });
+      showPins('lock');
       return;
     }
     if (nextBeat === 'clear') {

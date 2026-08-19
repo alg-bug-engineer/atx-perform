@@ -236,5 +236,8 @@ export function createScene0Opening(runtime, ctx, hooks = {}) {
     update,
     dispose,
     focusSelection,
+    // 幕 1 渠化展示后隐藏问题路段拥堵带（渠化本身即拥堵表达载体）
+    hideProblemAlert: () => problemAlert.hide(),
+    showProblemAlert: () => problemAlert.show(),
   };
 }
