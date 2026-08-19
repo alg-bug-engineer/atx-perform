@@ -110,7 +110,9 @@ function deltaText(d) {
             <b>{{ deltaText(c.delta) }}</b>
           </strong>
         </header>
-        <StageChannelization class="chan" :movements="c.movements" />
+        <div class="chan-slot">
+          <StageChannelization :movements="c.movements" />
+        </div>
         <p class="labels">{{ c.labels }}</p>
         <p class="role">{{ c.role }}</p>
         <p v-if="c.minG != null" class="bound">最小/最大绿 {{ c.minG }}s / {{ c.maxG }}s</p>
@@ -207,13 +209,15 @@ h3 {
   min-height: 0;
   overflow: auto;
   flex: 1;
-  align-content: start;
+  align-content: stretch;
+  align-items: stretch;
 }
 .card {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  min-height: 0;
   padding: 8px 8px 6px;
   border: 1px solid var(--cyan-border);
   background: rgba(4, 18, 32, 0.7);
@@ -245,9 +249,14 @@ h3 {
   color: var(--text-muted);
 }
 
-.chan {
+.chan-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+.chan-slot :deep(.chan) {
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
 }
 
 .labels,
@@ -263,21 +272,43 @@ h3 {
 }
 
 .phase-board.compact {
-  height: auto;
-  flex: none;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 .phase-board.compact .note,
 .phase-board.compact .meta,
-.phase-board.compact .labels,
-.phase-board.compact .role,
 .phase-board.compact .bound {
   display: none;
 }
 .phase-board.compact .cards {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
+  justify-items: stretch;
   overflow: hidden;
+  min-height: 0;
+}
+.phase-board.compact .card {
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
+  gap: 8px;
+}
+.phase-board.compact .ph {
+  font-size: 12px;
 }
 .phase-board.compact .card header strong {
+  font-size: 16px;
+}
+.phase-board.compact .labels,
+.phase-board.compact .role {
+  display: block;
   font-size: 12px;
+}
+.phase-board.compact .chan-slot {
+  flex: 1 1 0;
+  min-height: 0;
 }
 </style>

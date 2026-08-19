@@ -10,6 +10,7 @@ const props = defineProps({
   hint: { type: String, default: '' },
   keyWord: { type: String, default: '' },
   compact: { type: Boolean, default: false },
+  fill: { type: Boolean, default: false },
   tone: { type: String, default: 'ok' },
   cycleLen: { type: Number, default: 220 },
   t: { type: Number, default: 0 },
@@ -40,7 +41,7 @@ const playX = computed(() => ((props.t % props.cycleLen) + props.cycleLen) % pro
 </script>
 
 <template>
-  <aside class="align" :class="[`tone-${tone}`, { compact }]">
+  <aside class="align" :class="[`tone-${tone}`, { compact, fill }]">
     <header>
       <strong>{{ title }}</strong>
       <span>{{ hint }} <em v-if="keyWord">{{ keyWord }}</em></span>
@@ -127,6 +128,25 @@ header em {
   border-left: none;
   background: transparent;
 }
+.align.fill {
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 10px 14px;
+  border: 1px solid var(--cyan-border);
+  border-left: 3px solid var(--cyan-border);
+  background: rgba(0, 16, 28, 0.55);
+}
+.align.fill.tone-danger { border-left-color: var(--danger); }
+.align.fill.tone-ok { border-left-color: var(--ok); }
+.align.fill .chart {
+  flex: 1 1 0;
+  min-height: 72px;
+}
+.align.fill .bars { height: 100%; min-height: 72px; }
+.align.fill header strong { font-size: 22px; }
 .chart {
   display: grid;
   grid-template-columns: 48px 1fr;

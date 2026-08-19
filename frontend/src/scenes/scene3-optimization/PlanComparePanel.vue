@@ -40,6 +40,7 @@ const speed = ref(7)
 
 const beats = computed(() => findBriefingBeats(before.value, after.value))
 const fired = new Set()
+let waitingAlignEnd = false
 
 let rafId = 0
 let lastTs = 0
@@ -66,6 +67,11 @@ function tick(ts) {
         } else {
           clock.value = next
         }
+      } else if (waitingAlignEnd && next >= cycle) {
+        clock.value = cycle - 0.01
+        paused.value = true
+        waitingAlignEnd = false
+        startLightboxTour()
       } else {
         clock.value = next % cycle
       }
@@ -73,16 +79,6 @@ function tick(ts) {
   }
   lastTs = ts
   rafId = requestAnimationFrame(tick)
-}
-
-function playOnce() {
-  fired.clear()
-  clock.value = 0
-  holdRemain.value = 0.4
-  paused.value = false
-  guided.value = true
-  speed.value = 8
-  beatCaption.value = { tag: '演示', text: '先观察现状拥堵形成，再对比优化后通行', tone: 'plain' }
 }
 
 function onKey(e) {
@@ -95,6 +91,7 @@ onMounted(() => {
   playOnce()
 })
 onUnmounted(() => {
+  clearSeq()
   cancelAnimationFrame(rafId)
   window.removeEventListener('keydown', onKey)
 })
@@ -153,8 +150,94 @@ const enlargeLead = computed(() => {
 })
 const cycleLen = computed(() => demo.value?.cycleLen || 220)
 const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value} s`)
-/** 对时条暂隐，车辆模拟占满对比区 */
-const showAlignStrip = false
+
+const showAlignStrip = ref(true)
+const alignFading = ref(false)
+const showVehicles = ref(false)
+const showKpis = ref(false)
+
+const resultCards = computed(() => {
+  const list = (demo.value?.kpis || props.payload?.corridor_demo?.kpis || []).filter(
+    (k) => k.key !== 'cycle_end_queue',
+  )
+  return list.map((k) => {
+    const drop = k.before > 0 ? Math.round(((k.before - k.after) / k.before) * 100) : 0
+    const cleared = k.after === 0 && k.before > 0
+    return {
+      key: k.key,
+      label: k.label,
+      unit: k.unit,
+      before: k.before,
+      after: k.after,
+      delta: cleared ? '已消除' : drop > 0 ? `↓ ${drop}%` : '持平',
+    }
+  })
+})
+
+const ALIGN_PLAY_S = 6
+const LIGHTBOX_MS = 2000
+const ALIGN_FADE_MS = 450
+let seqTimers = []
+
+function clearSeq() {
+  seqTimers.forEach((id) => clearTimeout(id))
+  seqTimers = []
+  waitingAlignEnd = false
+}
+
+function later(ms, fn) {
+  const id = setTimeout(fn, ms)
+  seqTimers.push(id)
+}
+
+function startVehicleDemo() {
+  fired.clear()
+  clock.value = 0
+  holdRemain.value = 0.4
+  paused.value = false
+  guided.value = true
+  speed.value = 8
+  beatCaption.value = { tag: '演示', text: '先观察现状拥堵形成，再对比优化后通行', tone: 'plain' }
+}
+
+function startLightboxTour() {
+  enlarged.value = 'phase'
+  beatCaption.value = { tag: '方案细节', text: '相位相序图', tone: 'ok' }
+  later(LIGHTBOX_MS, () => {
+    enlarged.value = 'wave'
+    beatCaption.value = { tag: '方案细节', text: '绿波时距图', tone: 'ok' }
+    later(LIGHTBOX_MS, () => {
+      enlarged.value = null
+      alignFading.value = true
+      beatCaption.value = { tag: '方案对比', text: '进入现状与优化后通行对比', tone: 'plain' }
+      later(ALIGN_FADE_MS, () => {
+        showAlignStrip.value = false
+        alignFading.value = false
+        showVehicles.value = true
+        showKpis.value = true
+        startVehicleDemo()
+      })
+    })
+  })
+}
+
+function playOnce() {
+  clearSeq()
+  fired.clear()
+  clock.value = 0
+  holdRemain.value = 0
+  paused.value = false
+  guided.value = false
+  const cycle = demo.value?.cycleLen || 220
+  speed.value = cycle / ALIGN_PLAY_S
+  enlarged.value = null
+  showAlignStrip.value = true
+  alignFading.value = false
+  showVehicles.value = false
+  showKpis.value = false
+  waitingAlignEnd = true
+  beatCaption.value = { tag: '放行窗口', text: '对比现状与优化后经十路 / 解放东绿窗', tone: 'plain' }
+}
 </script>
 
 <template>
@@ -162,7 +245,7 @@ const showAlignStrip = false
     <header class="head">
       <h2 class="lead-headline">路口的优化方案为<span>相位协调</span></h2>
       <div class="tech">
-        <span>技术细节</span>
+        <span>方案细节</span>
         <button v-if="board" type="button" class="diagram-btn" @click="enlarged = 'phase'">
           相位相序图
         </button>
@@ -189,31 +272,44 @@ const showAlignStrip = false
           </button>
         </div>
       </div>
-      <div v-if="showAlignStrip && demo" class="align-row">
-        <OffsetAlignStrip
-          compact
-          title="现状"
-          hint="经十路 / 解放东北直绿窗"
-          key-word="错开"
-          tone="danger"
-          :cycle-len="cycleLen"
-          :t="clock"
-          :jingshi="jingshiBefore"
-          :jiefang="jiefangBefore"
-        />
-        <OffsetAlignStrip
-          compact
-          title="优化后"
-          hint="经十路 / 解放东北直绿窗"
-          key-word="对准"
-          tone="ok"
-          :cycle-len="cycleLen"
-          :t="clock"
-          :jingshi="jingshiAfter"
-          :jiefang="jiefangAfter"
-        />
+      <div v-if="showAlignStrip && demo" class="intro" :class="{ fading: alignFading }">
+        <div class="align-stack">
+          <OffsetAlignStrip
+            compact
+            title="现状"
+            hint="经十路 / 解放东北直绿窗"
+            key-word="错开"
+            tone="danger"
+            :cycle-len="cycleLen"
+            :t="clock"
+            :jingshi="jingshiBefore"
+            :jiefang="jiefangBefore"
+          />
+          <OffsetAlignStrip
+            compact
+            title="优化后"
+            hint="经十路 / 解放东北直绿窗"
+            key-word="对准"
+            tone="ok"
+            :cycle-len="cycleLen"
+            :t="clock"
+            :jingshi="jingshiAfter"
+            :jiefang="jiefangAfter"
+          />
+        </div>
+        <div class="preview-grid">
+          <div v-if="board" class="preview-card">
+            <PhaseSequenceBoard compact :board="board" />
+          </div>
+          <figure v-if="tsModel" class="preview-card">
+            <figcaption>绿波时距图</figcaption>
+            <div class="preview-body">
+              <TimeSpaceDiagram :model="tsModel" :mode="mode" :direction="direction" />
+            </div>
+          </figure>
+        </div>
       </div>
-      <div class="stage">
+      <div v-if="showVehicles" class="stage">
         <CorridorStage
           v-if="demo && before"
           :model="demo"
@@ -230,6 +326,13 @@ const showAlignStrip = false
         />
         <p v-if="!demo" class="empty">走廊仿真数据未就绪</p>
       </div>
+      <ul v-if="showKpis && resultCards.length" class="posters">
+        <li v-for="card in resultCards" :key="card.key">
+          <span class="poster-title">{{ card.label }}</span>
+          <strong>{{ fmt(card.before) }}{{ card.unit }} → {{ fmt(card.after) }}{{ card.unit }}</strong>
+          <em>{{ card.delta }}</em>
+        </li>
+      </ul>
     </div>
 
     <Teleport to="body">
@@ -422,12 +525,68 @@ const showAlignStrip = false
 .beat b.plain { color: var(--text); }
 .beat span { font-weight: 400; color: var(--text); }
 
-.align-row {
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  opacity: 1;
+  transition: opacity 0.45s ease;
+}
+.intro.fading {
+  opacity: 0;
+}
+.align-stack {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   flex: none;
   min-width: 0;
+}
+.preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+.preview-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--cyan-border);
+  background: rgba(0, 16, 28, 0.55);
+}
+.preview-card figcaption {
+  flex: none;
+  padding: 6px 8px 0;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+.preview-body {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.preview-card :deep(.phase-board) {
+  height: 100%;
+  border: none;
+  background: transparent;
+}
+.preview-card :deep(.phase-board.compact) {
+  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.preview-card :deep(.phase-board.compact .cards) {
+  flex: 1 1 0;
+  min-height: 0;
 }
 .stage {
   display: flex;
@@ -440,6 +599,50 @@ const showAlignStrip = false
 .stage :deep(.corridor) {
   flex: 1 1 0;
   min-height: 0;
+}
+.stage,
+.posters {
+  animation: appear 0.4s ease;
+}
+@keyframes appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.posters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: none;
+}
+.posters li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 8px;
+  align-items: baseline;
+  padding: 7px 10px;
+  border: 1px solid var(--cyan-border);
+  background: rgba(0, 16, 28, 0.55);
+}
+.poster-title {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+.posters strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.posters em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ok);
 }
 .empty {
   margin: auto;

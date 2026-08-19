@@ -141,7 +141,7 @@ const uid = Math.random().toString(36).slice(2, 8)
 </script>
 
 <template>
-  <svg class="chan" :viewBox="`0 0 ${S} ${S}`" role="img" aria-label="阶段放行渠化示意">
+  <svg class="chan" :viewBox="`0 0 ${S} ${S}`" preserveAspectRatio="xMidYMid meet" role="img" aria-label="阶段放行渠化示意">
     <defs>
       <marker
         :id="`arw-${uid}`"
@@ -196,7 +196,12 @@ const uid = Math.random().toString(36).slice(2, 8)
 </template>
 
 <style scoped>
-.chan { display: block; color: var(--ok); }
+.chan {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--ok);
+}
 .block { fill: rgba(6, 26, 44, 0.9); stroke: rgba(0, 229, 255, 0.16); }
 .asphalt { fill: rgba(16, 46, 68, 0.95); }
 .asphalt.box { fill: rgba(20, 56, 80, 0.95); }
