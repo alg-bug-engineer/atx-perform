@@ -102,7 +102,7 @@
       }
     },
     "channelization": {
-      "headline": "恢复路口渠化展示",
+      "headline": "",
       "caption": "目标经十路口，北进口为主问题进口",
       "approx_sec": 5,
       "panel": {
@@ -118,7 +118,7 @@
       }
     },
     "queue": {
-      "headline": "排队过程 · 队尾向上游延伸",
+      "headline": "",
       "caption": "北向南直行车辆逐段排队",
       "approx_sec": 5,
       "panel": {

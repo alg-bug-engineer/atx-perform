@@ -250,7 +250,7 @@ const SEG_BLEND_LEN = 10;
  * geom 缺失时中心线即 P0→P1 弦线，两端锁定仍保证接缝位置/切向连续（消错位）。
  * @returns {null|{ stations: Array<object>, at: (r:number)=>object, total: number }}
  */
-function buildSegmentCenterline(plan) {
+export function buildSegmentCenterline(plan) {
   const { armA, armB, boxRA, boxRB, worldA, worldB } = plan;
   if (!armA || !armB) return null;
   const dirA = bearingToWorldDir(armA.angle);
@@ -438,6 +438,7 @@ export function buildSegmentChannelizationLayer(plan, opts = {}) {
     showArmRoadNames = true,
     axisRoads = null,
     centerToCenter = false,
+    curved = false,
     excludeConnectingArms = true,
     showQueueCars = false,
     queueDataFor = null,
@@ -475,7 +476,7 @@ export function buildSegmentChannelizationLayer(plan, opts = {}) {
   }
 
   // ── 中央段体（局部 +Z = A→B）──────────────────────────────────────────────
-  const body = buildSegmentBody(plan, { arrowScale, centerToCenter, lift: bodyLift });
+  const body = buildSegmentBody(plan, { arrowScale, centerToCenter, curved, lift: bodyLift });
 
   // ── 组装 ───────────────────────────────────────────────────────────────────
   const group = new THREE.Group();

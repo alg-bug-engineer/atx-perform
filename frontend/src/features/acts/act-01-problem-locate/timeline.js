@@ -13,7 +13,7 @@ function seg(id) {
   return SEGS.find((s) => s.id === id) || { text: '', audioUrl: '', durationSec: 0, approxSec: 0 };
 }
 
-const ORDER = ['lock', 'channelization', 'queue', 'm-queue', 'm-speed', 'm-sat', 'nodes', 'conclusion'];
+const ORDER = ['lock', 'conclusion'];
 
 export const ACT1_BEATS = ORDER.map((key) => {
   const config = PROBLEM_LOCATE_BEATS[key] || {};
@@ -27,6 +27,8 @@ export const ACT1_BEATS = ORDER.map((key) => {
     headline: config.headline || '',
     caption: config.caption || '',
     panel: config.panel || null,
+    // lock 拍内子步：语音播报期间同步演绎 渠化→排队→三窗（播报与页面同步）
+    substeps: key === 'lock' ? 6 : 0,
     approxSec: config.approx_sec || seg(`s1-${key}`).approxSec || 4,
   };
 });

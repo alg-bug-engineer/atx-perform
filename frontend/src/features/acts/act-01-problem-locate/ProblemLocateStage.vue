@@ -10,6 +10,7 @@ import { runExitBarrier } from '../../../shared/act-timing.js';
 import { setAct2MapBeat } from '../../../shared/narrative-state.js';
 import { createConductor } from '../../../shared/conductor/conductor.js';
 import { ACT1_BEATS } from './timeline.js';
+import { PROBLEM_LOCATE_BEATS } from './fixture.js';
 import {
   beginLocate,
   completeLocateConfirm,
@@ -38,37 +39,45 @@ const dockStack = ref([]);
 let exited = false;
 
 /** 左侧信息侧栏卡片（参考幕三 trace-dock 处理方式，随拍累积） */
-function dockCardFor(beat) {
-  switch (beat.id) {
-    case 's1-lock':
+function dockCardFor(key) {
+  switch (key) {
+    case 'lock':
       return {
         title: '问题路段锁定',
         rows: [['路段', '奥体西路·解放东路—经十路'], ['流向', '北向南直行']],
       };
-    case 's1-channelization':
-      return { title: '路口渠化', copy: '目标经十路口，北进口为主问题进口。' };
-    case 's1-queue':
+    case 'queue':
       return { title: '车辆排队', copy: '北向南直行车辆正在逐段排队，队尾向上游延伸。' };
-    case 's1-m-queue':
+    case 'm-queue':
       return { title: '排队长度', hero: '270 m', accent: '#ff8a3a', lab: '蓄车 368 m · 排队比 0.73，接近预警线' };
-    case 's1-m-speed':
+    case 'm-speed':
       return { title: '平均速度', hero: '7.2 km/h', accent: '#ffb020', lab: '通行速度偏低 · 延时指数 5.28' };
-    case 's1-m-sat':
+    case 'm-sat':
       return { title: '饱和度', hero: '0.84', accent: '#ff6b4a', lab: '北向南直行 · 预警线 0.8' };
-    case 's1-nodes':
+    case 'nodes':
       return { title: '上下游路口', copy: '上游解放东路口、下游经十路口；经十路东西向压力突出，东进口通行偏慢。' };
-    case 's1-conclusion':
+    case 'conclusion':
       return { title: '问题定位完成', copy: '北向南溢流风险成立。' };
     default:
       return null;
   }
 }
 
+// lock 拍子步序列：语音播报期间同步演绎（播报与页面同步）
+const SUB_KEYS = ['lock', 'channelization', 'queue', 'm-queue', 'm-speed', 'm-sat'];
+
+/** 地图拍 + 侧栏卡 + 大字报 同步分派 */
+function dispatchMapBeat(key) {
+  setAct2MapBeat(key);
+  const card = dockCardFor(key);
+  if (card) dockStack.value = [...dockStack.value, card];
+  const hd = PROBLEM_LOCATE_BEATS[key]?.headline;
+  if (hd) headline.value = { main: hd };
+}
+
 // ── 指挥家分派 ─────────────────────────────────────────────────────
 function onBeatStart(beat) {
-  headline.value = { main: beat.headline };
-  const card = dockCardFor(beat);
-  if (card) dockStack.value = [...dockStack.value, card];
+  if (beat.headline) headline.value = { main: beat.headline };
   setProblemLocateHud({
     phase: beat.mapBeat,
     caption: beat.caption,
@@ -76,32 +85,19 @@ function onBeatStart(beat) {
     panel: beat.panel,
   });
 
-  switch (beat.id) {
-    case 's1-lock':
-      completeTicket();
-      beginLocate();
-      break;
-    case 's1-nodes':
-      setAct2MapBeat('nodes');
-      break;
-    case 's1-channelization':
-      setAct2MapBeat('channelization');
-      break;
-    case 's1-queue':
-      setAct2MapBeat('queue');
-      break;
-    case 's1-m-queue':
-    case 's1-m-speed':
-    case 's1-m-sat':
-      setAct2MapBeat(beat.mapBeat);
-      break;
-    case 's1-conclusion':
-      completeLocateConfirm();
-      setAct2MapBeat('conclusion');
-      break;
-    default:
-      break;
+  if (beat.mapBeat === 'lock') {
+    completeTicket();
+    beginLocate();
   }
+  if (beat.mapBeat === 'conclusion') completeLocateConfirm();
+  dispatchMapBeat(beat.mapBeat);
+}
+
+/** lock 拍子步：渠化→排队→三窗 随语音依次上页（播报与页面同步） */
+function onBeatProgress(beat, subIdx) {
+  if (beat.mapBeat !== 'lock') return;
+  const key = SUB_KEYS[subIdx];
+  if (key && key !== 'lock') dispatchMapBeat(key);
 }
 
 function runExitFlow() {
@@ -129,6 +125,7 @@ onMounted(() => {
     beats: ACT1_BEATS,
     hooks: {
       onBeatStart,
+      onBeatProgress,
       // 末拍语音播完即收束交棒（消灭尾部干等）
       onAllEnd: () => later(runExitFlow, 400),
     },

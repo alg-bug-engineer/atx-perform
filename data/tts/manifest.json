@@ -2,23 +2,15 @@
   "scenes": {
     "1": {
       "title": "问题定位",
-      "total_duration_sec": 20.21,
+      "total_duration_sec": 17.21,
       "segments": [
         {
           "id": "s1-lock",
           "file": "scene1/s1-lock.wav",
           "approx_sec": 8,
-          "text": "已锁定奥体西路北向南问题路段，范围为解放东路至经十路。路段排队较长，通行速度偏低。",
-          "duration_sec": 9.0,
-          "chars": 41
-        },
-        {
-          "id": "s1-nodes",
-          "file": "scene1/s1-nodes.wav",
-          "approx_sec": 8,
-          "text": "锁定上游解放东路口和下游经十路口。经十路东西向压力突出，东进口通行偏慢。",
-          "duration_sec": 7.96,
-          "chars": 36
+          "text": "已锁定奥体西路北向南问题路段，范围为解放东路至经十路。路段排队270米，通行速度7.2公里每小时。北向南直行饱和度0.84。",
+          "duration_sec": 13.96,
+          "chars": 62
         },
         {
           "id": "s1-conclusion",
@@ -114,15 +106,15 @@
     },
     "4": {
       "title": "效果评估",
-      "total_duration_sec": 5.16,
+      "total_duration_sec": 6.12,
       "segments": [
         {
           "id": "s4-main",
           "file": "scene4/s4-main.wav",
           "approx_sec": 10,
-          "text": "试运行后，排队下降40%，速度回升206%。",
-          "duration_sec": 5.16,
-          "chars": 22
+          "text": "试运行后，排队下降40%，绿灯利用率提升72.0%。",
+          "duration_sec": 6.12,
+          "chars": 26
         }
       ]
     },
@@ -141,7 +133,7 @@
       ]
     }
   },
-  "generated_at": "2026-08-19T09:46:37+0800",
+  "generated_at": "2026-08-19T13:34:12+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000

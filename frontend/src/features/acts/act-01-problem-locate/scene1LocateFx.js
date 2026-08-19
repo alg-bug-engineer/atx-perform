@@ -18,13 +18,12 @@ import { getConductorSegments } from '../../../shared/sceneNarration.js';
 import {
   createChannelizationLayer,
   disposeChannelizationLayer,
-  setChannelizationQueueCarsVisible,
-  setChannelizationQueueProgress,
+  gatherArms,
+  angleDiff,
 } from '../../scenes/scene-c/channelizationLayer.js';
 import {
   planSegmentChannelization,
   buildSegmentChannelizationLayer,
-  buildSegmentQueueCars,
 } from '../../scenes/scene-c/segmentChannelizationLayer.js';
 import { channelizationMapToInterItem } from '../../../services/channelizationFromBackend.js';
 
@@ -270,6 +269,89 @@ export function createAct2MapFx({
   let channelGroup = null;
   let segmentPlan = null;
   let queueAnim = null;
+  let queueBlocks = null;
+
+  /**
+   * 排队色块序列（对齐 agent-loop 新分支 act3MapFx 形态）：
+   * 沿段体真实中心线贴路排布（切向定向、-X 行驶半幅），
+   * 自 B 端停车线向上游逐排生长，与道路走向严格一致。
+   */
+  function buildQueueBlocks({ plan, laneCount, queueRatio }) {
+    const g = new THREE.Group();
+    g.name = 'queueBlocks';
+    // 视觉比例标定：盒体吃掉部分段长，绝对米数铺满会误读为 0.9+；
+    // 改按 排队比 × 可见蓄车空间（两停车线间）绘制，画面比例精确等于 0.73
+    const cl0 = (() => {
+      const t = (plan.segBearing * Math.PI) / 180;
+      const dir = { x: Math.sin(t), z: -Math.cos(t) };
+      const p0 = { x: plan.worldA.x + dir.x * plan.boxRA, z: plan.worldA.z + dir.z * plan.boxRA };
+      const p1 = { x: plan.worldB.x - dir.x * plan.boxRB, z: plan.worldB.z - dir.z * plan.boxRB };
+      const total = Math.hypot(p1.x - p0.x, p1.z - p0.z);
+      return {
+        total,
+        at: (r) => {
+          const u = total ? Math.max(0, Math.min(1, r / total)) : 0;
+          return {
+            x: p0.x + (p1.x - p0.x) * u,
+            z: p0.z + (p1.z - p0.z) * u,
+            tx: dir.x, tz: dir.z,
+            nx: dir.z, nz: -dir.x,
+          };
+        },
+      };
+    })();
+    const queueLen = Math.max(2, queueRatio * cl0.total);
+    const BLOCK_D = 0.58;
+    const BLOCK_GAP = 0.08;
+    const step = BLOCK_D + BLOCK_GAP;
+    const blockCount = Math.max(6, Math.round(queueLen / step));
+    const blockW = 0.8 * 0.9;
+    const laneXs = Array.from({ length: laneCount }, (_, i) => (i + 0.5) * 0.8);
+    const meshes = [];
+
+    // 中心线取样器：段体取直，色块沿 A→B 弦线同轴排布
+    const cl = cl0;
+
+    for (let i = 0; i < blockCount; i++) {
+      const r = cl.total - (BLOCK_D / 2 + i * step);
+      if (r < 0) break;
+      const f = cl.at(r);
+      const edge = i / Math.max(1, blockCount - 1);
+      const color = new THREE.Color(0xff6b5c).lerp(new THREE.Color(0xff9588), edge * 0.35);
+      const mat = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.62,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const rotY = Math.atan2(f.tx, f.tz);
+      laneXs.forEach((lx) => {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(blockW, BLOCK_D), mat);
+        m.rotation.order = 'YXZ';
+        m.rotation.y = rotY;
+        m.rotation.x = -Math.PI / 2;
+        // A→B 行驶半幅在 -X 侧（与段体车道同侧）
+        m.position.set(f.x - f.nx * lx, 0.75, f.z - f.nz * lx);
+        m.renderOrder = 54;
+        m.userData.blockIndex = i;
+        m.visible = false;
+        g.add(m);
+        meshes.push(m);
+      });
+    }
+    g.visible = false;
+    group.add(g);
+    return {
+      group: g,
+      show(v) { g.visible = !!v; },
+      setReveal(p) {
+        const k = Math.max(0, Math.min(1, p));
+        const n = Math.max(0, Math.ceil(blockCount * k));
+        meshes.forEach((m) => { m.visible = m.userData.blockIndex < n; });
+      },
+    };
+  }
 
   function interItemOf(inter) {
     const raw = channelizationData.by_intersection?.[inter.interId];
@@ -298,24 +380,34 @@ export function createAct2MapFx({
       segmentPlan = planSegmentChannelization(mainItem, otherItem, { travelBearing: 180 });
     }
     if (segmentPlan) {
+      // 段体取直：两端盒缘间直线铺设，色块同轴贴路
       const layer = buildSegmentChannelizationLayer(segmentPlan, channelOpts);
       if (layer) {
-        // 排队车挂段空间：与段体同轴同半幅（-X、A→B 行驶半幅），
-        // 自 B 端停车线向上游逐辆生长；车道数/转向比/270m 定长按实际数据标定
-        layer.add(buildSegmentQueueCars(segmentPlan, { queueM: 270, satPct: 84 }));
         channelGroup.add(layer);
+        const sl = mainItem.surrounding_links;
+        const arms = gatherArms(sl['进入路口的路段'] || [], sl['离开路口的路段'] || []);
+        const target = (segmentPlan.segBearing + 180) % 360;
+        const armN = arms.reduce((best, a) => {
+          const d = angleDiff(a.angle, target);
+          return d < (best?.d ?? Infinity) ? { a, d } : best;
+        }, null)?.a;
+        if (armN) {
+          const laneCount = Math.min(3, Math.max(2, (armN.inLink?.lane_info || '')
+            .split('|').filter(Boolean).length || 2));
+          queueBlocks = buildQueueBlocks({
+            plan: segmentPlan,
+            laneCount,
+            queueRatio: 0.73,
+          });
+        }
       }
     }
     if (!channelGroup.children.length && mainItem) {
       // 段化数据不足时回退单口渠化
       const raw = channelizationData.by_intersection?.[INTERSECTIONS.jingshi.interId];
       const north = (raw?.arms || []).find((a) => a.dir8_label === '北进口' && a.link_role === 'entrance');
-      channelGroup.add(createChannelizationLayer(mainItem, [{ armAngle: north?.approach_angle ?? 0, queueM: 270, satPct: 84 }], {
-        ...channelOpts,
-        showQueueCars: true,
-      }));
+      channelGroup.add(createChannelizationLayer(mainItem, null, channelOpts));
     }
-    setChannelizationQueueCarsVisible(channelGroup, false);
     channelGroup.visible = false;
     group.add(channelGroup);
     return channelGroup;
@@ -378,8 +470,8 @@ export function createAct2MapFx({
       playFlow(nsLayer, false);
       ensureChannelization();
       channelGroup.visible = true;
-      setChannelizationQueueCarsVisible(channelGroup, true);
-      setChannelizationQueueProgress(channelGroup, 0);
+      queueBlocks?.show(true);
+      queueBlocks?.setReveal(0);
       queueAnim = { start: timeSec, dur: SEG_DUR['s1-queue'] || 5 };
       showPins('lock');
       return;
@@ -388,9 +480,9 @@ export function createAct2MapFx({
       labelGroup.visible = true;
       targets.labels = 0.9;
       playFlow(nsLayer, false);
-      if (channelGroup) {
-        setChannelizationQueueCarsVisible(channelGroup, true);
-        setChannelizationQueueProgress(channelGroup, 1);
+      if (queueBlocks) {
+        queueBlocks.show(true);
+        queueBlocks.setReveal(1);
       }
       queueAnim = null;
       showPins(nextBeat, { keepLock: true });
@@ -425,6 +517,7 @@ export function createAct2MapFx({
       playFlow(jingshiEw, false);
       playFlow(jiefangEw, false);
       if (channelGroup) channelGroup.visible = false;
+      queueBlocks?.show(false);
       queueAnim = null;
       showPins(null);
     }
@@ -434,13 +527,13 @@ export function createAct2MapFx({
     nsLayer.update?.(time);
     jingshiEw.update?.(time);
     jiefangEw.update?.(time);
-    if (queueAnim && channelGroup) {
+    if (queueAnim && queueBlocks) {
       const t = (time - queueAnim.start) / queueAnim.dur;
       if (t >= 1) {
-        setChannelizationQueueProgress(channelGroup, 1);
+        queueBlocks.setReveal(1);
         queueAnim = null;
       } else {
-        setChannelizationQueueProgress(channelGroup, Math.max(0, t));
+        queueBlocks.setReveal(Math.max(0, t));
       }
     }
     if (labelGroup.visible && labelMats.length) {
@@ -483,7 +576,7 @@ export function createAct2MapFx({
     ensureChannelization: () => ensureChannelization(),
     removeChannelization: () => removeChannelization(),
     detachChannelization: () => null,
-    setQueueCarsVisible: (v) => setChannelizationQueueCarsVisible(channelGroup, v),
+    setQueueCarsVisible: (v) => queueBlocks?.show(v),
     getSegmentFraming: () => getSegmentFraming(),
     boostArrows: () => {},
     getTargetWorld: () => ({ x: problemMid.x, y: 0, z: problemMid.z }),
