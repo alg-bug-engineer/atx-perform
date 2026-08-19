@@ -4,7 +4,7 @@
  */
 import { computed } from 'vue'
 import CycleQueueChart from './CycleQueueChart.vue'
-import { buildTrialEffectSeries, fmtPct, fmtRatio2 } from './trialEffectSeries.js'
+import { buildTrialEffectSeries, fmtPct, fmtPlain, fmtRatio2 } from './trialEffectSeries.js'
 
 const props = defineProps({
   payload: { type: Object, required: true },
@@ -37,7 +37,7 @@ const headline = computed(() => {
   const overflow = peaks.value ? peaks.value.after > storageM.value : false
   return [
     `排队长度由 ${b.queue_length_m} m 降至 ${c.queue_length_m} m`,
-    `平均速度由 ${b.avg_speed_kmh.toFixed(1)} 提升至 ${c.avg_speed_kmh.toFixed(1)} km/h`,
+    `平均速度由 ${fmtPlain(b.avg_speed_kmh)} 提升至 ${fmtPlain(c.avg_speed_kmh)} km/h`,
     overflow ? `峰值排队仍超 ${cap} m 蓄车能力` : `峰值排队未超 ${cap} m 蓄车能力`,
   ].join('，')
 })
@@ -77,7 +77,7 @@ const cards = computed(() => {
       value: c ? fmtPct(c.green_utilization) : '—',
       tone: c && c.green_utilization >= th.green_utilization_low ? 'ok' : 'warn',
       trend: c ? trendOf(c.green_utilization, b.green_utilization) : '',
-      sub: `基线 ${fmtPct(b.green_utilization)} · 目标 ${th.green_utilization_low}`,
+      sub: `基线 ${fmtPct(b.green_utilization)} · 目标 ${fmtPct(th.green_utilization_low)}`,
     },
     {
       key: 'upstream',

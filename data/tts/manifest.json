@@ -128,7 +128,7 @@
           "id": "s4-main",
           "file": "scene4/s4-main.wav",
           "approx_sec": 10,
-          "text": "试运行后，排队下降40%，绿灯利用率提升72.0%。",
+          "text": "试运行后，排队下降40%，绿灯利用率提升至68%。",
           "duration_sec": 6.12,
           "chars": 26
         }

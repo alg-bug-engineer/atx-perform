@@ -89,7 +89,7 @@ onUnmounted(() => {
 <template>
   <header class="chrome" data-testid="app-chrome">
     <div class="banner">
-      <h1 class="title-main">奥体西绩效可视化</h1>
+      <h1 class="title-main">济南交管支队信控智能体</h1>
       <div class="banner-right">
         <time class="clock" :datetime="nowText">{{ nowText }}</time>
       </div>

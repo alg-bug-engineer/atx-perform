@@ -62,9 +62,9 @@ export function buildTrialEffectSeries(payload = {}) {
 
   const endRatio = num(targets.end_queue_ratio, Math.min(0.55, Math.max(0.4, ratioStart - 0.32)))
   const endQueue = num(targets.end_queue_length_m, null) ?? round1(storage * endRatio)
-  const endSpeed = num(targets.end_speed_kmh, 22)
+  const endSpeed = num(targets.end_speed_kmh, 13)
   const endDelay = num(targets.end_delay_index, 2.1)
-  const endGreen = num(targets.end_green_utilization, 0.72)
+  const endGreen = num(targets.end_green_utilization, 0.68)
   const endUpRatio = num(targets.end_upstream_queue_ratio, 0.35)
   const endUpBlocked = num(targets.end_upstream_blocked_veh, null)
 
@@ -150,7 +150,7 @@ export function buildTrialEffectSeries(payload = {}) {
       ok: speedImproved,
       title: '路段速度回升',
       detail: speedImproved
-        ? `速度 ${speed0.toFixed(1)} → ${last.avg_speed_kmh.toFixed(1)} km/h，延时指数 ${delay0.toFixed(2)} → ${last.delay_index.toFixed(2)}`
+        ? `速度 ${fmtPlain(speed0)} → ${fmtPlain(last.avg_speed_kmh)} km/h，延时指数 ${delay0.toFixed(2)} → ${last.delay_index.toFixed(2)}`
         : '速度改善不足',
     },
   ]
@@ -200,20 +200,31 @@ export function buildTrialEffectSeries(payload = {}) {
   }
 }
 
+function trimDot0(n, digits = 1) {
+  const f = 10 ** digits
+  const r = Math.round(n * f) / f
+  return Number.isInteger(r) ? String(r) : r.toFixed(digits)
+}
+
+export function fmtPlain(v, digits = 1) {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return trimDot0(v, digits)
+}
+
 export function fmtMeters(v) {
   if (v == null || !Number.isFinite(v)) return '—'
-  return `${round1(v)} m`
+  return `${trimDot0(v)} m`
 }
 
 export function fmtRatio2(v) {
   if (v == null || !Number.isFinite(v)) return '—'
   const rounded = Math.round(v * 100) / 100
-  return String(rounded)
+  return Number.isInteger(rounded) ? String(rounded) : String(rounded)
 }
 
 export function fmtPct(v) {
   if (v == null || !Number.isFinite(v)) return '—'
-  return `${(v * 100).toFixed(1)}%`
+  return `${trimDot0(v * 100)}%`
 }
 
 export function fmtDeltaS(v) {
@@ -224,5 +235,5 @@ export function fmtDeltaS(v) {
 
 export function fmtSpeed(v) {
   if (v == null || !Number.isFinite(v)) return '—'
-  return `${round1(v)} km/h`
+  return `${trimDot0(v)} km/h`
 }

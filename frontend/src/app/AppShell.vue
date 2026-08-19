@@ -24,7 +24,7 @@ const activeSceneComponent = computed(() =>
 )
 
 watch(activeSceneKey, (key) => {
-  document.title = `奥体西绩效可视化 · ${getSceneByKey(key).name}`
+  document.title = `济南交管支队信控智能体 · ${getSceneByKey(key).name}`
   playSceneNarration(key)
 }, { immediate: true })
 
