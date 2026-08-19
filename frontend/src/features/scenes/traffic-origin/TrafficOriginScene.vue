@@ -2292,12 +2292,9 @@ watch(act2MapBeat, (beat) => {
 
   if (beat === 'conclusion') {
     act2Fx.play('conclusion', t, { scene });
-    const point = act2Fx.getProblemWorld?.();
-    if (point) {
-      startAct2Pan(point.x, point.z, () => {
-        finishAct2Hold({ allowDrift: false });
-      });
-    }
+    // 结论拍不再二次定位：保持段取景机位就地收束，
+    // 避免大字报上屏瞬间镜头回拉产生抖动/偏移
+    finishAct2Hold({ allowDrift: false });
     return;
   }
 
