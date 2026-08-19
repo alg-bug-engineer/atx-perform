@@ -184,7 +184,7 @@ const inflowArrows = computed(() => {
 <template>
   <figure class="corridor" :class="[`tone-${variant.tone}`, { spilling: spill }]">
     <figcaption class="hd">
-      <span class="badge">{{ variant.key === 'before' ? '现状配时' : '优化后' }}</span>
+      <span class="badge">{{ variant.key === 'before' ? '现状' : '优化后' }}</span>
       <span class="sub">{{ variant.subtitle }}</span>
       <span v-if="spill" class="alarm">路口溢出，排队溢至解放东</span>
     </figcaption>
@@ -387,22 +387,31 @@ const inflowArrows = computed(() => {
 .corridor.tone-ok { border-left-color: var(--ok); }
 .corridor.spilling { box-shadow: inset 0 0 28px rgba(255, 68, 68, 0.08); }
 
-.hd { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; flex: none; }
+.hd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  flex: none;
+  text-align: center;
+}
 .badge {
-  padding: 1px 8px;
-  font-size: 12px;
-  letter-spacing: 1px;
+  padding: 3px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
   border: 1px solid currentColor;
   border-radius: 2px;
   color: var(--text);
 }
-.tone-ok .badge { color: var(--text); }
+.tone-danger .badge { color: var(--danger); border-color: var(--danger); }
+.tone-ok .badge { color: var(--ok); border-color: var(--ok); }
 .sub { font-size: 12px; color: var(--text); }
 .alarm {
-  margin-left: auto;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--danger);
 }
 @keyframes blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 

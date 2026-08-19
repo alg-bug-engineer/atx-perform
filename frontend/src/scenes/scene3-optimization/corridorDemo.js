@@ -73,7 +73,7 @@ export function buildCorridorDemo(optimization) {
     const m = meta[key] || {}
     return {
       key,
-      title: m.title || (key === 'before' ? '现状配时' : '相位协调'),
+      title: m.title || (key === 'before' ? '现状' : '相位协调'),
       subtitle: m.subtitle || '',
       tone: key === 'before' ? 'danger' : 'ok',
       cycleLen,

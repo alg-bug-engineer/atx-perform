@@ -367,14 +367,8 @@ function initThreeJS() {
 
 // ── 画布点击：射线拾取路口 ────────────────────────────────────────────────────
 function onCanvasClick(e) {
-  // 叙事 Act 播放期间禁止点选打断镜头
-  if (
-    narrativeActive.value
-    && (act1Phase.value !== 'idle' || act2Phase.value !== 'idle'
-      || act3Phase.value !== 'idle' || act4Phase.value !== 'idle'
-      || act5Phase.value !== 'idle' || act6Phase.value !== 'idle'
-      || act7Phase.value !== 'idle' || act8Phase.value !== 'idle')
-  ) return;
+  // 分析成因等叙事幕禁止点选路口弹出汇入特效（含演绎结束后）
+  if (narrativeActive.value) return;
   if (!allIntersections.length) return;
   const pt = screenToWorld(e.clientX, e.clientY);
   if (!pt) return;
