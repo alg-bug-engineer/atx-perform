@@ -38,7 +38,7 @@ const emit = defineEmits(['finish', 'home'])
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 14px 16px;
+  padding: 14px 0;
   border-radius: 4px;
   border: 1px solid var(--cyan-border-strong);
   background: rgba(4, 12, 30, 0.96);
