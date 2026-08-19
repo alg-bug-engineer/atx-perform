@@ -2,15 +2,31 @@
   "scenes": {
     "1": {
       "title": "问题定位",
-      "total_duration_sec": 17.21,
+      "total_duration_sec": 16.18,
       "segments": [
         {
           "id": "s1-lock",
           "file": "scene1/s1-lock.wav",
           "approx_sec": 8,
-          "text": "已锁定奥体西路北向南问题路段，范围为解放东路至经十路。路段排队270米，通行速度7.2公里每小时。北向南直行饱和度0.84。",
-          "duration_sec": 13.96,
-          "chars": 62
+          "text": "已锁定奥体西路北向南问题路段，范围为解放东路至经十路。",
+          "duration_sec": 5.88,
+          "chars": 27
+        },
+        {
+          "id": "s1-metrics",
+          "file": "scene1/s1-metrics.wav",
+          "approx_sec": 6,
+          "text": "路段排队270米，通行速度7.2公里每小时。",
+          "duration_sec": 4.44,
+          "chars": 22
+        },
+        {
+          "id": "s1-sat",
+          "file": "scene1/s1-sat.wav",
+          "approx_sec": 4,
+          "text": "北向南直行饱和度0.84。",
+          "duration_sec": 2.61,
+          "chars": 13
         },
         {
           "id": "s1-conclusion",
@@ -133,7 +149,7 @@
       ]
     }
   },
-  "generated_at": "2026-08-19T13:34:12+0800",
+  "generated_at": "2026-08-19T13:41:11+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000

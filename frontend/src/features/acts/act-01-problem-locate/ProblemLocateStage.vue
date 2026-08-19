@@ -63,16 +63,23 @@ function dockCardFor(key) {
   }
 }
 
-// lock 拍子步序列：语音播报期间同步演绎（播报与页面同步）
-const SUB_KEYS = ['lock', 'channelization', 'queue', 'm-queue', 'm-speed', 'm-sat'];
+// 每拍子步序列：分段语音播报期间页面同步演绎（播报与页面同步）
+const SUB_MAP = {
+  lock: ['lock', 'channelization'],
+  metrics: ['queue', 'm-queue', 'm-speed'],
+  sat: ['m-sat'],
+  conclusion: ['conclusion'],
+};
 
-/** 地图拍 + 侧栏卡 + 大字报 同步分派 */
+/** 地图拍 + 侧栏卡 + 大字报 同步分派（大字报只保留首尾：锁定/结论） */
 function dispatchMapBeat(key) {
   setAct2MapBeat(key);
   const card = dockCardFor(key);
   if (card) dockStack.value = [...dockStack.value, card];
-  const hd = PROBLEM_LOCATE_BEATS[key]?.headline;
-  if (hd) headline.value = { main: hd };
+  if (key === 'lock' || key === 'conclusion') {
+    const hd = PROBLEM_LOCATE_BEATS[key]?.headline;
+    if (hd) headline.value = { main: hd };
+  }
 }
 
 // ── 指挥家分派 ─────────────────────────────────────────────────────
@@ -90,14 +97,16 @@ function onBeatStart(beat) {
     beginLocate();
   }
   if (beat.mapBeat === 'conclusion') completeLocateConfirm();
-  dispatchMapBeat(beat.mapBeat);
+  const seq = SUB_MAP[beat.mapBeat] || [beat.mapBeat];
+  dispatchMapBeat(seq[0]);
 }
 
-/** lock 拍子步：渠化→排队→三窗 随语音依次上页（播报与页面同步） */
+/** 拍内子步：该段语音播到对应份时上页（渠化/排队/三窗随分段播报依次出现） */
 function onBeatProgress(beat, subIdx) {
-  if (beat.mapBeat !== 'lock') return;
-  const key = SUB_KEYS[subIdx];
-  if (key && key !== 'lock') dispatchMapBeat(key);
+  const seq = SUB_MAP[beat.mapBeat];
+  if (!seq) return;
+  const key = seq[subIdx];
+  if (key && key !== seq[0]) dispatchMapBeat(key);
 }
 
 function runExitFlow() {

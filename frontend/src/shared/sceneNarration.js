@@ -10,6 +10,8 @@ import scripts from '@data/tts/scripts.json'
 import manifest from '@data/tts/manifest.json'
 
 import s1Lock from '@data/tts/scene1/s1-lock.wav?url'
+import s1Metrics from '@data/tts/scene1/s1-metrics.wav?url'
+import s1Sat from '@data/tts/scene1/s1-sat.wav?url'
 import s1Conclusion from '@data/tts/scene1/s1-conclusion.wav?url'
 import s2Trace from '@data/tts/scene2/s2-trace.wav?url'
 import s2Supply from '@data/tts/scene2/s2-supply.wav?url'
@@ -29,6 +31,8 @@ const NARRATED = new Set(['3', '3b', '4', '5'])
 
 const AUDIO_BY_FILE = {
   'scene1/s1-lock.wav': s1Lock,
+  'scene1/s1-metrics.wav': s1Metrics,
+  'scene1/s1-sat.wav': s1Sat,
   'scene1/s1-conclusion.wav': s1Conclusion,
   'scene2/s2-trace.wav': s2Trace,
   'scene2/s2-supply.wav': s2Supply,
