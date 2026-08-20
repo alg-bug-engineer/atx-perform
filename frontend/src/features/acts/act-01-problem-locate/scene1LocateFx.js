@@ -20,6 +20,7 @@ import {
   disposeChannelizationLayer,
   gatherArms,
   angleDiff,
+  interCenterOffset,
 } from '../../scenes/scene-c/channelizationLayer.js';
 import {
   planSegmentChannelization,
@@ -29,7 +30,8 @@ import { channelizationMapToInterItem } from '../../../services/channelizationFr
 
 function worldOf(inter) {
   const [x, y] = project(inter.lon, inter.lat);
-  return { x, y, z: -y };
+  const [ox, oz] = interCenterOffset(inter.interId);
+  return { x: x + ox, y, z: -y + oz };
 }
 
 function runtimeOrigin(intersections, spec) {
@@ -316,11 +318,29 @@ export function createAct2MapFx({
     const abB = widen?.ab?.[1] || laneCount;
     const loN = Math.min(abA, abB);
     const hiN = Math.max(abA, abB);
-    // 排队仅在非拓宽直行车道上演示：全程外侧 loN 列固定贴外缘，
+    // B++：排队 3 列随当地车道网格（段中加宽车道 ↔ 拓宽区现状网格 smoothstep 过渡），
     // 不进入近口左转拓宽区
-    const rowSpec = () => {
-      if (!widen) return { n: laneCount, off: 0 };
-      return { n: loN, off: (hiN - loN) * 0.8 };
+    const g0 = widen?.median ?? 0.8;
+    const surAB = (hiN - loN) * 0.8;
+    const surBA = 0.8; // 南向北富余 1 车道（4→3）
+    const gAB = (g0 * surAB) / (surAB + surBA);
+    const wmidAB = (hiN * 0.8 - gAB) / loN;
+    const rowSpec = (u) => {
+      if (!widen) {
+        return { xs: Array.from({ length: laneCount }, (_, k) => (k + 0.5) * 0.8) };
+      }
+      const total = cl0.total || 1;
+      const halfL = total / 2;
+      const tB = Math.min(widen.tB ?? 10, halfL);
+      const c = Math.min(1, Math.max(0, ((u - halfL) - (halfL - tB)) / tB));
+      const s = c * c * (3 - 2 * c);
+      return {
+        xs: Array.from({ length: loN }, (_, k) => {
+          const a = gAB + (k + 0.5) * wmidAB;
+          const b = (k + 2.5) * 0.8;
+          return a + (b - a) * s;
+        }),
+      };
     };
     const meshes = [];
 
@@ -341,9 +361,8 @@ export function createAct2MapFx({
         side: THREE.DoubleSide,
       });
       const rotY = Math.atan2(f.tx, f.tz);
-      const spec = rowSpec();
-      const xs = Array.from({ length: spec.n }, (_, k) => spec.off + (k + 0.5) * 0.8);
-      xs.forEach((lx) => {
+      const spec = rowSpec(r);
+      spec.xs.forEach((lx) => {
         const m = new THREE.Mesh(new THREE.PlaneGeometry(blockW, BLOCK_D), mat);
         m.rotation.order = 'YXZ';
         m.rotation.y = rotY;
@@ -391,7 +410,7 @@ export function createAct2MapFx({
       axisRoads: AXIS_ROADS,
       // 真实车道演进：北向南 解放东 3→经十路 5；南向北 经十路 3→解放东 4；
       // 段中取直，近口 tB/tA 距离内曲线拓宽
-      widen: { ab: [3, 5], ba: [4, 3], tA: 8, tB: 10 },
+      widen: { ab: [3, 5], ba: [4, 3], tA: 8, tB: 10, median: 0.8 },
     };
     const mainItem = interItemOf(INTERSECTIONS.jingshi);
     const otherItem = interItemOf(INTERSECTIONS.jiefang);

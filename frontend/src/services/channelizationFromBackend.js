@@ -62,6 +62,11 @@ function toLocalLink(link, isEntrance, axisRoads) {
     f_angle: fAngle,
     t_angle: tAngle,
     length_m: link.length_m,
+    // 几何与路口 id 透传：臂中心线弯曲/双向均值/手工标定均依赖这些字段，
+    // 缺失时运行时臂体永远回退直线（白盒测试与线上表现不一致的根因）
+    geom: link.geom || null,
+    f_inter_id: link.f_inter_id,
+    t_inter_id: link.t_inter_id,
   };
 }
 

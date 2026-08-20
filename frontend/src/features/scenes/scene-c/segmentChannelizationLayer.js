@@ -26,6 +26,7 @@ import {
   hPlane, zLine, zDash, makeArrow,
   createChannelizationLayer,
   computeChannelGeometry,
+  interCenterOffset,
   parseGeomPts, resamplePolyline, smoothPolyline,
   buildCurvedRoad, buildCurvedLine, buildCurvedDash,
   createCarMesh,
@@ -149,8 +150,15 @@ export function planSegmentChannelization(mainItem, otherItem, opts = {}) {
 
   const infoMain = mainItem.intersection_info;
   const infoOther = otherItem.intersection_info;
-  const [mx, mz] = project(infoMain.longitude, infoMain.latitude);
-  const [ox0, oz0] = project(infoOther.longitude, infoOther.latitude);
+  // 与 createChannelizationLayer / worldOf 共用路口中心标定偏移，保证段体与盒体接缝闭合
+  const [pmx, pmz] = project(infoMain.longitude, infoMain.latitude);
+  const [pox, poz] = project(infoOther.longitude, infoOther.latitude);
+  const [omx, omz] = interCenterOffset(infoMain.inter_id);
+  const [oox, ooz] = interCenterOffset(infoOther.inter_id);
+  const mx = pmx + omx;
+  const mz = pmz + omz;
+  const ox0 = pox + oox;
+  const oz0 = poz + ooz;
 
   const D0 = Math.hypot(ox0 - mx, oz0 - mz);
   if (D0 < 1) return null; // 两口坐标几乎重合，段模式无意义
@@ -291,62 +299,63 @@ function buildStraightSegmentBody(plan, { arrowScale = 1.55, centerToCenter = fa
   const xCenter = (wBA - wAB) / 2;
 
   if (useWiden) {
-    // ── 左转拓宽段体：段中取直等宽，近口 tA/tB 距离内 smoothstep 曲线拓宽 ──
+    // ── B++：段中车道加宽吸收富余宽度，绿化带压缩为窄条 g0；拓宽区车道保持现状 ──
     const abMax = Math.max(widen.ab[0], widen.ab[1]) * LANE_W;
     const baMax = Math.max(widen.ba[0], widen.ba[1]) * LANE_W;
+    const g0 = widen.median ?? 0.8;
+    const surAB = abMax - widen.ab[0] * LANE_W;
+    const surBA = baMax - widen.ba[1] * LANE_W;
+    const gAB = (g0 * surAB) / ((surAB + surBA) || 1);
+    const gBA = g0 - gAB;
+    const wmidAB = (abMax - gAB) / widen.ab[0]; // 段中加宽车道宽
+    // 南向北：B 端 3 车道常规宽起始，近 A 端外缘外扩拓至 4 车道
+    const baMidOut = gBA + widen.ba[1] * LANE_W;
     const tB = Math.min(widen.tB ?? 10, fullLen * 0.5);
     const tA = Math.min(widen.tA ?? 8, fullLen * 0.5);
     const smooth = (u) => {
       const c = Math.min(1, Math.max(0, u));
       return c * c * (3 - 2 * c);
     };
-    // 北向南：段中 3 车道取直，近 B 端 tB 内曲线拓至 5
-    const wABAt = (z) => (widen.ab[0] + (widen.ab[1] - widen.ab[0]) * smooth((z - (halfL - tB)) / tB)) * LANE_W;
-    // 南向北：段中 3 车道取直，近 A 端 tA 内曲线拓至 4
-    const wBAAt = (z) => (widen.ba[1] + (widen.ba[0] - widen.ba[1]) * smooth((-z - (halfL - tA)) / tA)) * LANE_W;
-    const xiAB = (z) => -abMax + wABAt(z); // 北向南内缘（绿化带侧）
-    const xiBA = (z) => baMax - wBAAt(z); // 南向北内缘（绿化带侧）
-    const zs = [-halfL, -halfL * 0.5, 0, halfL * 0.5, halfL - tB, halfL - tB * 0.5, halfL];
-    const zsBA = [-halfL, -halfL + tA * 0.5, -halfL + tA, 0, halfL * 0.5, halfL];
+    const sB = (z) => smooth((z - (halfL - tB)) / tB);
+    const sA = (z) => smooth((-z - (halfL - tA)) / tA);
+    const mixB = (a, b) => (z) => a + (b - a) * sB(z);
+    const mixA = (a, b) => (z) => a + (b - a) * sA(z);
+    // 内缘：段中 ∓g，近口收 0
+    const xiAB = (z) => -gAB * (1 - sB(z));
+    const xiBA = (z) => gBA * (1 - sA(z));
+    // 南向北外缘：段中取直 baMidOut，近 A 端外扩至 baMax；
+    // 外扩在拓宽区前半程完成，保证口上 4 车道网格清晰可见
+    const sA2 = (z) => smooth((-z - (halfL - tA)) / (tA * 0.5));
+    const xoBA = (z) => baMidOut + (baMax - baMidOut) * sA2(z);
+    const zs = [-halfL, -halfL + 3, -halfL + 1.5, -halfL * 0.5, 0, halfL * 0.5, halfL - tB, halfL - tB * 0.5, halfL];
+    const zsBA = [-halfL, -halfL + tA * 0.5, -halfL + tA, 0, halfL * 0.5, halfL - 3, halfL - 1.5, halfL];
     const zsAll = [...new Set([...zs, ...zsBA])].sort((a, b) => a - b);
     body.add(taperedPlane(() => -abMax, xiAB, zsAll, C_ROAD));
-    body.add(taperedPlane(xiBA, () => baMax, zsAll, C_ROAD));
-    // 中央绿化带：两内缘之间，段中取直、近口收窄
-    body.add(taperedPlane(xiAB, xiBA, zsAll, C_MEDIAN, BASE_Y + 0.02));
-    // 外缘石（取直）
+    body.add(taperedPlane(xiBA, xoBA, zsAll, C_ROAD));
+    // 绿化带：两内缘间窄条；鼻端在停车线前 3u 渐隐收 0（真实绿化带不伸入路口喉区）
+    const noseF = (z) => smooth(Math.min(halfL - z, z + halfL) / 3);
+    const cMid = (z) => (xiAB(z) + xiBA(z)) / 2;
+    const halfG = (z) => ((xiBA(z) - xiAB(z)) / 2) * noseF(z);
+    body.add(taperedPlane((z) => cMid(z) - halfG(z), (z) => cMid(z) + halfG(z), zsAll, C_MEDIAN, BASE_Y + 0.02));
+    // 外缘石（北向南取直；南向北段中取直、近 A 端外扩）
     body.add(zLine(-abMax, -halfL, halfL, C_CURB));
-    body.add(zLine(baMax, -halfL, halfL, C_CURB));
-    // 内缘线（绿化带侧路缘）
+    body.add(edgeLine(zsAll.map((z) => [xoBA(z), z]), C_CURB));
+    // 内缘线
     body.add(edgeLine(zsAll.map((z) => [xiAB(z), z]), C_CURB));
     body.add(edgeLine(zsAll.map((z) => [xiBA(z), z]), C_CURB));
-    // 车道边界线：直行车道边界取直常量；新增左转边界自绿化带直线长出
-    const midInnerAB = abMax - widen.ab[0] * LANE_W;
+    // 车道边界线：段中加宽网格与口上现状网格各取直常量，
+    // 在拓宽区起点干净切换（不画斜向过渡线，避免线条混乱）
+    // 北向南：段中 2 条（3 加宽车道）止于拓宽起点；口上 4 条（5 车道）自拓宽起点起绘
+    body.add(dashLineX(() => -gAB - wmidAB, -halfL, halfL - tB, C_MARKING));
+    body.add(dashLineX(() => -gAB - 2 * wmidAB, -halfL, halfL - tB, C_MARKING));
     for (let i = 1; i < widen.ab[1]; i++) {
-      const x = -i * LANE_W;
-      let z0 = -halfL;
-      if (i * LANE_W < midInnerAB - 1e-6) {
-        // 新左转边界：自内缘穿过该常量线处起绘（直线）
-        z0 = widthCrossZ(xiAB, x, -halfL, halfL);
-        if (z0 == null) continue;
-      } else if (Math.abs(i * LANE_W - midInnerAB) < 1e-6) {
-        // 段中与内缘重合，仅绘拓宽段（直线）
-        z0 = halfL - tB;
-      }
-      const d = zDash(x, z0, halfL, C_MARKING);
-      if (d) body.add(d);
+      body.add(dashLineX(() => -i * LANE_W, halfL - tB, halfL, C_MARKING));
     }
-    const midInnerBA = baMax - widen.ba[1] * LANE_W;
+    // 南向北：段中 2 条（3 常规车道）止于拓宽起点；口上 3 条（4 车道）自拓宽起点起绘
+    body.add(dashLineX(() => gBA + LANE_W, -halfL, -halfL + tA, C_MARKING));
+    body.add(dashLineX(() => gBA + 2 * LANE_W, -halfL, -halfL + tA, C_MARKING));
     for (let j = 1; j < widen.ba[0]; j++) {
-      const x = j * LANE_W;
-      let z1 = halfL;
-      if (j * LANE_W < midInnerBA - 1e-6) {
-        z1 = widthCrossZ((z) => -xiBA(z), -x, halfL, -halfL);
-        if (z1 == null) continue;
-      } else if (Math.abs(j * LANE_W - midInnerBA) < 1e-6) {
-        z1 = -halfL + tA;
-      }
-      const d = zDash(x, -halfL, z1, C_MARKING);
-      if (d) body.add(d);
+      body.add(dashLineX(() => j * LANE_W, -halfL + tA, halfL, C_MARKING));
     }
   } else {
     // 路面

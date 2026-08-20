@@ -442,6 +442,53 @@ function smoothPolyline(pts, passes = 6) {
   return cur;
 }
 
+// ── 臂中心线手工标定表（z=弧长站, x=横向）──────────────────────────────
+// 个别链路 DB geom 为直线旧数据（如经十路下游南臂，底图真实走向东偏），
+// 以底图实测中心线标定，仅作用于表内臂，其余臂不受影响。
+const ARM_CENTER_OVERRIDES = {
+  // 180° 臂系（x=东偏）：底图实测中心线，z33 后东南折明显
+  '011wwe28ctu00001|180': [[0, 0], [6, 0], [12, 0], [18, 1.4], [24, 2.0], [30, 3.0], [36, 7.7], [44, 12]],
+  // 经十路东西臂：OSM 实测轴线近水平（斜率≈0.02），此前「斜」为透视错觉
+  '011wwe28ctu00001|90': [[0, 0], [12, 0.3], [24, 0.6], [36, 0.9], [44, 1.0]],
+  '011wwe28ctu00001|270': [[0, 0], [12, 0.3], [24, 0.6], [36, 0.9], [44, 1.0]],
+};
+
+// ── 路口中心视觉标定（OSM 底图为视觉真源）─────────────────────────────
+// inter_id → [dx, dz] 中心整体平移（世界单位，+z 向南），
+// 修正 DB 坐标与底图的整体偏差（经十路口偏北）；
+// createChannelizationLayer 与场景 worldOf 共用，保证段体与盒体接缝闭合。
+const INTER_CENTER_OFFSET = {
+  // OSM 实测经十路轴线在 DB 中心南约 6u；用户验证后回调至 3.0 居中
+  '011wwe28ctu00001': [0, 3.0],
+};
+export function interCenterOffset(interId) {
+  return (interId && INTER_CENTER_OFFSET[interId]) || [0, 0];
+}
+
+function overrideCenterline(arm, boxR) {
+  const bucket = Math.round(arm.angle / 10) * 10;
+  const ids = [arm.inLink?.f_inter_id, arm.inLink?.t_inter_id, arm.outLink?.f_inter_id, arm.outLink?.t_inter_id];
+  const hit = ids.find((id) => id && ARM_CENTER_OVERRIDES[`${id}|${bucket}`]);
+  if (!hit) return null;
+  const tab = ARM_CENTER_OVERRIDES[`${hit}|${bucket}`];
+  const rMax = boxR + ARM_LEN;
+  const at = (z) => {
+    if (z <= tab[0][0]) return tab[0][1];
+    for (let i = 1; i < tab.length; i++) {
+      if (tab[i][0] >= z) {
+        const a = tab[i - 1];
+        const b = tab[i];
+        const t = (z - a[0]) / Math.max(b[0] - a[0], 1e-6);
+        return a[1] + (b[1] - a[1]) * t;
+      }
+    }
+    return tab[tab.length - 1][1];
+  };
+  const pts = [];
+  for (let r = 0; r <= rMax; r += 1.5) pts.push({ x: at(r), z: r });
+  return pts;
+}
+
 /**
  * 臂中心线采样器：沿臂射线弧长 r 等距采样，输出横向偏移站点与单位切向/法向。
  * 数据源优先级 inLink.geom > outLink.geom（与臂角来源一致）；
@@ -449,22 +496,56 @@ function smoothPolyline(pts, passes = 6) {
  * @returns {null|{ stations: Array<object>, at: (r:number)=>object }}
  */
 function buildArmCenterline(arm, boxR, center) {
-  const geom = arm?.inLink?.geom || arm?.outLink?.geom;
+  const geomIn = arm?.inLink?.geom;
+  const geomOut = arm?.outLink?.geom;
+  const geom = geomIn || geomOut;
   if (!geom || !center) return null;
-  let ll;
-  try { ll = parseGeomPts(geom); } catch (_) { return null; }
-  if (!Array.isArray(ll) || ll.length < 2) return null;
 
-  // 投影到臂局部空间（+Z 沿臂向外）
-  let pts = ll.map(([lon, lat]) => {
-    const [wx, wz] = project(lon, lat);
-    return worldToArmLocal(arm.angle, wx - center.x, wz - center.z);
-  });
-  // 从路口端向外排序（取离中心更近的一端为起点）
-  const dHead = Math.hypot(pts[0].x, pts[0].z);
-  const dTail = Math.hypot(pts[pts.length - 1].x, pts[pts.length - 1].z);
-  if (dTail < dHead) pts.reverse();
-  if (pts[0].z > boxR + ARM_LEN) return null;   // 几何起点已在臂端之外，数据异常
+  // 手工标定表优先（个别链路 geom 旧数据）；否则 link geom 双向均值
+  const overridePts = overrideCenterline(arm, boxR);
+  let pts = overridePts;
+
+  // 投影到臂局部空间（+Z 沿臂向外），并从路口端向外排序
+  const toLocal = (g) => {
+    let ll;
+    try { ll = parseGeomPts(g); } catch (_) { return null; }
+    if (!Array.isArray(ll) || ll.length < 2) return null;
+    const p = ll.map(([lon, lat]) => {
+      const [wx, wz] = project(lon, lat);
+      return worldToArmLocal(arm.angle, wx - center.x, wz - center.z);
+    });
+    const dHead = Math.hypot(p[0].x, p[0].z);
+    const dTail = Math.hypot(p[p.length - 1].x, p[p.length - 1].z);
+    if (dTail < dHead) p.reverse();
+    return p;
+  };
+
+  if (!pts && geom) {
+    pts = toLocal(geom);
+    if (pts && pts[0].z > boxR + ARM_LEN) pts = null;   // 几何起点已在臂端之外，数据异常
+
+    // 双向几何齐备时取进/出横向均值 = 道路中心线，
+    // 避免臂体偏向单向车行道（经十路东西臂偏北、下游奥体西路偏侧）
+    if (pts && geomIn && geomOut) {
+      const other = toLocal(geom === geomIn ? geomOut : geomIn);
+      if (other) {
+        const xOtherAt = (z) => {
+          if (z <= other[0].z) return other[0].x;
+          for (let i = 1; i < other.length; i++) {
+            if (other[i].z >= z) {
+              const a = other[i - 1];
+              const b = other[i];
+              const tt = (z - a.z) / Math.max(b.z - a.z, 1e-6);
+              return a.x + (b.x - a.x) * tt;
+            }
+          }
+          return other[other.length - 1].x;
+        };
+        pts = pts.map((p) => ({ ...p, x: (p.x + xOtherAt(p.z)) / 2 }));
+      }
+    }
+  }
+  if (!pts) return null;
 
   // 密集重采样 + 平滑（消除折角；端点固定，锁定区行为不变）
   pts = smoothPolyline(resamplePolyline(pts, 1.0), 6);
@@ -502,6 +583,8 @@ function buildArmCenterline(arm, boxR, center) {
 
   const lockEnd = boxR + ARM_LOCK_LEN;
   const blendW = (r) => {
+    // 标定表为可信真源：全程直接应用，避免近场锁定+混合产生 S 形扭曲
+    if (overridePts) return 1;
     const u = Math.min(1, Math.max(0, (r - lockEnd) / ARM_BLEND_LEN));
     return u * u * (3 - 2 * u);
   };
@@ -515,7 +598,7 @@ function buildArmCenterline(arm, boxR, center) {
   const STEP = 1.5;
   for (let r = boxR; r < boxR + ARM_LEN; r += STEP) stations.push({ r, ...blendAt(r) });
   stations.push({ r: boxR + ARM_LEN, ...blendAt(boxR + ARM_LEN) });
-  if (stations.some((p) => Math.abs(p.x) > 15)) return null;  // 横向偏移异常 → 回退直线
+  if (stations.some((p) => Math.abs(p.x) > 30)) return null;  // 横向偏移异常 → 回退直线（30U 容纳真实急弯，如下游奥体西路东南折）
 
   // 切向（中心差分）与法向（+X 侧）
   for (let i = 0; i < stations.length; i++) {
@@ -976,7 +1059,10 @@ export function createChannelizationLayer(interItem, queueData = null, opts = {}
   group.renderOrder = 10;
 
   const info     = interItem.intersection_info;
-  const [cx, cz] = project(info.longitude, info.latitude);
+  const [pcx, pcz] = project(info.longitude, info.latitude);
+  const [offx, offz] = interCenterOffset(info.inter_id);
+  const cx = pcx + offx;
+  const cz = pcz + offz;
 
   const sl       = interItem.surrounding_links;
   const inLinks  = sl['进入路口的路段']  || [];
