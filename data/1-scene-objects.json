@@ -12,7 +12,17 @@
     },
     "expert_overrides": {
       "queue_length_m": 270,
-      "note": "排队长度采用专家调研值，不使用库内 queue 表"
+      "jingshi_east_approach_lanes": {
+        "scope": "东进口主路+辅路合计",
+        "through": 7,
+        "right": 1,
+        "left": 2,
+        "total": 10
+      },
+      "jingshi_east_right_flow_mock_veh_h_per_lane": 100,
+      "jingshi_west_flow_mock_ratio_of_east": 0.9,
+      "jingshi_west_saturation_mock": 0.76,
+      "note": "排队长度 270 m、经十东进口车道功能以实地为准；东右转 mock 100；西进口流量 mock = 东向合计 × 0.9（pcu/h），饱和度 mock 0.76"
     }
   },
   "intersections": {

@@ -6,17 +6,18 @@
  *
  * 演绎时序：坤顺/解放东北东西进口 → 经十路–奥体西北进口 流量溯源，
  * 视觉对齐 baseline 拥堵蔓延的反向（远端先亮，收束到汇点）；
- * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 示意相位环 → 270m 排队溢流。
+ * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 双口信号时间轴 → 270m 排队溢流。
  *
  * HUD 状态经 setFlowTraceHud 桥接给幕 2 舞台组件（Act2FlowStage）渲染。
  */
+import * as THREE from 'three';
 import { createInflowTraceLayer } from '../../../layers/inflowTraceLayer.js';
 import { createDownstreamFlowTraceLayer } from '../../../layers/downstreamFlowTraceLayer.js';
 import { createJingshiEwFlowLayer } from '../../../layers/jingshiEwFlowLayer.js';
 import { createRoadNameLabelLayer } from '../../../layers/roadNameLabels.js';
 import { createScene2MapAnnot } from '../../../layers/scene2MapAnnot.js';
 import { whenBroadcastIdle } from '../../../shared/broadcast-bus.js';
-import { setFlowTraceHud } from './state.js';
+import { setFlowTraceHud, setFlowTraceSchemaAnchor } from './state.js';
 
 const APPROACH_ALIAS = {
   N: 'N',
@@ -263,6 +264,42 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
   let playGen = 0;
   let playPhase = '';
   let followCtx = null;
+  let schemaViaPos = null;
+  const schemaWorld = new THREE.Vector3();
+  const schemaNdc = new THREE.Vector3();
+
+  function updateSchemaAnchor() {
+    if (!playing || !schemaViaPos || !runtime.camera) {
+      setFlowTraceSchemaAnchor(null);
+      return;
+    }
+    const [vx, vy] = schemaViaPos;
+    schemaWorld.set(vx, 2, -vy);
+    schemaNdc.copy(schemaWorld).project(runtime.camera);
+    if (schemaNdc.z > 1) {
+      setFlowTraceSchemaAnchor(null);
+      return;
+    }
+    const res = getResolution?.();
+    const w = res?.x || window.innerWidth;
+    const h = res?.y || window.innerHeight;
+    const panelW = 320;
+    const panelH = 400;
+    const pad = 16;
+    const headlineClear = 136;
+    const sx = ((schemaNdc.x + 1) / 2) * w;
+    const sy = ((-schemaNdc.y + 1) / 2) * h;
+    // 解放东×奥体西路口东侧、路南空地（镜头里红框位置），不要贴屏幕右缘
+    let left = sx + 22;
+    let top = sy + 18;
+    const maxLeft = Math.max(pad, w - panelW - pad);
+    const maxTop = Math.max(pad, h - panelH - headlineClear);
+    if (left > maxLeft) left = maxLeft;
+    if (left < pad) left = pad;
+    if (top > maxTop) top = maxTop;
+    if (top < pad) top = pad;
+    setFlowTraceSchemaAnchor({ left, top });
+  }
 
   function clearTimers() {
     for (const id of timers) clearTimeout(id);
@@ -337,6 +374,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
     clearAnnot();
     followCtx = null;
     playPhase = '';
+    schemaViaPos = null;
+    setFlowTraceSchemaAnchor(null);
   }
 
   function frameSink(bounds, center) {
@@ -425,6 +464,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
     const downstreamTraces = causeAnalysis?.downstream_traces?.by_turn?.through || [];
     const upstreamShareDisplay = flowTrace.upstream_share_display || {};
     const fallbackMetrics = causeAnalysis?.jingshi_ew_fallback_metrics || {};
+    const coordinationEvidence = causeAnalysis?.signal_coordination_evidence || {};
     const eastMetric = fallbackMetrics.east_entrance_E2W || {};
     const westMetric = fallbackMetrics.west_entrance_W2E || {};
     const ewDisplay = dc.metrics || {};
@@ -432,14 +472,19 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
       east: {
         speed: eastMetric.avg_speed_kmh,
         delay: eastMetric.congestion_delay_index,
-        saturation: ewDisplay.east_through_saturation ?? 0.76,
-        flow: ewDisplay.east_through_flow_vph ?? 1230,
+        saturation: ewDisplay.east_through_saturation ?? 0.819,
+        flow: ewDisplay.east_approach_flow_pcu_h
+          ?? ewDisplay.east_approach_flow_veh_h
+          ?? ewDisplay.east_through_flow_pcu_h
+          ?? 1586.5,
       },
       west: {
         speed: westMetric.avg_speed_kmh,
         delay: westMetric.congestion_delay_index,
-        saturation: ewDisplay.west_through_saturation ?? 0.73,
-        flow: ewDisplay.west_through_flow_vph ?? 1180,
+        saturation: ewDisplay.west_through_saturation ?? 0.76,
+        flow: ewDisplay.west_approach_flow_pcu_h
+          ?? ewDisplay.west_through_flow_pcu_h
+          ?? 1427.85,
       },
     };
     const res = getResolution?.();
@@ -480,13 +525,13 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
       via,
       target,
       problemRoad,
-      queueM: beats.overflow?.queue_m || 270,
-      queueRatio: beats.overflow?.queue_ratio ?? 0.8,
+      queueM: 270,
       supplyMetrics: {
-        flow: flowTrace.demand_supply?.supply_vph,
-        capacity: flowTrace.demand_supply?.demand_vph,
+        flow: flowTrace.demand_supply?.supply_pcu_h,
+        capacity: flowTrace.demand_supply?.demand_pcu_h,
       },
       arterialMetrics,
+      coordinationEvidence,
       hopTimes,
     });
     runtime.scene.add(annot);
@@ -494,6 +539,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
 
     followCtx = { source, via, target };
     playPhase = 'trace';
+    schemaViaPos = via?.pos || null;
     const startLook = followTraceLook(0, source, via, target);
     if (startLook) {
       runtime.animateCamera({
@@ -517,6 +563,26 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
     layer.whenFullyRevealed?.().then(() => {
       if (!playing || disposed || gen !== playGen) return;
       waitVoiceThen(() => {
+      playPhase = 'inflow';
+      followCtx = null;
+      annot?.setBeat('inflow');
+      if (via?.pos) {
+        const [vx, vy] = via.pos;
+        runtime.animateCamera({
+          posTarget: { x: vx, y: 128, z: -vy },
+          lookTarget: { x: vx, y: 0, z: -vy },
+          lerp: 0.055,
+        });
+      }
+      emitHud({
+        phase: 'inflow',
+        caption: captionFor(beats, 'inflow', '解放东三向汇入问题路段：北直、东左、西右'),
+        text: captionFor(beats, 'inflow', '解放东三向汇入问题路段：北直、东左、西右'),
+        headline: headlineFor(beats, 'inflow', '上游路口汇入问题路段占比'),
+        panel: { kind: 'inflow', title: '汇入构成' },
+      });
+
+      afterMapAndVoice(beatMs(beats, 'inflow', 3800), () => {
       playPhase = 'supply';
       followCtx = null;
       frameProblemLink(via, target);
@@ -524,15 +590,15 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
       const ds = flowTrace.demand_supply || {};
       emitHud({
         phase: 'supply',
-        caption: captionFor(beats, 'supply', '当前通行量低于车道能力上限，本段仍有承接余量'),
-        text: captionFor(beats, 'supply', '当前通行量低于车道能力上限，本段仍有承接余量'),
+        caption: captionFor(beats, 'supply', '当前通行量低于进口道路能力，本段仍有承接余量'),
+        text: captionFor(beats, 'supply', '当前通行量低于进口道路能力，本段仍有承接余量'),
         headline: headlineFor(beats, 'supply', '本路段通行能力仍有余量'),
         panel: {
           kind: 'supply',
           title: ds.title || '路段供需核验',
-          supply: ds.supply_vph,
-          demand: ds.demand_vph,
-          conclusion: ds.conclusion || '当前通行量低于车道能力上限，本段仍有承接余量',
+          supply: ds.supply_pcu_h,
+          demand: ds.demand_pcu_h,
+          conclusion: ds.conclusion || '当前通行量低于进口道路能力，本段仍有承接余量',
         },
       });
 
@@ -547,6 +613,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
             topology,
             originId: target.props.inter_id,
             traces: downstreamTraces,
+            receiving: flowTrace.downstream_receiving || null,
             resolution: getResolution?.(),
           });
           runtime.scene.add(downstreamLayer);
@@ -554,26 +621,35 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
           frameDownstream();
           playPhase = 'downstream';
           const primaryTrace = downstreamLayer.primaryTrace;
+          const recv = flowTrace.downstream_receiving || {};
+          const recvLink = recv.link || {};
+          const recvQueue = recv.queue || {};
           emitHud({
             phase: 'downstream',
             caption: captionFor(
               beats,
               'downstream',
-              '北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向',
+              '北向南直行主去向为奥体西路与龙奥北路，占比 85.33%。该段速度 24.6 km/h、延时指数 1.43、排队占比 18.6%，具备承接余量',
             ),
             text: captionFor(
               beats,
               'downstream',
-              '北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向',
+              '北向南直行主去向为奥体西路与龙奥北路，占比 85.33%。该段速度 24.6 km/h、延时指数 1.43、排队占比 18.6%，具备承接余量',
             ),
-            headline: headlineFor(beats, 'downstream', '下游通道具备承接余量'),
+            headline: headlineFor(beats, 'downstream', '下游主通道具备承接余量'),
             panel: {
               kind: 'downstream',
-              title: '下游关联去向',
-              destination: primaryTrace?.cor_inter_name || '奥体西路与龙奥北路路口',
-              ratio: primaryTrace?.flow_share_ratio ?? 85.33,
-              metric: '下游关联占比',
-              conclusion: beats.downstream?.conclusion || '下游主通道具备承接余量',
+              title: '下游出口',
+              destination: recv.primary?.inter_name || primaryTrace?.cor_inter_name || '奥体西路与龙奥北路路口',
+              ratio: recv.primary?.share_pct ?? primaryTrace?.flow_share_ratio ?? 85.33,
+              speed: recvLink.avg_speed_kmh,
+              delay: recvLink.congestion_delay_index,
+              queue_ratio: recvQueue.queue_ratio ?? null,
+              queue_m: recvQueue.queue_m ?? null,
+              storage_m: recvQueue.storage_m ?? null,
+              contrast_speed: recv.contrast?.problem_speed_kmh,
+              queue_note: recvQueue.note || '峰值排队占比，饱和度无表',
+              conclusion: beats.downstream?.conclusion || recv.verdict || '下游主通道具备承接余量',
             },
           });
 
@@ -622,43 +698,61 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
               afterMapAndVoice(beatMs(beats, 'arterial', dc.ew_flow_ms ?? 3200), () => {
                 playPhase = 'signal';
                 annot?.setBeat('signal');
+                const mismatch = coordinationEvidence.mismatch || {};
+                const mismatchSec = Number(mismatch.conflict_duration_sec)
+                  || Math.abs(
+                    Number(
+                      coordinationEvidence.upstream_signal
+                        ?.release_relative_to_downstream_green_sec,
+                    ) || 0,
+                  );
                 emitHud({
                   phase: 'signal',
-                  caption: captionFor(beats, 'signal', '受主干道优先约束，当前周期内难以释放北向南有效绿灯窗口'),
-                  text: captionFor(beats, 'signal', '受主干道优先约束，当前周期内难以释放北向南有效绿灯窗口'),
-                  headline: headlineFor(beats, 'signal', '北向南难以增配有效绿灯'),
+                  caption: captionFor(
+                    beats,
+                    'signal',
+                    '当前相邻路口绿灯相位错配，导致溢流风险加重。',
+                  ),
+                  text: captionFor(
+                    beats,
+                    'signal',
+                    '当前相邻路口绿灯相位错配，导致溢流风险加重。',
+                  ),
+                  headline: headlineFor(
+                    beats,
+                    'signal',
+                    '当前相邻路口绿灯相位错配，导致溢流风险加重。',
+                  ),
                   panel: {
                     kind: 'signal',
-                    title: '绿灯约束',
-                    value: '经十路主干道优先',
-                    copy: copyText(dc, 'priority', '受主干道优先约束，当前周期内难以再为北向南直行释放有效绿灯窗口。'),
+                    title: mismatch.card_title || '双口绿灯错配',
+                    value: mismatch.hero || '经十已红 · 解放东仍绿',
+                    common_cycle_sec: coordinationEvidence.common_cycle_sec,
+                    mismatch_sec: mismatchSec,
+                    mismatch_label: mismatch.dock_metric_label || '绿灯错配',
+                    queue_m:
+                      Number(mismatch.queue_m)
+                      || Number(
+                        coordinationEvidence.queue_observation?.display_queue_m,
+                      )
+                      || 270,
+                    queue_label: mismatch.queue_label || '排队长度',
+                    can_coordinate: coordinationEvidence.can_coordinate === true,
+                    copy:
+                      mismatch.dock_copy
+                      || coordinationEvidence.conclusion
+                      || copyText(
+                        dc,
+                        'priority',
+                        '经十已红灯时解放东仍在放行，溢流风险加重。周期一致，可协调。',
+                      ),
                   },
                 });
 
                 afterMapAndVoice(beatMs(beats, 'signal', dc.signal_ms ?? 2800), () => {
-                  playPhase = 'overflow';
-                  ewLayer?.setOverflowHint?.(true);
-                  annot?.setBeat('overflow');
-                  frameProblemLink(via, target);
-                  emitHud({
-                    phase: 'overflow',
-                    caption: captionFor(beats, 'overflow', '北向南车流短时难以消散，溢流风险成立'),
-                    text: captionFor(beats, 'overflow', '北向南车流短时难以消散，溢流风险成立'),
-                    headline: headlineFor(beats, 'overflow', '北向南溢流风险成立'),
-                    panel: {
-                      kind: 'overflow',
-                      title: '溢流风险',
-                      queue_m: beats.overflow?.queue_m || 270,
-                      queue_ratio: beats.overflow?.queue_ratio ?? 0.8,
-                      gaps: beats.overflow?.gaps || [],
-                      copy: copyText(dc, 'overflow', '经十路东西向压力与奥体西路北进口排队叠加，北向南车流短时难以消散。'),
-                    },
-                  });
-                  afterMapAndVoice(beatMs(beats, 'overflow', dc.overflow_ms ?? 3600), () => {
-                    frameJingshiEw(target, problemRoad);
-                    after(dc.frame_ms ?? 900, () => {
-                      hooks.onComplete?.();
-                    });
+                  frameJingshiEw(target, problemRoad);
+                  after(dc.frame_ms ?? 900, () => {
+                    hooks.onComplete?.();
                   });
                 });
               });
@@ -666,6 +760,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
           });
           });
         });
+      });
       });
       });
     });
@@ -701,6 +796,7 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
       }
     }
     annot?.update?.(time);
+    updateSchemaAnchor();
   }
 
   function setResolution(w, h) {

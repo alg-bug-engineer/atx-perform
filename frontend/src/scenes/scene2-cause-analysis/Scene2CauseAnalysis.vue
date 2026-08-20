@@ -2,8 +2,9 @@
 /**
  * 幕 2 · 分析成因（3D 原生幕）：TrafficOriginScene 走廊 + act-02 流量溯源舞台。
  * 地图演绎由 flowTraceMapFx 在走廊里直接播放（trace → supply → ew_clear →
- * arterial → signal → overflow），不再切回首页重载。
- * 节拍文案与指标读本地 data/1-2-flow-trace.json。
+ * arterial → signal），不再切回首页重载。
+ * 节拍文案与指标读本地 data/1-2-flow-trace.json；
+ * 上游排行读 data/1-2-cause-analysis.json 的 upstream_traces.by_turn。
  */
 import { onBeforeUnmount, ref } from 'vue'
 // 副作用注册 act-02：TrafficOriginScene init 时要从注册表取 createAct2FlowMapFx
@@ -66,7 +67,8 @@ onBeforeUnmount(() => {
 /* 视口已在步骤栏下方；覆盖打到实际类名 .trace-dock，避免再留 92px 空档 */
 .scene-3d :deep(.act-dock),
 .scene-3d :deep(.scene2-dock),
-.scene-3d :deep(.trace-dock) {
+.scene-3d :deep(.trace-dock),
+.scene-3d :deep(.diagnosis-dock) {
   top: 12px;
   max-height: calc(100% - 100px);
 }

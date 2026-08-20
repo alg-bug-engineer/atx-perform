@@ -69,22 +69,27 @@ function roundedRect(ctx, x, y, width, height, radius) {
   else ctx.rect(x, y, width, height);
 }
 
-function makeShareSprite(name, ratio, primary) {
+function makeShareSprite(name, ratio, primary, extras = []) {
   const shortName = String(name || '下游关联路口').replace(/路口$/, '');
   const ratioText = `${Number(ratio).toFixed(2)}%`;
+  const extraLines = extras.filter(Boolean);
   const dpr = 2;
   const padX = 26;
   const titleSize = 26;
   const ratioSize = 38;
   const metricSize = 22;
-  const cssH = 136;
+  const extraSize = 20;
+  const extraH = extraLines.length ? 10 + extraLines.length * 26 : 0;
+  const cssH = 136 + extraH;
   const measure = document.createElement('canvas').getContext('2d');
   measure.font = `500 ${titleSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
   let contentW = measure.measureText(shortName).width;
   measure.font = `700 ${ratioSize}px "DIN Alternate","PingFang SC",sans-serif`;
   const ratioW0 = measure.measureText(ratioText).width;
   measure.font = `500 ${metricSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
-  contentW = Math.max(contentW, ratioW0 + 16 + measure.measureText('下游关联占比').width);
+  contentW = Math.max(contentW, ratioW0 + 16 + measure.measureText(primary ? '主去向占比' : '下游关联占比').width);
+  measure.font = `500 ${extraSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  for (const line of extraLines) contentW = Math.max(contentW, measure.measureText(line).width);
   const cssW = Math.ceil(Math.max(contentW + padX * 2, 340));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(cssW * dpr);
@@ -112,7 +117,12 @@ function makeShareSprite(name, ratio, primary) {
   const ratioW = ctx.measureText(ratioText).width;
   ctx.font = `500 ${metricSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
   ctx.fillStyle = 'rgba(150,180,198,0.82)';
-  ctx.fillText('下游关联占比', padX + ratioW + 16, 94);
+  ctx.fillText(primary ? '主去向占比' : '下游关联占比', padX + ratioW + 16, 94);
+  extraLines.forEach((line, index) => {
+    ctx.font = `500 ${extraSize}px "PingFang SC","Microsoft YaHei",sans-serif`;
+    ctx.fillStyle = 'rgba(200,220,235,0.9)';
+    ctx.fillText(line, padX, 128 + index * 26);
+  });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -128,7 +138,7 @@ function makeShareSprite(name, ratio, primary) {
     depthTest: false,
   });
   const sprite = new THREE.Sprite(material);
-  const worldH = 13.6;
+  const worldH = 13.6 * (cssH / 136);
   sprite.scale.set(worldH * (cssW / cssH), worldH, 1);
   sprite.userData.baseScale = [worldH * (cssW / cssH), worldH];
   sprite.renderOrder = 64;
@@ -181,6 +191,10 @@ function resolveIntersection(intersections, trace) {
  *  topology: object,
  *  originId: string,
  *  traces: object[],
+ *  receiving?: {
+ *    link?: { avg_speed_kmh?: number, congestion_delay_index?: number, length_m?: number },
+ *    queue?: { queue_ratio?: number, queue_m?: number, storage_m?: number },
+ *  },
  *  resolution?: THREE.Vector2,
  * }} opts
  */
@@ -190,6 +204,7 @@ export function createDownstreamFlowTraceLayer({
   topology,
   originId,
   traces = [],
+  receiving = null,
   resolution,
 } = {}) {
   const group = new THREE.Group();
@@ -212,10 +227,22 @@ export function createDownstreamFlowTraceLayer({
     if (inter.props?.inter_id && !distTime.has(inter.props.inter_id)) {
       distTime.set(inter.props.inter_id, (distTime.get(originId) ?? 0) + 0.8 + traceIndex * 0.35);
     }
+    const extras = [];
+    if (traceIndex === 0) {
+      const speed = Number(receiving?.link?.avg_speed_kmh);
+      const delay = Number(receiving?.link?.congestion_delay_index);
+      const queueRatio = Number(receiving?.queue?.queue_ratio);
+      if (Number.isFinite(speed)) extras.push(`速度 ${speed.toFixed(1)} km/h`);
+      if (Number.isFinite(delay)) extras.push(`拥堵延时指数 ${delay.toFixed(2)}`);
+      if (Number.isFinite(queueRatio) && queueRatio > 0) {
+        extras.push(`排队占比 ${(queueRatio * 100).toFixed(1)}%`);
+      }
+    }
     const sprite = makeShareSprite(
       trace.cor_inter_name,
       trace.flow_share_ratio,
       traceIndex === 0,
+      extras,
     );
     sprite.position.set(inter.pos[0] + (traceIndex % 2 ? 14 : -14), 14, -inter.pos[1]);
     sprite.userData.revealAt = (distTime.get(inter.props?.inter_id) ?? 0.8) + FADE_IN_DUR;

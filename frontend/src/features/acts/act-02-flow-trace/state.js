@@ -4,13 +4,13 @@
  * 阶段：idle → tracing → done → handoff
  *
  * 地图节拍（flowTraceMapBeat，供地图运行时消费）：
- *   null | 'trace' | 'supply' | 'downstream' | 'arterial' | 'signal' | 'overflow' | 'clear'
- *   - 'trace'     地图播放上游→汇点流量溯源动画
+ *   null | 'trace' | 'inflow' | 'supply' | 'downstream' | 'arterial' | 'signal' | 'clear'
+ *   - 'trace'     地图播放上游→汇点流量溯源动画（诊断步骤 1 上游来向）
+ *   - 'inflow'    解放东三向汇入示意图（北直 70% / 东左 25% / 西右 5%，MOCK）
  *   - 'supply'    供需分析（上游需求流量）
- *   - 'downstream' 下游关联去向（flow_share_ratio）
- *   - 'arterial'  本口（经十路东西向进口流量）
- *   - 'signal'    绿灯约束
- *   - 'overflow'  溢流风险
+ *   - 'downstream' 下游关联去向（flow_share_ratio；诊断步骤 2）
+ *   - 'arterial'  本口（经十路东西向进口流量；诊断步骤 3）
+ *   - 'signal'    绿灯错配与可协调判定（诊断步骤 5）
  */
 import { ref } from 'vue';
 import {
@@ -33,16 +33,15 @@ const VOICE_BEAT_BY_PHASE = {
   downstream: 'a2f.downstream',
   arterial: 'a2f.arterial',
   signal: 'a2f.signal',
-  overflow: 'a2f.overflow',
 };
 
 const TASK_LABEL_BY_PHASE = {
   trace: '执行中：上游流量溯源',
+  inflow: '执行中：汇入构成',
   supply: '执行中：路段供需核验',
   downstream: '执行中：下游关联去向',
   arterial: '执行中：经十路主干道研判',
   signal: '执行中：绿灯约束研判',
-  overflow: '执行中：溢流风险确认',
 };
 
 /**
@@ -50,6 +49,18 @@ const TASK_LABEL_BY_PHASE = {
  * @type {import('vue').Ref<{ phase: string, caption: string, text: string, headline: string, panel: object|null }>}
  */
 export const flowTraceHud = ref({ phase: '', caption: '', text: '', headline: '', panel: null });
+
+/** 解放东路口示意图的屏幕锚点（地图投影，单位 px） */
+export const flowTraceSchemaAnchor = ref(null);
+
+export function setFlowTraceSchemaAnchor(anchor) {
+  const next = anchor && Number.isFinite(anchor.left) && Number.isFinite(anchor.top)
+    ? { left: Math.round(anchor.left), top: Math.round(anchor.top) }
+    : null;
+  const prev = flowTraceSchemaAnchor.value;
+  if (prev?.left === next?.left && prev?.top === next?.top && Boolean(prev) === Boolean(next)) return;
+  flowTraceSchemaAnchor.value = next;
+}
 
 /** 写入 HUD 状态；phase 变化时同步口播 beat */
 export function setFlowTraceHud(state) {
@@ -62,6 +73,7 @@ export function setFlowTraceHud(state) {
 
 export function resetFlowTraceHud() {
   flowTraceHud.value = { phase: '', caption: '', text: '', headline: '', panel: null };
+  flowTraceSchemaAnchor.value = null;
 }
 
 export function requestFlowTraceReplay() {
@@ -149,6 +161,7 @@ export function markFlowTraceRevealed() {
 
 /** 溯源收束 */
 export function completeFlowTrace() {
+  setFlowTraceHud({ phase: 'done' });
   flowTracePhase.value = 'done';
   taskBarLabel.value = '流量溯源完成';
 }

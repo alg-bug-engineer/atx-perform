@@ -46,10 +46,19 @@
     { "dir": "N", "label": "北进口", "from_name": "奥体西路与解放东路路口" }
   ],
   "upstream_share_display": {
-    "mock": true,
-    "source_ratio": 32.4,
-    "via_ratio": 48.1,
-    "note": "演示用关联占比，不作为库内实测值"
+    "mock": false,
+    "source_type": "pg",
+    "db_supported": true,
+    "metric": "flow_share_ratio",
+    "source_table": "xianchang.ads_ts_inter_turn_flow_correlate_d",
+    "turn": "through",
+    "source_ratio": 30.41,
+    "via_ratio": 48.07,
+    "source_inter_id": "011wwe28fty00001",
+    "via_inter_id": "011wwe28fmc00001",
+    "source_hop": 2,
+    "via_hop": 1,
+    "note": "与 1-2-cause-analysis.json upstream_traces.by_turn.through 同口径；前端优先读 traces，本字段为地图钉锚点。"
   },
   "problem_link": {
     "link_id": "12wwe28fmwwe28ct01",
@@ -61,11 +70,11 @@
     "step_index": 208,
     "step_label": "17:20-17:25",
     "day_of_week": 1,
-    "inflow_vph": 429,
-    "outflow_vph": 824,
-    "supply_vph": 824,
+    "inflow_pcu_h": 429,
+    "outflow_pcu_h": 824,
+    "supply_pcu_h": 824,
     "supply_formula": "max(解放东汇入, 经十汇出)",
-    "demand_vph": 1285.6,
+    "demand_pcu_h": 1285.6,
     "demand_formula": "北进口车道通行能力求和（缺右转车道）",
     "demand_lanes": [
       { "lane_no": 1, "turn": "left", "cap": 286.4 },
@@ -76,11 +85,68 @@
     "supply_gt_demand": false,
     "has_receiving_capacity": true,
     "title": "路段供需核验",
-    "conclusion": "当前通行量低于车道能力上限，本段仍有承接余量，需继续向下游排查",
+    "conclusion": "当前通行量低于进口道路能力，本段仍有承接余量，需继续向下游排查",
     "table_rows": [
-      { "label": "当前通行流量", "value": "824 vph" },
-      { "label": "车道能力上限", "value": "1285.6 vph" }
+      { "label": "当前通行流量", "value": "824 pcu/h" },
+      { "label": "进口道路能力", "value": "1285.6 pcu/h" }
     ]
+  },
+  "downstream_receiving": {
+    "primary": {
+      "inter_id": "011wwe28bxq00001",
+      "inter_name": "奥体西路与龙奥北路路口",
+      "share_pct": 85.33,
+      "hop": 1,
+      "metric": "flow_share_ratio"
+    },
+    "link": {
+      "link_id": "12wwe28ctwwe28bx01",
+      "road_name": "奥体西路:无名道路-龙奥北路(西北向东南)",
+      "length_m": 591.7,
+      "avg_speed_kmh": 24.55,
+      "congestion_delay_index": 1.43,
+      "lane_num": 4,
+      "day_of_week": 1,
+      "step_start": 204,
+      "step_end": 227,
+      "window_label": "周一晚高峰 17:00-19:00",
+      "agg": "avg",
+      "source": "xianchang.dws_link_index_5min_mm AVG(avg_speed_kmh/delay_index) step 204-227 + dim_link_info"
+    },
+    "saturation": {
+      "value": null,
+      "db_supported": false,
+      "gap": "GAP-DOWNSTREAM-SAT",
+      "inter_id": "011wwe28bxq00001",
+      "dir8_code": 7,
+      "dir_label": "西北进口",
+      "source": "xianchang.dws_turn_saturation_5min_mm",
+      "note": "龙奥北转向饱和度无表；主去向卡改用峰值排队占比，不再展示饱和度"
+    },
+    "queue": {
+      "queue_m": 110,
+      "storage_m": 592,
+      "queue_ratio": 0.186,
+      "agg": "peak",
+      "formula": "MAX(queue_len_max) / storage_m = 110 / 592",
+      "turn_at_peak": ["left", "uturn"],
+      "dir8_code": 7,
+      "dir_label": "西北进口",
+      "day_of_week": 1,
+      "step_start": 204,
+      "step_end": 227,
+      "window_label": "周一晚高峰 17:00-19:00",
+      "db_supported": true,
+      "source": "xianchang.dws_inter_dir_turn_perf_5min_mm MAX(queue_len_max) + rid_length_m",
+      "note": "峰值排队 110 m（左转/掉头），容纳 592 m"
+    },
+    "contrast": {
+      "problem_speed_kmh": 7.2,
+      "problem_delay": 5.28,
+      "problem_storage_m": 367.89
+    },
+    "has_receiving_capacity": true,
+    "verdict": "主去向为奥体西路与龙奥北路（85.33%）。该段速度 24.6 km/h、延时指数 1.43、峰值排队占比 18.6%（110 / 592 m），明显好于问题路段，下游主通道具备承接余量。"
   },
   "road_labels": [
     { "name": "经十路", "at": "target", "dx": -26, "dy": 1 },
@@ -94,34 +160,53 @@
     "frame_ms": 900,
     "ew_flow_ms": 3200,
     "signal_ms": 2800,
-    "overflow_ms": 3600,
     "keep_road_labels": ["经十路", "奥体西路"],
     "metrics": {
-      "east_through_flow_vph": 1230,
-      "east_through_saturation": 0.76,
-      "west_through_flow_vph": 1180,
-      "west_through_saturation": 0.73,
+      "time_window": {
+        "day_of_week": 1,
+        "step_start": 204,
+        "step_end": 227,
+        "label": "周一 17:00-19:00"
+      },
+      "flow_unit": "pcu/h",
+      "east_approach_flow_veh_h": 1586.5,
+      "east_approach_flow_pcu_h": 1586.5,
+      "west_approach_flow_pcu_h": 1427.85,
+      "west_mock_ratio_of_east": 0.9,
+      "east_turns_veh_h": { "left": 149.5, "through": 1337.0, "right": 100.0 },
+      "west_turns_pcu_h": { "left": 134.55, "through": 1203.3, "right": 90.0 },
+      "east_through_saturation": 0.819,
+      "west_through_saturation": 0.76,
+      "west_saturation_mock": true,
+      "east_right_flow_mock": true,
+      "west_flow_mock": true,
+      "east_through_flow_pcu_h": 1586.5,
+      "west_through_flow_pcu_h": 1427.85,
       "west_mock": true,
-      "north_through_flow_vph": 824,
+      "north_through_flow_pcu_h": 824,
       "north_through_saturation": 1.28,
       "intersection_saturation_max": 1.29,
-      "intersection_los": "F"
+      "intersection_los": "F",
+      "note": "东进口合计 1586.5 pcu/h（库左149.5+库直1337+右转mock100）。西进口库内全0：流量 mock=东向×0.9=1427.85 pcu/h，饱和度 mock=0.76。卡片单位 pcu/h。"
     },
     "approach_cards": [
       {
         "role": "东进口",
         "name": "经十路",
-        "saturation": 0.76,
-        "flow_vph": 1230
+        "saturation": 0.819,
+        "flow_pcu_h": 1586.5
       },
       {
         "role": "西进口",
         "name": "经十路",
-        "saturation": 0.73,
-        "flow_vph": 1180
+        "saturation": 0.76,
+        "flow_pcu_h": 1427.85,
+        "flow_mock": true,
+        "saturation_mock": true,
+        "mock_ratio_of_east": 0.9
       }
     ],
-    "gaps": ["GAP-WEST-SAT"],
+    "gaps": ["GAP-WEST-SAT", "GAP-EAST-RIGHT-FLOW"],
     "title": "下游约束研判",
     "hint": "成因不在路段供给不足，而在下游主干道优先保障下的绿灯约束。",
     "copy": [
@@ -133,12 +218,7 @@
       {
         "id": "priority",
         "narration_id": "s2_ew_priority",
-        "text": "受经十路主干道优先约束，当前周期内难以再为北向南直行释放有效绿灯窗口。"
-      },
-      {
-        "id": "overflow",
-        "narration_id": "s2_ew_overflow",
-        "text": "经十路东西向压力与奥体西路北进口排队叠加，北向南车流短时难以消散，溢流风险成立。"
+        "text": "两口绿灯时间不一致：经十北直已红灯时，解放东仍在放行，车流压入短路段，溢流风险加重。共同周期 220 秒，具备协调条件。"
       }
     ]
   },
@@ -147,18 +227,23 @@
       "caption": "正在追溯上游来流，按流量占比还原汇入路径",
       "headline": "流量由北向南汇入经十路口"
     },
+    "inflow": {
+      "ms": 3800,
+      "caption": "解放东路口北进口直行、东进口左转、西进口右转汇入问题路段",
+      "headline": "上游路口汇入问题路段占比"
+    },
     "supply": {
       "ms": 3600,
       "clear_ms": 500,
-      "caption": "当前通行量低于车道能力上限，本段仍有承接余量，需继续向下游排查",
+      "caption": "当前通行量低于进口道路能力，本段仍有承接余量，需继续向下游排查",
       "headline": "本路段通行能力仍有余量"
     },
     "downstream": {
-      "ms": 4200,
-      "caption": "北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向，占比 85.33%",
+      "ms": 5600,
+      "caption": "北向南直行主去向为奥体西路与龙奥北路，占比 85.33%。该段速度 24.6 km/h、延时指数 1.43、排队占比 18.6%，具备承接余量",
       "has_receiving_capacity": true,
-      "conclusion": "下游主通道具备承接余量，当前瓶颈集中在经十路口放行约束",
-      "headline": "下游通道具备承接余量"
+      "conclusion": "速度与延时均好于问题路段，下游主通道具备承接余量，瓶颈在经十路口放行",
+      "headline": "下游主通道具备承接余量"
     },
     "arterial": {
       "ms": 4200,
@@ -166,19 +251,10 @@
       "headline": "经十路东西向优先保障"
     },
     "signal": {
-      "ms": 3400,
-      "caption": "受主干道优先约束，当前周期内难以再为北向南直行释放有效绿灯窗口",
-      "schematic": true,
-      "gap": "相位环非库内绿秒",
-      "headline": "北向南难以增配有效绿灯"
-    },
-    "overflow": {
-      "ms": 3600,
-      "caption": "经十路东西向压力与奥体西路北进口排队叠加，北向南车流短时难以消散，溢流风险成立",
-      "queue_m": 270,
-      "queue_ratio": 0.8,
-      "gaps": ["GAP-QUEUE-TABLE"],
-      "headline": "北向南溢流风险成立"
+      "ms": 5200,
+      "caption": "当前相邻路口绿灯相位错配，导致溢流风险加重。",
+      "schematic": "dual_signal_timeline",
+      "headline": "当前相邻路口绿灯相位错配，导致溢流风险加重。"
     }
   }
 }

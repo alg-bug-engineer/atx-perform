@@ -2,7 +2,7 @@
 
 嗅探与决策更新见 `data/1-sniff-report.json`。连接：`ycx@121.40.233.80:15432/ycx`，schema：`road6` + `xianchang`，路网版本 `20260501`。
 
-分析窗：**周一 17:00–19:00**（`day_of_week=1`, `step_index=210–221`）。
+分析窗：**周一 17:00–19:00**（`day_of_week=1`, `step_index=204–227`）。
 
 ## 1. 已成功解析
 
@@ -41,11 +41,15 @@
 |----|------|------|
 | GAP-TRACE-ABS-FLOW | accepted_share_only | 不要求绝对辆/h |
 | GAP-NORTH-LR-FLOW | accepted_through_as_demand | 左/右绝对流量仍为 0；需求用直行 |
-| GAP-WEST-SAT | mitigated_by_speed_delay | 已改东西进口速度/延时 |
+| GAP-WEST-SAT | mitigated_mock | 西饱和度 mock 0.76；流量 mock = 东向 × 0.9 = 1427.85 pcu/h |
 | GAP-AMAP-STATE | open | 路况色仍用速度派生 |
 | GAP-JIEFANG-SAT | open | 解放东饱和度仍为 0 |
 | GAP-QUEUE-TABLE | mitigated_expert_270 | 排队用 270m |
+| GAP-JINGSHI-EAST-LANES | mitigated_expert_field | 经十东进口实地 7直+1右+2左；库内渠化转向不用 |
+| GAP-EAST-RIGHT-FLOW | mitigated_mock_100_per_lane | 东进口右转无行；1 车道 × 100 辆/h mock；合计 1586.5 |
 | GAP-RIGHT-LANE-CAP | open | 缺右转车道 capacity |
+| GAP-DOWNSTREAM-QUEUE | mitigated_peak_ratio | 龙奥北西北进口用峰值排队 110 m / 容纳 592 m = 18.6% |
+| GAP-DOWNSTREAM-SAT | open | 龙奥北无转向饱和度；主去向卡改展示峰值排队占比 |
 | GAP-OPT-PLAN / EFFECT / SKILL | implement_from_agent_loop | 改走 agent-loop 代码逻辑 |
 
 ## 4. 产物

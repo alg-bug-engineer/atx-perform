@@ -462,9 +462,9 @@
       },
       "demand": {
         "measured": {
-          "north_through_vph": 545.8,
-          "north_left_vph": 0,
-          "north_right_vph": 0,
+          "north_through_pcu_h": 545.8,
+          "north_left_pcu_h": 0,
+          "north_right_pcu_h": 0,
           "source": "dws_inter_link_turn_flow_5min_mm inter_id=011wwe28ctu00001 dir8=0，周一 17:00-19:00 均值"
         },
         "saturation": {
@@ -472,8 +472,8 @@
           "source": "dws_turn_saturation_5min_mm"
         },
         "proxy": {
-          "left_vph": 625,
-          "right_vph": 330.3,
+          "left_pcu_h": 625,
+          "right_pcu_h": 330.3,
           "source": "对向南进口（dir8=4）实测转向流量，用于补北进口左/右转的检测缺口"
         },
         "db_supported": false,

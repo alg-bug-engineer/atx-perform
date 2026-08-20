@@ -6,6 +6,15 @@
   "by_intersection": {
     "011wwe28ctu00001": {
       "inter_name": "奥体西路与经十路路口",
+      "field_survey": {
+        "source": "expert_field",
+        "approach": "东进口（主路+辅路合计）",
+        "total_lanes": 10,
+        "through": 7,
+        "right": 1,
+        "left": 2,
+        "note": "实地车道功能；覆盖库内渠化 turn_move。地图臂几何仍读 PG，不按实地改画。"
+      },
       "arms": [
         {
           "inter_id": "011wwe28ctu00001",
@@ -144,6 +153,8 @@
           "c_lane_num": 2,
           "lane_info": "C|D",
           "turn_move": "11|13",
+          "db_turn_move_untrusted": true,
+          "lane_func_note": "库内辅路直+右；车道功能以 field_survey（主+辅合计 7直1右2左）为准",
           "f_dist_m": 898.1,
           "t_dist_m": 24.9,
           "road_name": "经十路辅路:经十路-无名道路, 经十路辅路:无名道路-奥体西路(东向西)",
@@ -260,6 +271,8 @@
           "c_lane_num": 10,
           "lane_info": "B|B|B|C|C|C|C|C|C|C",
           "turn_move": "12|12|12|11|11|11|11|11|11|11",
+          "db_turn_move_untrusted": true,
+          "lane_func_note": "库内主路直3+左7；车道功能以 field_survey（主+辅合计 7直1右2左）为准",
           "f_dist_m": 897.6,
           "t_dist_m": 11.1,
           "road_name": "经十路:奥体东路-无名道路, 经十路:无名道路-奥体西路(东向西)",
