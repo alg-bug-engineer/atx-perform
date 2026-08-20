@@ -20,6 +20,7 @@
 import * as THREE from 'three';
 import {
   LANE_W,
+  BASE_Y, LINE_Y,
   C_ROAD, C_DIVIDER, C_MARKING, C_CURB,
   project, bearingToRotY, angleDiff, geoBearing,
   hPlane, zLine, zDash, makeArrow,
@@ -37,6 +38,82 @@ const MIN_BODY_LEN = 12;
 const ARM_MATCH_TOL = 30;
 /** 转向箭头距盒缘的收进量（避免贴停车线） */
 const ARROW_INSET = 3;
+
+// ── 拓宽段体（车道数单调过渡，如北向南 3→5 / 南向北 4→3）──────────────
+// widen = { ab: [nA, nB], ba: [nA, nB] }：A→B 半幅在 A/B 端车道数、B→A 半幅在 A/B 端车道数；
+// 路面两侧缘石线性收放，车道边界线自路缘「生长」（width > i·LANE_W 区间才绘制）。
+/** 横向条带网格：左右缘均随局部 z 变化 */
+function taperedPlane(xlAt, xrAt, zs, color, y = BASE_Y) {
+  const pos = [];
+  const idx = [];
+  zs.forEach((z, k) => {
+    pos.push(xlAt(z), y, z, xrAt(z), y, z);
+    if (k > 0) {
+      const a = 2 * k - 2;
+      const b = 2 * k - 1;
+      const c = 2 * k;
+      const d = 2 * k + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: true }));
+  m.renderOrder = 10;
+  return m;
+}
+
+/** 缘石折线（[x, z] 列表） */
+function edgeLine(xzList, color, y = LINE_Y) {
+  const arr = [];
+  xzList.forEach(([x, z]) => arr.push(x, y, z));
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+  const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color }));
+  l.renderOrder = 10;
+  return l;
+}
+
+/** 线性宽 w0→w1 下，车道边界 i·LANE_W 的可绘 t 区间（width > i·LANE_W 才存在） */
+function boundRange(w0, w1, i) {
+  const span = w1 - w0;
+  if (Math.abs(span) < 1e-6) return w0 > i * LANE_W ? [0, 1] : null;
+  const t = (i * LANE_W - w0) / span;
+  if (span > 0) return t >= 1 ? null : [Math.max(0, t), 1];
+  return t <= 0 ? null : [0, Math.min(1, t)];
+}
+
+/** x 随 z 变化的斜向虚线（车道边界自绿化带生长） */
+function dashLineX(xAt, z0, z1, color, dashLen = 2.8, gapLen = 2.2) {
+  const pts = [];
+  let z = z0;
+  let on = true;
+  while (z < z1) {
+    const end = Math.min(z + (on ? dashLen : gapLen), z1);
+    if (on) pts.push(xAt(z), LINE_Y, z, xAt(end), LINE_Y, end);
+    z = end;
+    on = !on;
+  }
+  if (pts.length < 6) return null;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color }));
+  l.renderOrder = 10;
+  return l;
+}
+
+/** 扫描 wAt(z) 首次超过 target 的 z（z0→z1 方向），无交返回 null */
+function widthCrossZ(wAt, target, z0, z1, n = 64) {
+  for (let k = 0; k <= n; k++) {
+    const z = z0 + (z1 - z0) * (k / n);
+    if (wAt(z) > target + 1e-4) return z;
+  }
+  return null;
+}
+
+/** 中央绿化带（median）填充色 */
+const C_MEDIAN = 0x1f6b3a;
 
 /** 地理方位角 → 世界单位向量（x 东，z 南；北 = -Z） */
 function bearingToWorldDir(bearing) {
@@ -154,18 +231,19 @@ export function planSegmentChannelization(mainItem, otherItem, opts = {}) {
  *   Act2 段中心渠化保持直段体——Act3 蓄车锚定沿臂直线假设，弯曲会破坏对齐）
  * @returns {THREE.Group}
  */
-export function buildSegmentBody(plan, { arrowScale = 1.55, curved = false, centerToCenter = false, lift = 0 } = {}) {
+export function buildSegmentBody(plan, { arrowScale = 1.55, curved = false, centerToCenter = false, lift = 0, widen = null } = {}) {
   if (curved) {
     const curvedBody = buildCurvedSegmentBody(plan, { arrowScale });
     if (curvedBody) return curvedBody;
     // geom 缺失/退化/横向偏移异常 → 回退直段体
   }
-  return buildStraightSegmentBody(plan, { arrowScale, centerToCenter, lift });
+  return buildStraightSegmentBody(plan, { arrowScale, centerToCenter, lift, widen });
 }
 
 /** 直段体（原实现）：沿 segBearing 盒缘到盒缘，中心组级旋转定位；
- *  centerToCenter=true 时两端延伸至路口中心，填补连接臂排除后的口心开放区缺失。 */
-function buildStraightSegmentBody(plan, { arrowScale = 1.55, centerToCenter = false, lift = 0 } = {}) {
+ *  centerToCenter=true 时两端延伸至路口中心，填补连接臂排除后的口心开放区缺失。
+ *  widen={ab:[nA,nB], ba:[nA,nB]} 时双向半幅按端点车道数单调拓宽（真实车道演进）。 */
+function buildStraightSegmentBody(plan, { arrowScale = 1.55, centerToCenter = false, lift = 0, widen = null } = {}) {
   const {
     nAB, nBA, codesAB, codesBA,
     boxRA, boxRB, bodyLen,
@@ -176,41 +254,120 @@ function buildStraightSegmentBody(plan, { arrowScale = 1.55, centerToCenter = fa
   const dirAB = bearingToWorldDir(segBearing);
   const body = new THREE.Group();
   body.name = 'segmentBody';
-  const extA = centerToCenter ? boxRA : 0;
-  const extB = centerToCenter ? boxRB : 0;
-  const fullLen = bodyLen + extA + extB;
+  const useWiden = !!widen && Array.isArray(widen.ab) && Array.isArray(widen.ba);
+  // 轴选取：widen 时锁定「盒缘沿臂角」（与底图/盒体接缝同源）；否则原中心轴口径
+  let startX;
+  let startZ;
+  let endX;
+  let endZ;
+  let axisBearing;
+  let fullLen;
+  if (useWiden && plan.armA && plan.armB) {
+    const dA = bearingToWorldDir(plan.armA.angle);
+    const dB = bearingToWorldDir(plan.armB.angle);
+    startX = worldA.x + dA.x * boxRA;
+    startZ = worldA.z + dA.z * boxRA;
+    endX = worldB.x + dB.x * boxRB;
+    endZ = worldB.z + dB.z * boxRB;
+    axisBearing = (Math.atan2(endX - startX, -(endZ - startZ)) * 180) / Math.PI;
+    fullLen = Math.hypot(endX - startX, endZ - startZ);
+  } else {
+    const extA = centerToCenter ? boxRA : 0;
+    const extB = centerToCenter ? boxRB : 0;
+    fullLen = bodyLen + extA + extB;
+    startX = worldA.x + dirAB.x * (boxRA - extA);
+    startZ = worldA.z + dirAB.z * (boxRA - extA);
+    endX = worldB.x - dirAB.x * (boxRB - extB);
+    endZ = worldB.z - dirAB.z * (boxRB - extB);
+    axisBearing = segBearing;
+  }
   const halfL = fullLen / 2;
-  // 段体中心 = A/B 延伸端点的中点（centerToCenter 时即两口中心连线中点）
-  const startX = worldA.x + dirAB.x * (boxRA - extA);
-  const startZ = worldA.z + dirAB.z * (boxRA - extA);
-  const endX = worldB.x - dirAB.x * (boxRB - extB);
-  const endZ = worldB.z - dirAB.z * (boxRB - extB);
   body.position.set((startX + endX) / 2, lift, (startZ + endZ) / 2);
-  body.rotation.y = bearingToRotY(segBearing);
+  body.rotation.y = bearingToRotY(axisBearing);
 
   const wAB = nAB * LANE_W;
   const wBA = nBA * LANE_W;
   const totalW = wAB + wBA;
   const xCenter = (wBA - wAB) / 2;
 
-  // 路面
-  const road = hPlane(totalW, fullLen, C_ROAD);
-  road.position.set(xCenter, road.position.y, 0);
-  body.add(road);
+  if (useWiden) {
+    // ── 左转拓宽段体：段中取直等宽，近口 tA/tB 距离内 smoothstep 曲线拓宽 ──
+    const abMax = Math.max(widen.ab[0], widen.ab[1]) * LANE_W;
+    const baMax = Math.max(widen.ba[0], widen.ba[1]) * LANE_W;
+    const tB = Math.min(widen.tB ?? 10, fullLen * 0.5);
+    const tA = Math.min(widen.tA ?? 8, fullLen * 0.5);
+    const smooth = (u) => {
+      const c = Math.min(1, Math.max(0, u));
+      return c * c * (3 - 2 * c);
+    };
+    // 北向南：段中 3 车道取直，近 B 端 tB 内曲线拓至 5
+    const wABAt = (z) => (widen.ab[0] + (widen.ab[1] - widen.ab[0]) * smooth((z - (halfL - tB)) / tB)) * LANE_W;
+    // 南向北：段中 3 车道取直，近 A 端 tA 内曲线拓至 4
+    const wBAAt = (z) => (widen.ba[1] + (widen.ba[0] - widen.ba[1]) * smooth((-z - (halfL - tA)) / tA)) * LANE_W;
+    const xiAB = (z) => -abMax + wABAt(z); // 北向南内缘（绿化带侧）
+    const xiBA = (z) => baMax - wBAAt(z); // 南向北内缘（绿化带侧）
+    const zs = [-halfL, -halfL * 0.5, 0, halfL * 0.5, halfL - tB, halfL - tB * 0.5, halfL];
+    const zsBA = [-halfL, -halfL + tA * 0.5, -halfL + tA, 0, halfL * 0.5, halfL];
+    const zsAll = [...new Set([...zs, ...zsBA])].sort((a, b) => a - b);
+    body.add(taperedPlane(() => -abMax, xiAB, zsAll, C_ROAD));
+    body.add(taperedPlane(xiBA, () => baMax, zsAll, C_ROAD));
+    // 中央绿化带：两内缘之间，段中取直、近口收窄
+    body.add(taperedPlane(xiAB, xiBA, zsAll, C_MEDIAN, BASE_Y + 0.02));
+    // 外缘石（取直）
+    body.add(zLine(-abMax, -halfL, halfL, C_CURB));
+    body.add(zLine(baMax, -halfL, halfL, C_CURB));
+    // 内缘线（绿化带侧路缘）
+    body.add(edgeLine(zsAll.map((z) => [xiAB(z), z]), C_CURB));
+    body.add(edgeLine(zsAll.map((z) => [xiBA(z), z]), C_CURB));
+    // 车道边界线：直行车道边界取直常量；新增左转边界自绿化带直线长出
+    const midInnerAB = abMax - widen.ab[0] * LANE_W;
+    for (let i = 1; i < widen.ab[1]; i++) {
+      const x = -i * LANE_W;
+      let z0 = -halfL;
+      if (i * LANE_W < midInnerAB - 1e-6) {
+        // 新左转边界：自内缘穿过该常量线处起绘（直线）
+        z0 = widthCrossZ(xiAB, x, -halfL, halfL);
+        if (z0 == null) continue;
+      } else if (Math.abs(i * LANE_W - midInnerAB) < 1e-6) {
+        // 段中与内缘重合，仅绘拓宽段（直线）
+        z0 = halfL - tB;
+      }
+      const d = zDash(x, z0, halfL, C_MARKING);
+      if (d) body.add(d);
+    }
+    const midInnerBA = baMax - widen.ba[1] * LANE_W;
+    for (let j = 1; j < widen.ba[0]; j++) {
+      const x = j * LANE_W;
+      let z1 = halfL;
+      if (j * LANE_W < midInnerBA - 1e-6) {
+        z1 = widthCrossZ((z) => -xiBA(z), -x, halfL, -halfL);
+        if (z1 == null) continue;
+      } else if (Math.abs(j * LANE_W - midInnerBA) < 1e-6) {
+        z1 = -halfL + tA;
+      }
+      const d = zDash(x, -halfL, z1, C_MARKING);
+      if (d) body.add(d);
+    }
+  } else {
+    // 路面
+    const road = hPlane(totalW, fullLen, C_ROAD);
+    road.position.set(xCenter, road.position.y, 0);
+    body.add(road);
 
-  // 缘石线（两外侧）
-  if (nAB > 0) body.add(zLine(-wAB, -halfL, halfL, C_CURB));
-  if (nBA > 0) body.add(zLine(wBA, -halfL, halfL, C_CURB));
-  // 中心分隔线
-  if (nAB > 0 && nBA > 0) body.add(zLine(0, -halfL, halfL, C_DIVIDER));
-  // 车道虚线
-  for (let i = 1; i < nAB; i++) {
-    const d = zDash(-i * LANE_W, -halfL, halfL, C_MARKING);
-    if (d) body.add(d);
-  }
-  for (let j = 1; j < nBA; j++) {
-    const d = zDash(j * LANE_W, -halfL, halfL, C_MARKING);
-    if (d) body.add(d);
+    // 缘石线（两外侧）
+    if (nAB > 0) body.add(zLine(-wAB, -halfL, halfL, C_CURB));
+    if (nBA > 0) body.add(zLine(wBA, -halfL, halfL, C_CURB));
+    // 中心分隔线
+    if (nAB > 0 && nBA > 0) body.add(zLine(0, -halfL, halfL, C_DIVIDER));
+    // 车道虚线
+    for (let i = 1; i < nAB; i++) {
+      const d = zDash(-i * LANE_W, -halfL, halfL, C_MARKING);
+      if (d) body.add(d);
+    }
+    for (let j = 1; j < nBA; j++) {
+      const d = zDash(j * LANE_W, -halfL, halfL, C_MARKING);
+      if (d) body.add(d);
+    }
   }
 
   // 转向箭头：A→B 半幅近 B 端（车流 +Z，经 rotation.y=π 镜像到 -X 侧、尖端朝 +Z）；
@@ -443,6 +600,7 @@ export function buildSegmentChannelizationLayer(plan, opts = {}) {
     showQueueCars = false,
     queueDataFor = null,
     bodyLift = 0,
+    widen = null,
   } = opts;
   const {
     itemA, itemB, armA, armB,
@@ -476,7 +634,7 @@ export function buildSegmentChannelizationLayer(plan, opts = {}) {
   }
 
   // ── 中央段体（局部 +Z = A→B）──────────────────────────────────────────────
-  const body = buildSegmentBody(plan, { arrowScale, centerToCenter, curved, lift: bodyLift });
+  const body = buildSegmentBody(plan, { arrowScale, centerToCenter, curved, lift: bodyLift, widen });
 
   // ── 组装 ───────────────────────────────────────────────────────────────────
   const group = new THREE.Group();

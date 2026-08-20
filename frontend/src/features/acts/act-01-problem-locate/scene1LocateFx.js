@@ -276,24 +276,28 @@ export function createAct2MapFx({
    * 沿段体真实中心线贴路排布（切向定向、-X 行驶半幅），
    * 自 B 端停车线向上游逐排生长，与道路走向严格一致。
    */
-  function buildQueueBlocks({ plan, laneCount, queueRatio }) {
+  function buildQueueBlocks({ plan, laneCount, queueRatio, widen = null }) {
     const g = new THREE.Group();
     g.name = 'queueBlocks';
     // 视觉比例标定：盒体吃掉部分段长，绝对米数铺满会误读为 0.9+；
     // 改按 排队比 × 可见蓄车空间（两停车线间）绘制，画面比例精确等于 0.73
     const cl0 = (() => {
-      const t = (plan.segBearing * Math.PI) / 180;
-      const dir = { x: Math.sin(t), z: -Math.cos(t) };
-      const p0 = { x: plan.worldA.x + dir.x * plan.boxRA, z: plan.worldA.z + dir.z * plan.boxRA };
-      const p1 = { x: plan.worldB.x - dir.x * plan.boxRB, z: plan.worldB.z - dir.z * plan.boxRB };
-      const total = Math.hypot(p1.x - p0.x, p1.z - p0.z);
+      // 轴锁定沿臂角盒缘（与段体 widen 轴同源），贴底图真实走向
+      const tA = ((plan.armA?.angle ?? plan.segBearing) * Math.PI) / 180;
+      const tB = ((plan.armB?.angle ?? (plan.segBearing + 180) % 360) * Math.PI) / 180;
+      const p0 = { x: plan.worldA.x + Math.sin(tA) * plan.boxRA, z: plan.worldA.z - Math.cos(tA) * plan.boxRA };
+      const p1 = { x: plan.worldB.x + Math.sin(tB) * plan.boxRB, z: plan.worldB.z - Math.cos(tB) * plan.boxRB };
+      const dx = p1.x - p0.x;
+      const dz = p1.z - p0.z;
+      const total = Math.hypot(dx, dz);
+      const dir = { x: total ? dx / total : 0, z: total ? dz / total : 1 };
       return {
         total,
         at: (r) => {
           const u = total ? Math.max(0, Math.min(1, r / total)) : 0;
           return {
-            x: p0.x + (p1.x - p0.x) * u,
-            z: p0.z + (p1.z - p0.z) * u,
+            x: p0.x + dx * u,
+            z: p0.z + dz * u,
             tx: dir.x, tz: dir.z,
             nx: dir.z, nz: -dir.x,
           };
@@ -306,7 +310,18 @@ export function createAct2MapFx({
     const step = BLOCK_D + BLOCK_GAP;
     const blockCount = Math.max(6, Math.round(queueLen / step));
     const blockW = 0.8 * 0.9;
-    const laneXs = Array.from({ length: laneCount }, (_, i) => (i + 0.5) * 0.8);
+    // 拓宽口径：北向南半幅车道数沿段线性演进（3→5），
+    // 直行车贴外缘石不动、左转车道自绿化带侧生长 → 列偏移随当地宽度外移
+    const abA = widen?.ab?.[0] || laneCount;
+    const abB = widen?.ab?.[1] || laneCount;
+    const loN = Math.min(abA, abB);
+    const hiN = Math.max(abA, abB);
+    // 排队仅在非拓宽直行车道上演示：全程外侧 loN 列固定贴外缘，
+    // 不进入近口左转拓宽区
+    const rowSpec = () => {
+      if (!widen) return { n: laneCount, off: 0 };
+      return { n: loN, off: (hiN - loN) * 0.8 };
+    };
     const meshes = [];
 
     // 中心线取样器：段体取直，色块沿 A→B 弦线同轴排布
@@ -326,7 +341,9 @@ export function createAct2MapFx({
         side: THREE.DoubleSide,
       });
       const rotY = Math.atan2(f.tx, f.tz);
-      laneXs.forEach((lx) => {
+      const spec = rowSpec();
+      const xs = Array.from({ length: spec.n }, (_, k) => spec.off + (k + 0.5) * 0.8);
+      xs.forEach((lx) => {
         const m = new THREE.Mesh(new THREE.PlaneGeometry(blockW, BLOCK_D), mat);
         m.rotation.order = 'YXZ';
         m.rotation.y = rotY;
@@ -372,6 +389,9 @@ export function createAct2MapFx({
       neutralOtherArms: false,
       showArmRoadNames: false,
       axisRoads: AXIS_ROADS,
+      // 真实车道演进：北向南 解放东 3→经十路 5；南向北 经十路 3→解放东 4；
+      // 段中取直，近口 tB/tA 距离内曲线拓宽
+      widen: { ab: [3, 5], ba: [4, 3], tA: 8, tB: 10 },
     };
     const mainItem = interItemOf(INTERSECTIONS.jingshi);
     const otherItem = interItemOf(INTERSECTIONS.jiefang);
@@ -392,12 +412,13 @@ export function createAct2MapFx({
           return d < (best?.d ?? Infinity) ? { a, d } : best;
         }, null)?.a;
         if (armN) {
-          const laneCount = Math.min(3, Math.max(2, (armN.inLink?.lane_info || '')
-            .split('|').filter(Boolean).length || 2));
+          const laneCount = Math.max(2, (armN.inLink?.lane_info || '')
+            .split('|').filter(Boolean).length || 2);
           queueBlocks = buildQueueBlocks({
             plan: segmentPlan,
             laneCount,
             queueRatio: 0.73,
+            widen: channelOpts.widen,
           });
         }
       }

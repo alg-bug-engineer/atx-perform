@@ -1107,6 +1107,7 @@ export function disposeChannelizationLayer(group) {
 // 与 Act3/Act8 的 LANE_W 本地副本同源，禁止在此改动数值而不同步
 export {
   LANE_W,
+  BASE_Y, LINE_Y,
   C_ROAD, C_DIVIDER, C_MARKING, C_CURB,
   project, bearingToRotY, angleDiff, geoBearing,
   hPlane, zLine, zDash, makeArrow,
