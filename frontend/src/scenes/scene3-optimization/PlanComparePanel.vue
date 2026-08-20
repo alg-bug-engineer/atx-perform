@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import TimeSpaceDiagram from '../scene3b-signal-plan/TimeSpaceDiagram.vue'
 import { buildSignalPlanModel } from '../scene3b-signal-plan/signalPlanModel.js'
+import { getConductorSegments } from '../../shared/sceneNarration.js'
 import PhaseSequenceBoard from './PhaseSequenceBoard.vue'
 import OffsetAlignStrip from './OffsetAlignStrip.vue'
 import { buildPhasePlans, greenBands } from './corridorDemo.js'
@@ -57,7 +58,7 @@ function tick(ts) {
 }
 
 function onKey(e) {
-  if (e.key === 'Escape') enlarged.value = null
+  if (e.key === 'Escape') closeLightbox()
 }
 
 onMounted(() => {
@@ -125,7 +126,12 @@ const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value
 
 const ALIGN_PLAY_S = 6
 const ALIGN_LOOP_S = 12
-const LIGHTBOX_MS = 2000
+const SCENE3_TTS_S = getConductorSegments('3').reduce(
+  (sum, seg) => sum + (Number(seg.durationSec) || Number(seg.approxSec) || 0),
+  0,
+) || 19.56
+// 口播约 19.6s：对时条 6s 后放大相序，余下口播时间对半分给相序；绿波弹窗不再自动关掉，留到切幕
+const PHASE_LIGHTBOX_S = Math.max(6, (SCENE3_TTS_S - ALIGN_PLAY_S) / 2)
 let seqTimers = []
 
 function clearSeq() {
@@ -139,18 +145,20 @@ function later(ms, fn) {
   seqTimers.push(id)
 }
 
+function closeLightbox() {
+  if (!enlarged.value) return
+  enlarged.value = null
+  paused.value = false
+  speed.value = cycleLen.value / ALIGN_LOOP_S
+  beatCaption.value = { tag: '方案对比', text: '解放东放行窗口对准经十路绿灯', tone: 'ok' }
+}
+
 function startLightboxTour() {
   enlarged.value = 'phase'
   beatCaption.value = { tag: '方案细节', text: '相位相序图', tone: 'ok' }
-  later(LIGHTBOX_MS, () => {
+  later(Math.round(PHASE_LIGHTBOX_S * 1000), () => {
     enlarged.value = 'wave'
     beatCaption.value = { tag: '方案细节', text: '绿波时距图', tone: 'ok' }
-    later(LIGHTBOX_MS, () => {
-      enlarged.value = null
-      paused.value = false
-      speed.value = cycleLen.value / ALIGN_LOOP_S
-      beatCaption.value = { tag: '方案对比', text: '解放东放行窗口对准经十路绿灯', tone: 'ok' }
-    })
   })
 }
 
@@ -241,7 +249,7 @@ function playOnce() {
         v-if="enlarged"
         class="lightbox"
         data-testid="scene3-enlarge"
-        @click.self="enlarged = null"
+        @click.self="closeLightbox"
       >
         <div class="sheet" :class="enlarged">
           <header>
@@ -276,7 +284,7 @@ function playOnce() {
                 {{ d.t }}
               </button>
             </div>
-            <button type="button" class="close" @click="enlarged = null">关闭</button>
+            <button type="button" class="close" @click="closeLightbox">关闭</button>
           </header>
           <p v-if="enlargeLead === 'phase'" class="lead-copy">
             解放东整体后移 <b class="ok">56 s</b>，北进口直行绿时 <b class="warn">21 → 15 s</b>，经十路配时维持不变。
