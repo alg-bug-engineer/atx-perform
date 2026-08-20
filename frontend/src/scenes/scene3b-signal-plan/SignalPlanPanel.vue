@@ -3,13 +3,17 @@
 import { computed, ref } from 'vue'
 import TimeSpaceDiagram from './TimeSpaceDiagram.vue'
 import StageTimingCompare from './StageTimingCompare.vue'
-import { buildSignalPlanModel } from './signalPlanModel.js'
+import PhaseSequenceBoard from '../scene3-optimization/PhaseSequenceBoard.vue'
+import { buildSignalPlanModel, buildPhaseBoard } from './signalPlanModel.js'
 
 const props = defineProps({
   payload: { type: Object, required: true },
 })
 
 const model = computed(() => buildSignalPlanModel(props.payload))
+
+/** 相位相序图：引擎方案板口径（与幕 4 专家建议板同组件、不同数据源） */
+const phaseBoard = computed(() => buildPhaseBoard(props.payload))
 
 const mode = ref('optimized')
 const direction = ref('both')
@@ -36,19 +40,36 @@ const dirLabel = computed(() => (bandDir.value === 'forward' ? '北向南' : '�
 /** 概述只引用引擎指标，不自造口径 */
 const lede = computed(() => {
   const c = model.value.corridor
+  const n = model.value.rawNodes.length
   const band = kpi('chained_bandwidth_s')
   const travel = kpi('travel_time_s')
   const delay = kpi('coordinated_direction_delay_s')
-  return `公共周期由现状 ${c.baseline_cycles_s.join(' / ')} s 统一为 ${c.cycle_s} s，七个路口相位差重排；绿波带宽 ${fmt(band?.baseline)} → ${fmt(band?.optimized)} s，协调方向通行时间缩短 ${fmt(Math.abs(travel?.delta ?? 0))} s、平均延误降 ${fmt(Math.abs(delay?.delta ?? 0))} s/车。`
+  const parts = [
+    `公共周期由现状 ${c.baseline_cycles_s.join(' / ')} s 统一为 ${c.cycle_s} s，${n} 个路口相位差重排`,
+  ]
+  if (band) parts.push(`绿波带宽 ${fmt(band.baseline)} → ${fmt(band.optimized)} s`)
+  if (travel?.delta != null) {
+    parts.push(`协调方向通行时间${travel.delta < 0 ? '缩短' : '增加'} ${fmt(Math.abs(travel.delta))} s`)
+  }
+  if (delay?.delta != null) {
+    parts.push(`平均延误${delay.delta < 0 ? '降' : '升'} ${fmt(Math.abs(delay.delta))} s/车`)
+  }
+  let text = `${parts.join('，')}。`
+  // 引擎拒绝推荐时（候选均未达接受门槛），把选择结论带入概述
+  if (model.value.meta.recommendation_status === 'not_recommended') {
+    text += ` ${model.value.meta.selection_reason || '候选方案均未达接受门槛，维持现状'}`
+  }
+  return text
 })
 
+const STATUS_TONE = { recommended: 'ok', not_recommended: 'warn' }
 const headChips = computed(() => {
   const c = model.value.corridor
   const m = model.value.meta
-  return [
+  const chips = [
     { k: '公共周期', v: `${c.cycle_s} s`, sub: `现状 ${c.baseline_cycles_s.join(' / ')} s`, tone: 'change' },
     { k: '协调策略', v: m.strategy_label, sub: m.strategy_family_label, tone: 'hold' },
-    { k: '设计车速', v: `${c.design_speed_kmh.toFixed(1)} km/h`, sub: '晚高峰实测干线速度', tone: 'hold' },
+    { k: '设计车速', v: `${c.design_speed_kmh.toFixed(1)} km/h`, sub: '协调设计速度', tone: 'hold' },
     {
       k: '相位差重排',
       v: `${fmt(kpi('avg_abs_offset_change_s')?.optimized)} s`,
@@ -56,6 +77,15 @@ const headChips = computed(() => {
       tone: 'change',
     },
   ]
+  if (m.recommendation_status) {
+    chips.push({
+      k: '推荐状态',
+      v: m.recommendation_status === 'not_recommended' ? '维持现状' : '推荐',
+      sub: m.requires_human_confirm ? '待人工确认' : '方案生成阶段结论',
+      tone: STATUS_TONE[m.recommendation_status] || 'hold',
+    })
+  }
+  return chips
 })
 
 const kpiCards = computed(() =>
@@ -226,18 +256,30 @@ const bandCaption = computed(() => {
 
           <div class="col-head tight">
             <h3>候选方案比选</h3>
-            <span class="hint">综合分</span>
+            <span class="hint">链式带宽综合分</span>
           </div>
           <ul class="cands">
             <li v-for="c in model.candidates" :key="c.candidate_id" :class="{ on: c.selected }">
               <span class="cl">{{ c.label }}</span>
-              <strong class="cs" :class="{ pos: c.score_delta > 0 }">
+              <strong
+                v-if="c.score_delta != null"
+                class="cs"
+                :class="{ pos: c.score_delta > 0 }"
+              >
                 {{ c.score_delta > 0 ? '+' : '' }}{{ c.score_delta.toFixed(2) }}
               </strong>
+              <strong v-else class="cs">—</strong>
             </li>
           </ul>
+          <p v-if="model.meta.recommendation_status === 'not_recommended'" class="cand-note">
+            候选均未达接受门槛：{{ model.meta.selection_reason || '维持现状' }}
+          </p>
         </div>
       </div>
+    </div>
+
+    <div v-if="phaseBoard" class="phase-row" data-testid="signal-plan-phase-sequence">
+      <PhaseSequenceBoard :board="phaseBoard" />
     </div>
   </section>
 </template>
@@ -245,10 +287,21 @@ const bandCaption = computed(() => {
 <style scoped>
 .signal-plan {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 0.78fr);
   gap: 8px;
   height: 100%;
   min-height: 0;
+}
+
+/* 相位相序图：全宽一行，卡片墙内部滚动 */
+.phase-row {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+.phase-row > :deep(.phase-board) {
+  width: 100%;
+  height: 100%;
 }
 
 .head {
@@ -295,6 +348,12 @@ const bandCaption = computed(() => {
 }
 .chip.warn strong {
   color: var(--warn);
+}
+.chip.ok {
+  border-color: rgba(51, 204, 136, 0.5);
+}
+.chip.ok strong {
+  color: var(--ok);
 }
 
 /* 方案生成阶段的模型预估，压成一条，不与幕 4 的试运行实测抢视觉 */
@@ -542,6 +601,15 @@ h3 {
 }
 .cands .cs.pos {
   color: var(--ok);
+}
+.cand-note {
+  margin: 0;
+  padding: 3px 5px;
+  font-size: 9.5px;
+  line-height: 1.4;
+  color: var(--warn);
+  border-left: 2px solid var(--warn);
+  background: rgba(255, 204, 0, 0.06);
 }
 
 /* 侧栏统计区可滚动，避免内容顶破边框 */

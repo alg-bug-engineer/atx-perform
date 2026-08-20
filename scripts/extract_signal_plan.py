@@ -234,6 +234,12 @@ def build_diagram(st: dict[str, Any], cycle_s: float) -> dict[str, Any] | None:
         {
             "dir": v.get("direction") or "forward",
             "role": (v.get("meta") or {}).get("role") or "main",
+            # 工作台 splitMoveWaitRuns 分段配色所需：出发时刻/红发起车/侧向汇入
+            "meta": {
+                "depart_s": (v.get("meta") or {}).get("depart_s"),
+                "depart_phase": (v.get("meta") or {}).get("depart_phase"),
+                "side_arrival": bool((v.get("meta") or {}).get("side_arrival")),
+            },
             "pts": pts(v.get("points")),
         }
         for v in d.get("vehicles") or []

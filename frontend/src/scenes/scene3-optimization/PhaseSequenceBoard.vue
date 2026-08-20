@@ -1,7 +1,9 @@
 <script setup>
 /**
  * 相位相序图：对齐 assets/信控方案可视化图.png
- * 一阶段一张卡，绿时前后对比 + 渠化流向。默认解放东（有改动的口）。
+ * 一阶段一张卡，绿时前后对比 + 渠化流向。
+ * 数据源两种口径：幕 4 专家建议板（key=jingshi/jiefang）与幕 4b 引擎方案板（3 路口）。
+ * 默认选中「焦点路口」（无焦点标记时优先解放东，即幕 4 有改动的口）。
  */
 import { computed, ref } from 'vue'
 import StageChannelization from '../scene3b-signal-plan/StageChannelization.vue'
@@ -12,16 +14,26 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
 })
 
-const selectedKey = ref('jiefang')
+const selectedKey = ref(null)
 
 const nodes = computed(() => {
   const list = [...(props.board?.intersections || [])]
-  return list.sort((a, b) => Number(b.key === 'jiefang') - Number(a.key === 'jiefang'))
+  return list.sort(
+    (a, b) =>
+      Number(Boolean(b.is_focus)) - Number(Boolean(a.is_focus)) ||
+      Number(b.key === 'jiefang') - Number(a.key === 'jiefang'),
+  )
 })
 
 const node = computed(
   () => nodes.value.find((n) => n.key === selectedKey.value) || nodes.value[0],
 )
+
+function pickLabel(n) {
+  if (n.short_name) return n.short_name
+  if (n.key === 'jiefang') return '解放东'
+  return '经十路'
+}
 
 const cards = computed(() => {
   const n = node.value
@@ -72,7 +84,7 @@ function deltaText(d) {
           :class="{ on: n.key === node.key }"
           @click="selectedKey = n.key"
         >
-          {{ n.key === 'jiefang' ? '解放东' : '经十路' }}
+          {{ pickLabel(n) }}
         </button>
       </div>
       <slot name="head-extra" />
@@ -113,9 +125,9 @@ function deltaText(d) {
         <div class="chan-slot">
           <StageChannelization :movements="c.movements" />
         </div>
-        <p class="labels">{{ c.labels }}</p>
-        <p class="role">{{ c.role }}</p>
-        <p v-if="c.minG != null" class="bound">最小/最大绿 {{ c.minG }}s / {{ c.maxG }}s</p>
+        <p class="labels">{{ c.labels || '过渡 / 行人' }}</p>
+        <p v-if="c.role" class="role">{{ c.role }}</p>
+        <p v-if="c.minG != null" class="bound">最小/最大绿 {{ c.minG }}s / {{ c.maxG ?? '—' }}</p>
       </article>
     </div>
   </section>
