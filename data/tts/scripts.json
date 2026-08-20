@@ -78,7 +78,7 @@
           "id": "a2f.signal",
           "file": "scene2/s2-signal.wav",
           "approx_sec": 7,
-          "text": "当前周期内难以增加北向南直行绿灯时间，所以北向南车流短时难以消散，有溢流风险"
+          "text": "当前相邻路口绿灯相位错配，导致溢流风险加重。"
         },
         {
           "id": "a2f.done",

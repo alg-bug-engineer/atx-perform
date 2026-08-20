@@ -1,13 +1,11 @@
 /**
- * 幕 2 地图动作（方案 A）：路口脉冲、问题路段强调、示意相位环、270 m 排队条。
- * 溢流拍在排队条旁标出排队比。
+ * 幕 2 地图动作（方案 A）：路口脉冲、问题路段强调、双口绿灯错配时间轴。
  */
 import * as THREE from 'three';
 
 const C_GREEN = 0x00cc44;
 const C_AMBER = 0xf5a623;
 const C_RED = 0xff1800;
-const C_QUEUE = 0xff8a3a;
 const C_CYAN = 0x00e5ff;
 const METERS_PER_UNIT = 10;
 const LABEL_DPR = 2;
@@ -100,61 +98,17 @@ function strokeCard(ctx, cssW, cssH) {
   ctx.stroke();
 }
 
-function makeQueueRatioSprite(ratio) {
-  const title = '排队比已达';
-  const value = Number(ratio).toFixed(1);
-  const measure = document.createElement('canvas').getContext('2d');
-  measure.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
-  let contentW = measure.measureText(title).width;
-  measure.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
-  contentW = Math.max(contentW, measure.measureText(value).width);
-  const cssW = Math.ceil(Math.max(contentW + CARD_PAD_X * 2, CARD_MIN_W));
-  const cssH = CARD_TWO_LINE_H;
-  const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
-
-  ctx.fillStyle = 'rgba(18, 8, 4, 0.78)';
-  ctx.strokeStyle = 'rgba(255, 138, 58, 0.85)';
-  strokeCard(ctx, cssW, cssH);
-
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.font = `500 ${CARD_TITLE}px "PingFang SC","Microsoft YaHei",sans-serif`;
-  ctx.fillStyle = 'rgba(255, 196, 140, 0.95)';
-  ctx.fillText(title, CARD_PAD_X, 34);
-  ctx.font = `700 ${CARD_VALUE}px "DIN Alternate","PingFang SC",sans-serif`;
-  ctx.fillStyle = '#ff8a3a';
-  ctx.fillText(value, CARD_PAD_X, 74);
-
-  const tex = makeLabelTexture(canvas);
-  const mat = new THREE.SpriteMaterial({
-    map: tex,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    depthTest: false,
-  });
-  const spr = new THREE.Sprite(mat);
-  const worldH = CARD_WORLD_H;
-  const worldW = worldH * (cssW / cssH);
-  spr.scale.set(worldW, worldH, 1);
-  spr.userData.baseScale = [worldW, worldH];
-  spr.renderOrder = 62;
-  spr.visible = false;
-  spr.userData.disposeLabel = () => {
-    tex.dispose();
-    mat.dispose();
-  };
-  return spr;
-}
-
 function makeArterialSprite({ title, speed, saturation, flow, delay, accent = '#ff8a3a' }) {
   const speedText = `${Number(speed || 0).toFixed(1)} km/h`;
   const sat = Number(saturation);
   const flowN = Number(flow);
+  const flowText = Number.isFinite(flowN)
+    ? `${Number.isInteger(flowN) ? flowN.toFixed(0) : flowN.toFixed(1)} pcu/h`
+    : '—';
   const delayN = Number(delay);
   const rows = [
     `饱和度 ${Number.isFinite(sat) ? sat.toFixed(2) : '—'}`,
-    `流量 ${Number.isFinite(flowN) ? `${flowN.toFixed(0)} vph` : '—'}`,
+    `流量 ${flowText}`,
     Number.isFinite(delayN) ? `拥堵延时指数 ${delayN.toFixed(2)}` : '',
   ].filter(Boolean);
 
@@ -282,18 +236,6 @@ function metricAnchors(coords2d) {
   ];
 }
 
-function queueLabelAnchor(coords2d) {
-  if (!coords2d || coords2d.length < 2) return null;
-  const a = coords2d[0];
-  const b = coords2d[coords2d.length - 1];
-  const mx = (a[0] + b[0]) / 2;
-  const my = (a[1] + b[1]) / 2;
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
-  const len = Math.hypot(dx, dy) || 1;
-  return [mx + (-dy / len) * 11, my + (dx / len) * 11];
-}
-
 function makeTube(coords2d, radius, color, y = 1.2) {
   if (!coords2d || coords2d.length < 2) return null;
   const pts = coords2d.map(([x, ny]) => new THREE.Vector3(x, y, -ny));
@@ -312,41 +254,150 @@ function makeTube(coords2d, radius, color, y = 1.2) {
   return mesh;
 }
 
-function makeArcLine(radius, a0, a1, y, color) {
-  const n = 28;
-  const positions = [];
-  for (let i = 0; i <= n; i += 1) {
-    const t = i / n;
-    const a = a0 + (a1 - a0) * t;
-    positions.push(radius * Math.cos(a), y, radius * Math.sin(a));
+function makeCoordinationTimelineSprite(evidence = {}, queueM = 270) {
+  const cycle = Number(evidence.common_cycle_sec) || 220;
+  const downstream = evidence.downstream_signal || {};
+  const upstream = evidence.upstream_signal || {};
+  const mismatch = evidence.mismatch || {};
+  const queueDisplayM = Number(mismatch.queue_m)
+    || Number(evidence.queue_observation?.display_queue_m)
+    || Number(queueM)
+    || 270;
+  const downstreamStart = Number(downstream.effective_green_start_sec) || 85;
+  const downstreamGreen = Number(downstream.green_duration_sec) || 57;
+  const upstreamStart = Number(upstream.release_start_sec) || 59;
+  const upstreamGreen = Number(upstream.green_duration_sec) || 21;
+  const conflictStart = Number(mismatch.conflict_start_sec) || upstreamStart;
+  const conflictEnd = Number(mismatch.conflict_end_sec) || downstreamStart;
+  const title = mismatch.card_title || '双口绿灯错配';
+  const headline = mismatch.headline || '绿灯时间不一致';
+  const display = mismatch.display || '经十北直已红灯时，解放东仍在放行';
+  const risk = mismatch.risk || '溢流风险加重';
+  const footer = mismatch.footer || '周期一致，调整放行先后即可降低集中到达';
+  const queueLabel = mismatch.queue_label || '排队';
+
+  const cssW = 540;
+  const cssH = 242;
+  const { canvas, ctx } = beginLabelCanvas(cssW, cssH);
+  ctx.fillStyle = 'rgba(3, 14, 25, 0.94)';
+  ctx.strokeStyle = 'rgba(255, 138, 58, 0.72)';
+  strokeCard(ctx, cssW, cssH);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#e8f6ff';
+  ctx.fillText(title, 20, 24);
+  ctx.font = '600 13px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#ff8a3a';
+  ctx.fillText(headline, 20, 46);
+  ctx.textAlign = 'right';
+  ctx.font = '500 14px "DIN Alternate","PingFang SC",sans-serif';
+  ctx.fillStyle = 'rgba(175,205,220,0.9)';
+  ctx.fillText(`共同周期 ${cycle} s`, cssW - 20, 24);
+
+  const barX = 148;
+  const barW = cssW - barX - 22;
+  const barH = 18;
+  const jingshiY = 78;
+  const jiefangY = 122;
+  const xAt = (sec) => barX + (sec / cycle) * barW;
+  const wAt = (sec) => Math.max(4, (sec / cycle) * barW);
+
+  ctx.textAlign = 'left';
+  ctx.font = '500 13px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(205,225,238,0.92)';
+  ctx.fillText('经十路口 · 北直', 18, jingshiY + barH / 2);
+  ctx.fillText('解放东路口 · 北直', 18, jiefangY + barH / 2);
+
+  ctx.fillStyle = 'rgba(255, 48, 32, 0.72)';
+  ctx.fillRect(barX, jingshiY, barW, barH);
+  ctx.fillStyle = 'rgba(44, 213, 120, 0.96)';
+  ctx.fillRect(xAt(downstreamStart), jingshiY, wAt(downstreamGreen), barH);
+
+  ctx.fillStyle = 'rgba(115,140,160,0.22)';
+  ctx.fillRect(barX, jiefangY, barW, barH);
+  ctx.fillStyle = 'rgba(44, 213, 120, 0.96)';
+  ctx.fillRect(xAt(upstreamStart), jiefangY, wAt(upstreamGreen), barH);
+
+  const conflictX = xAt(conflictStart);
+  const conflictW = wAt(conflictEnd - conflictStart);
+  ctx.fillStyle = 'rgba(255, 96, 40, 0.2)';
+  ctx.fillRect(conflictX, jingshiY - 8, conflictW, jiefangY + barH - jingshiY + 16);
+  ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = 'rgba(255, 138, 58, 0.95)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(conflictX, jingshiY - 8, conflictW, jiefangY + barH - jingshiY + 16);
+  ctx.setLineDash([]);
+
+  const jingshiGreenX = xAt(downstreamStart);
+  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = 'rgba(0,229,255,0.8)';
+  ctx.beginPath();
+  ctx.moveTo(jingshiGreenX, jingshiY - 10);
+  ctx.lineTo(jingshiGreenX, jiefangY + barH + 10);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = '600 11px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(255, 210, 180, 0.95)';
+  ctx.textAlign = 'center';
+  ctx.fillText('经十已红 · 解放东仍绿', conflictX + conflictW / 2, jingshiY - 16);
+  ctx.fillStyle = 'rgba(180, 230, 255, 0.9)';
+  ctx.fillText('经十转绿', jingshiGreenX + 28, jiefangY + barH + 16);
+
+  ctx.font = '600 10px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(255, 220, 220, 0.88)';
+  if (conflictW > 36) ctx.fillText('红灯', conflictX + conflictW / 2, jingshiY + barH / 2);
+  ctx.fillStyle = 'rgba(20, 40, 28, 0.9)';
+  ctx.fillText('绿灯', xAt(downstreamStart) + wAt(downstreamGreen) / 2, jingshiY + barH / 2);
+  ctx.fillStyle = 'rgba(20, 40, 28, 0.9)';
+  const jiefangGreenW = wAt(upstreamGreen);
+  if (jiefangGreenW > 22) {
+    ctx.fillText('绿灯', xAt(upstreamStart) + jiefangGreenW / 2, jiefangY + barH / 2);
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  const mat = new THREE.LineBasicMaterial({
-    color,
+
+  ctx.textAlign = 'left';
+  ctx.font = '600 15px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#ffb070';
+  ctx.fillText(`${display}，${risk}`, 20, 178);
+  ctx.font = '500 13px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#ff8a3a';
+  ctx.fillText(`${queueLabel} ${queueDisplayM} m`, 20, 200);
+  ctx.fillStyle = '#86efac';
+  ctx.fillText('判定：可协调', 188, 200);
+  ctx.font = '500 12px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = 'rgba(180,205,220,0.78)';
+  ctx.fillText(footer, 20, 220);
+
+  const texture = makeLabelTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
     transparent: true,
     opacity: 0,
-    blending: THREE.AdditiveBlending,
     depthWrite: false,
+    depthTest: false,
   });
-  const line = new THREE.Line(geo, mat);
-  line.renderOrder = 55;
-  line.visible = false;
-  return line;
+  const sprite = new THREE.Sprite(material);
+  const worldH = 20;
+  sprite.scale.set(worldH * (cssW / cssH), worldH, 1);
+  sprite.renderOrder = 65;
+  sprite.visible = false;
+  sprite.userData.disposeLabel = () => texture.dispose();
+  return sprite;
 }
 
 /**
  * @param {{
- *   via?: { pos: [number, number] },
  *   target?: { pos: [number, number] },
  *   problemRoad?: { coords: [number, number][] },
  *   queueM?: number,
- *   queueRatio?: number,
  *   supplyMetrics?: { flow?: number, capacity?: number },
  *   arterialMetrics?: {
  *     east?: { speed?: number, delay?: number, saturation?: number, flow?: number },
  *     west?: { speed?: number, delay?: number, saturation?: number, flow?: number },
  *   },
+ *   coordinationEvidence?: object,
  *   hopTimes?: {
  *     pos: [number, number],
  *     revealAt: number,
@@ -356,13 +407,12 @@ function makeArcLine(radius, a0, a1, y, color) {
  * }} opts
  */
 export function createScene2MapAnnot({
-  via,
   target,
   problemRoad,
   queueM = 270,
-  queueRatio = 0.8,
   supplyMetrics = {},
   arterialMetrics = {},
+  coordinationEvidence = {},
   hopTimes = [],
 } = {}) {
   const group = new THREE.Group();
@@ -380,7 +430,6 @@ export function createScene2MapAnnot({
   }
 
   const targetPos = target?.pos;
-  const viaPos = via?.pos;
 
   const hopPulses = hopTimes.map((hop) => {
     const spr = new THREE.Sprite(
@@ -424,13 +473,13 @@ export function createScene2MapAnnot({
   const supplyGroup = new THREE.Group();
   const flowSpr = makeMetricSprite({
     title: '当前通行流量',
-    value: `${Number(supplyMetrics.flow || 0).toFixed(0)} vph`,
+    value: `${Number(supplyMetrics.flow || 0).toFixed(0)} pcu/h`,
     sub: '路段实际通行',
     accent: '#00e5ff',
   });
   const capacitySpr = makeMetricSprite({
-    title: '车道能力上限',
-    value: `${Number(supplyMetrics.capacity || 0).toFixed(1)} vph`,
+    title: '进口道路能力',
+    value: `${Number(supplyMetrics.capacity || 0).toFixed(1)} pcu/h`,
     sub: '当前仍有承接余量',
     accent: '#86efac',
   });
@@ -472,20 +521,31 @@ export function createScene2MapAnnot({
   arterialGroup.visible = false;
   track(arterialGroup);
 
-  const ringGroup = new THREE.Group();
-  ringGroup.visible = false;
-  if (targetPos) {
-    ringGroup.position.set(targetPos[0], 0, -targetPos[1]);
-    const arcs = [
-      makeArcLine(9.5, -0.55, 0.55, 5.5, C_GREEN),
-      makeArcLine(9.5, Math.PI - 0.55, Math.PI + 0.55, 5.5, C_GREEN),
-      makeArcLine(9.5, Math.PI / 2 - 0.22, Math.PI / 2 + 0.22, 5.5, C_RED),
-      makeArcLine(9.5, -Math.PI / 2 - 0.22, -Math.PI / 2 + 0.22, 5.5, C_RED),
-    ];
-    arcs.forEach((arc) => ringGroup.add(arc));
-    ringGroup.userData.arcs = arcs;
+  const coordinationGroup = new THREE.Group();
+  coordinationGroup.visible = false;
+  const coordinationTimeline = makeCoordinationTimelineSprite(coordinationEvidence, queueM);
+  if (problemMid) {
+    coordinationTimeline.position.set(problemMid[0] + 34, 22, -problemMid[1]);
+  } else if (targetPos) {
+    coordinationTimeline.position.set(targetPos[0] + 34, 22, -targetPos[1]);
   }
-  track(ringGroup);
+  coordinationGroup.add(coordinationTimeline);
+
+  const signalQueueM = Number(
+    coordinationEvidence.mismatch?.queue_m
+      ?? coordinationEvidence.queue_observation?.display_queue_m
+      ?? queueM,
+  ) || 270;
+  const residualQueuePts = pathFromSouth(
+    problemRoad?.coords,
+    Math.max(4, signalQueueM / METERS_PER_UNIT),
+  );
+  const residualQueueTube = makeTube(residualQueuePts, 1.05, C_RED, 1.15);
+  if (residualQueueTube) {
+    residualQueueTube.geometry.setDrawRange(0, 0);
+    coordinationGroup.add(residualQueueTube);
+  }
+  track(coordinationGroup);
 
   const blockPulse = new THREE.Sprite(
     new THREE.SpriteMaterial({
@@ -503,37 +563,6 @@ export function createScene2MapAnnot({
   blockPulse.visible = false;
   track(blockPulse);
 
-  const queueLen = Math.max(4, queueM / METERS_PER_UNIT);
-  const queuePts = pathFromSouth(problemRoad?.coords, queueLen);
-  const queueTube = makeTube(queuePts, 1.15, C_QUEUE, 1.2);
-  if (queueTube) {
-    queueTube.geometry.setDrawRange(0, 0);
-    track(queueTube);
-  }
-
-  const ratioSpr = makeQueueRatioSprite(queueRatio);
-  const ratioAnchor = queueLabelAnchor(queuePts);
-  if (ratioAnchor) {
-    ratioSpr.position.set(ratioAnchor[0], 14, -ratioAnchor[1]);
-  }
-  track(ratioSpr);
-
-  const viaPulse = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: glowTex,
-      color: C_RED,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }),
-  );
-  if (viaPos) viaPulse.position.copy(toWorld(viaPos, 7));
-  viaPulse.scale.set(18, 18, 1);
-  viaPulse.renderOrder = 59;
-  viaPulse.visible = false;
-  track(viaPulse);
-
   let beat = 'hidden';
   let beatAt = 0;
   let traceElapsed = 0;
@@ -541,12 +570,11 @@ export function createScene2MapAnnot({
   function applyBeat(name) {
     fades.length = 0;
     const showLink = name === 'supply';
-    const showRing = name === 'signal';
-    const showQueue = name === 'overflow';
+    const showCoordination = name === 'signal';
     const showSupply = name === 'supply';
     const supplyLeaving = name === 'supply_out';
-    const showArterial = name === 'arterial' || name === 'signal' || name === 'overflow';
-    ringGroup.visible = showRing;
+    const showArterial = name === 'arterial' || name === 'signal';
+    coordinationGroup.visible = showCoordination;
     supplyGroup.visible = showSupply || supplyLeaving;
     arterialGroup.visible = showArterial;
 
@@ -567,15 +595,12 @@ export function createScene2MapAnnot({
     } else {
       for (const spr of [eastSpr, westSpr]) fadeTo(spr, 1);
     }
-    if (name !== 'trace') {
+    if (name !== 'trace' && name !== 'inflow') {
       for (const spr of hopShareLabels) fadeTo(spr, 0);
     }
-    fadeTo(viaPulse, showQueue ? 0.9 : 0);
     fadeTo(blockPulse, name === 'signal' ? 0.85 : 0);
-    if (queueTube) fadeTo(queueTube, showQueue ? 0.85 : 0);
-    fadeTo(ratioSpr, showQueue ? 1 : 0);
-    const ringOn = showRing ? 0.95 : 0;
-    for (const arc of ringGroup.userData.arcs || []) fadeTo(arc, ringOn);
+    fadeTo(coordinationTimeline, showCoordination ? 1 : 0);
+    if (residualQueueTube) fadeTo(residualQueueTube, showCoordination ? 0.9 : 0);
   }
 
   group.setBeat = (name, at = performance.now() / 1000) => {
@@ -598,8 +623,13 @@ export function createScene2MapAnnot({
       f.obj.visible = next > 0.02;
     }
 
-    if (beat === 'trace') {
+    if (beat === 'trace' || beat === 'inflow') {
       for (const hop of hopPulses) {
+        if (beat !== 'trace') {
+          hop.spr.visible = false;
+          hop.spr.material.opacity = 0;
+          continue;
+        }
         const dt = traceElapsed - (hop.revealAt ?? 0);
         if (dt < 0 || dt > 1.4) {
           hop.spr.visible = false;
@@ -613,6 +643,11 @@ export function createScene2MapAnnot({
         hop.spr.scale.set(s, s, 1);
       }
       for (const sprite of hopShareLabels) {
+        if (beat === 'inflow') {
+          sprite.material.opacity = 1;
+          sprite.visible = true;
+          continue;
+        }
         const local = traceElapsed - sprite.userData.revealAt - 0.18;
         const alpha = Math.min(1, Math.max(0, local / 0.4));
         sprite.material.opacity = alpha;
@@ -631,15 +666,21 @@ export function createScene2MapAnnot({
 
     if (beat === 'signal') {
       const signalElapsed = time - beatAt;
-      const arcs = ringGroup.userData.arcs || [];
-      arcs.forEach((arc, index) => {
-        const revealAt = index < 2 ? index * 0.18 : 0.72 + (index - 2) * 0.16;
-        const reveal = Math.min(1, Math.max(0, (signalElapsed - revealAt) / 0.35));
-        arc.material.opacity = reveal * (index < 2 ? 0.95 : 0.88);
-      });
-      const p = signalElapsed > 0.7 ? 0.55 + 0.45 * Math.sin(time * 5.2) : 0;
-      blockPulse.material.opacity = Math.max(blockPulse.material.opacity, p * 0.7);
-      const s = 12 + p * 10;
+      const timelineAlpha = Math.min(1, Math.max(0, signalElapsed / 0.45));
+      coordinationTimeline.material.opacity = timelineAlpha;
+      coordinationTimeline.visible = timelineAlpha > 0.02;
+
+      if (residualQueueTube) {
+        const grow = Math.min(1, Math.max(0, (signalElapsed - 0.35) / 0.85));
+        residualQueueTube.material.opacity = 0.35 + grow * 0.55;
+        residualQueueTube.visible = grow > 0.02;
+        const indexCount = residualQueueTube.geometry.index?.count || 0;
+        residualQueueTube.geometry.setDrawRange(0, Math.floor(indexCount * grow));
+      }
+
+      const conflict = signalElapsed > 2.65 ? 0.55 + 0.45 * Math.sin(time * 5.2) : 0;
+      blockPulse.material.opacity = Math.max(blockPulse.material.opacity, conflict * 0.72);
+      const s = 12 + conflict * 10;
       blockPulse.scale.set(s, s, 1);
     }
 
@@ -666,33 +707,12 @@ export function createScene2MapAnnot({
       eastSpr.visible = eastAlpha > 0.02;
       westSpr.visible = westAlpha > 0.02;
     }
-
-    if (beat === 'overflow') {
-      const p = 0.5 + 0.5 * Math.sin(time * 3.4);
-      viaPulse.material.opacity = Math.max(0.35, p);
-      const s = 14 + p * 10;
-      viaPulse.scale.set(s, s, 1);
-      if (queueTube) {
-        const grow = Math.min(1, Math.max(0, (time - beatAt) / 1.1));
-        queueTube.material.opacity = 0.4 + grow * 0.5;
-        queueTube.visible = true;
-        const indexCount = queueTube.geometry.index?.count || 0;
-        queueTube.geometry.setDrawRange(0, Math.floor(indexCount * grow));
-      }
-      if (ratioSpr) {
-        const grow = Math.min(1, Math.max(0, (time - beatAt - 0.25) / 0.7));
-        ratioSpr.material.opacity = grow;
-        ratioSpr.visible = grow > 0.02;
-        const bob = 1 + 0.04 * Math.sin(time * 3.2);
-        const [rw, rh] = ratioSpr.userData.baseScale || [34, CARD_WORLD_H];
-        ratioSpr.scale.set(rw * bob, rh * bob, 1);
-      }
-    }
   };
 
   group.dispose = () => {
     glowTex.dispose();
     group.traverse((obj) => {
+      obj.userData?.disposeLabel?.();
       obj.geometry?.dispose?.();
       obj.material?.dispose?.();
     });

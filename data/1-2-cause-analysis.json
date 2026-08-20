@@ -16,6 +16,49 @@
   "hide": [
     "dual_intersection_channelization"
   ],
+  "diagnosis_rail": {
+    "source_type": "derived",
+    "db_supported": true,
+    "metric": "flow_share_ratio",
+    "note": "步骤 1 证据为解放东三向汇入示意图（mock 70/25/5）；步骤 2 已接下游主去向 + 南段速度/延时/峰值排队占比（110/592=18.6%）；步骤 5 已接双口绿灯错配与可协调性证据；步骤 3–4 仍为导航占位。",
+    "steps": [
+      {
+        "id": "upstream",
+        "label": "上游来向",
+        "map_phases": ["trace", "inflow"],
+        "evidence": "InflowShareSchema",
+        "data_status": "mock"
+      },
+      {
+        "id": "downstream",
+        "label": "下游出口",
+        "map_phases": ["downstream"],
+        "evidence": "downstream_receiving",
+        "data_status": "derived"
+      },
+      {
+        "id": "cross_arterial",
+        "label": "垂直流量",
+        "map_phases": ["arterial"],
+        "evidence": null,
+        "data_status": "pending_module"
+      },
+      {
+        "id": "channelization",
+        "label": "渠化复核",
+        "map_phases": [],
+        "evidence": null,
+        "data_status": "pending_module"
+      },
+      {
+        "id": "signal",
+        "label": "信号协调",
+        "map_phases": ["signal"],
+        "evidence": "signal_coordination_evidence",
+        "data_status": "derived"
+      }
+    ]
+  },
   "upstream_traces": {
     "source": "xianchang.ads_ts_inter_turn_flow_correlate_d",
     "metric": "flow_share_ratio",
@@ -392,13 +435,137 @@
     "narrative_claim": "需求未超过供给（以直行需求 vs 北进口已查到的车道通行能力）",
     "demand_policy": "先使用北进口直行流量作为路口需求"
   },
+  "problem_link_turn_inflow": {
+    "via_inter_id": "011wwe28fmc00001",
+    "via_name": "奥体西路与解放东路路口",
+    "link_id": "12wwe28fmwwe28ct01",
+    "link_name": "奥体西路:解放东路-经十路(北向南)",
+    "source_type": "mock",
+    "db_supported": false,
+    "formula": "演示占比：北进口直行 70% + 东进口左转 25% + 西进口右转 5%",
+    "note": "库内解放东三向晚高峰主表为 0、西右 copy1 无行。本卡为演示 mock，不作为 PG 实测。",
+    "movements": [
+      {
+        "key": "north_through",
+        "label": "北进口直行",
+        "dir8": 0,
+        "turn": 2,
+        "share_pct": 70,
+        "source_type": "mock",
+        "db_supported": false,
+        "is_primary": true
+      },
+      {
+        "key": "east_left",
+        "label": "东进口左转",
+        "dir8": 2,
+        "turn": 1,
+        "share_pct": 25,
+        "source_type": "mock",
+        "db_supported": false,
+        "is_primary": false
+      },
+      {
+        "key": "west_right",
+        "label": "西进口右转",
+        "dir8": 6,
+        "turn": 3,
+        "share_pct": 5,
+        "source_type": "mock",
+        "db_supported": false,
+        "is_primary": false
+      }
+    ]
+  },
   "downstream_constraint": {
     "inter_id": "011wwe28ctu00001",
-    "east_through_saturation": 0.76,
-    "west_through_saturation": 0.0,
+    "time_window": {
+      "day_of_week": 1,
+      "step_start": 204,
+      "step_end": 227,
+      "label": "周一 17:00-19:00"
+    },
+    "flow_unit": "pcu/h",
+    "east_approach_flow_veh_h": 1586.5,
+    "east_approach_flow_pcu_h": 1586.5,
+    "west_approach_flow_pcu_h": 1427.85,
+    "west_mock_ratio_of_east": 0.9,
+    "east_turns_veh_h": { "left": 149.5, "through": 1337.0, "right": 100.0 },
+    "west_turns_pcu_h": { "left": 134.55, "through": 1203.3, "right": 90.0 },
+    "east_through_saturation": 0.819,
+    "west_through_saturation": 0.76,
+    "west_saturation_mock": true,
+    "east_right_flow_mock": true,
+    "west_flow_mock": true,
     "intersection_saturation_max": 1.2865916666666668,
     "intersection_los": "F",
-    "story": "经十路保障东西向通勤；东西向饱和度高，周期内难再向南北向分配可用绿灯"
+    "story": "经十路保障东西向通勤；东进口合计 1586.5 pcu/h、西进口流量 mock 为东向 0.9（1427.85 pcu/h）、饱和度 mock 0.76，周期内难再向南北向分配可用绿灯",
+    "note": "东：库左转149.5+库直行1337+右转1车道×100。西：库内全0，流量=东向×0.9，饱和度 mock 0.76。"
+  },
+  "signal_coordination_evidence": {
+    "source_type": "derived_with_field_observation",
+    "db_supported_partial": true,
+    "source": "dwd_ctl_inter_plan_cfg + dwd_ctl_inter_stage_cfg + 现场观测 + 幕2供需/下游承接结论",
+    "common_cycle_sec": 220,
+    "downstream_signal": {
+      "inter_id": "011wwe28ctu00001",
+      "inter_name": "奥体西路与经十路路口",
+      "movement": "北进口直行",
+      "effective_green_start_sec": 85,
+      "green_duration_sec": 57,
+      "source": "signal_plan_board 阶段表"
+    },
+    "upstream_signal": {
+      "inter_id": "011wwe28fmc00001",
+      "inter_name": "奥体西路与解放东路路口",
+      "movement": "北进口直行",
+      "release_start_sec": 59,
+      "green_duration_sec": 21,
+      "release_relative_to_downstream_green_sec": -26,
+      "source": "现场标定放行先后 + signal_plan_board 阶段表",
+      "db_supported": false,
+      "note": "库内 offset_sec=195 但 coord_stage_no=0，无法直接确定绝对锚定；59 s 为现场标定现状时序。负 26 s 表示解放东在经十有效绿窗前放行。"
+    },
+    "queue_observation": {
+      "residual_after_downstream_release_m": 170,
+      "display_queue_m": 270,
+      "fill_sequence": ["解放东西进口右转", "解放东东进口左转", "解放东北进口直行"],
+      "spill_trigger": "北进口直行绿灯亮起时短路段剩余空间不足，队列压回解放东路口",
+      "source": "现场观测（晚高峰 17:00-19:00）",
+      "db_supported": false,
+      "note": "幕2展示排队长度固定专家值 270 m；170 m 仅为经十放行后残余观测，不在本幕展示。"
+    },
+    "feasibility_checks": {
+      "current_flow_pcu_h": 824,
+      "known_lane_capacity_pcu_h": 1285.6,
+      "demand_below_capacity": true,
+      "downstream_has_receiving_capacity": true,
+      "common_cycle": true
+    },
+    "mismatch": {
+      "headline": "绿灯时间不一致",
+      "card_title": "双口绿灯错配",
+      "hero": "经十已红 · 解放东仍绿",
+      "conflict_start_sec": 59,
+      "conflict_end_sec": 85,
+      "conflict_duration_sec": 26,
+      "jiefang_green_during_jingshi_red_sec": 21,
+      "display": "经十北直已红灯时，解放东仍在放行",
+      "risk": "车流压入短路段，溢流风险加重",
+      "dock_metric_label": "绿灯错配",
+      "queue_label": "排队长度",
+      "queue_m": 270,
+      "dock_copy": "经十已红灯时解放东仍在放行，溢流风险加重。周期一致，可协调。",
+      "footer": "周期一致，调整放行先后即可降低集中到达",
+      "note": "解放东北直绿窗 59–80 s 全部落在经十北直红灯期内（经十北直绿窗 85–142 s）；错配 26 s 为解放东启亮至经十北直转绿。"
+    },
+    "can_coordinate": true,
+    "conclusion": "两口绿灯时间不一致：经十北进口仍为红灯时，解放东继续放行，车流压入短路段，溢流风险加重。共同周期 220 s、需求未超已查能力，具备相位协调条件。",
+    "escalation": {
+      "upstream_of_upstream_required": false,
+      "note": "本例已具备两口协调条件，不进入上游的上游截流分支。"
+    },
+    "implementation_boundary": "幕2只展示现状错配与可协调性证据；83 s→139 s、调整56 s等优化参数留在幕3。"
   },
   "actions": [
     {

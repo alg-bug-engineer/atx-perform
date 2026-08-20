@@ -219,7 +219,8 @@
     "intersection_saturation_max": 1.2865916666666668,
     "db_supported_partial": true,
     "gaps": [
-      "GAP-WEST-SAT"
+      "GAP-WEST-SAT",
+      "GAP-JINGSHI-EAST-LANES"
     ],
     "fallback_policy": "东西进口饱和度/西向流量不可用时，改用进口 link 速度 + 拥堵延时指数",
     "fallback_metrics": {
@@ -300,31 +301,68 @@
       "from_dir": "E",
       "to_dir": "W",
       "through_link_id": "12wwe291ewwe28ct01",
-      "turn_flow_veh_h": {
-        "left": null,
-        "through": 1230.0,
-        "right": null,
-        "sum": 1230.0
+      "time_window": {
+        "day_of_week": 1,
+        "step_start": 204,
+        "step_end": 227,
+        "label": "周一 17:00-19:00"
       },
-      "through_saturation": 0.76,
-      "note": "直行有值；左/右转绝对流量库内缺值"
+      "turn_flow_veh_h": {
+        "left": 149.5,
+        "through": 1337.0,
+        "right": 100.0,
+        "sum": 1586.5
+      },
+      "lane_count": {
+        "left": 2,
+        "through": 6,
+        "right": 1
+      },
+      "through_saturation": 0.819,
+      "left_saturation": 0.763,
+      "right_flow_mock": {
+        "per_lane_veh_h": 100,
+        "lanes": 1,
+        "source": "expert_mock",
+        "gap": "GAP-EAST-RIGHT-FLOW"
+      },
+      "note": "东进口合计 1586.5 辆/h = 左转 149.5（库，2 车道）+ 直行 1337（库，6 车道合计）+ 右转 100（实地 1 车道 × mock 100）。右转库内无行。分析成因幕卡片用此合计。"
     },
     "west_entrance": {
       "direction": "W2E",
       "from_dir": "W",
       "to_dir": "E",
       "through_link_id": "12wwe289qwwe28ct01",
-      "turn_flow_veh_h": {
-        "left": null,
-        "through": null,
-        "right": null,
-        "sum": null
+      "time_window": {
+        "day_of_week": 1,
+        "step_start": 204,
+        "step_end": 227,
+        "label": "周一 17:00-19:00"
       },
-      "through_saturation": 0.0,
+      "turn_flow_pcu_h": {
+        "left": 134.55,
+        "through": 1203.3,
+        "right": 90.0,
+        "sum": 1427.85
+      },
+      "lane_count": {
+        "left": 2,
+        "through": 5,
+        "right": 2
+      },
+      "through_saturation": 0.76,
+      "west_flow_mock": {
+        "ratio_of_east": 0.9,
+        "east_approach_flow_pcu_h": 1586.5,
+        "west_approach_flow_pcu_h": 1427.85,
+        "source": "expert_mock",
+        "gap": "GAP-WEST-SAT"
+      },
+      "west_saturation_mock": 0.76,
       "gaps": [
         "GAP-WEST-SAT"
       ],
-      "note": "西进口全向流量/饱和度库内为 0，改用速度+拥堵延时指数降级"
+      "note": "西进口库内流量/饱和度为 0。分析成因幕西侧流量 mock = 东向合计 1586.5 × 0.9 = 1427.85 pcu/h；饱和度 mock 0.76。"
     },
     "impact_prediction": {
       "note": "南北向配时调整对东西向车流影响（派生估算，非库内直读）",
@@ -332,7 +370,7 @@
       "intersection_saturation_max": 1.2865916666666668,
       "intersection_los": "F",
       "through_impact": "南北加绿将压缩东西直行绿灯，东进口直行饱和度 0.76 已偏高",
-      "turn_impact": "东西向转向流量库内缺值，影响待补数评估",
+      "turn_impact": "东进口左转库内有值；右转为 mock 100 辆/h（1 车道）。西进口仍缺",
       "delay_scope": "东进口延误指数 5.81 / 西进口 3.41，压缩绿灯后预计上升；波及转山西路·奥体东路方向 1–2 跳"
     }
   },

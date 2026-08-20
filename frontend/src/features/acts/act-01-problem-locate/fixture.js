@@ -273,8 +273,8 @@ export const FLOW_INFO_WINDOWS = [
  *
  * 注：幕 1 信息窗目前只展示核心问题路段窗口（core: true），
  * 本组窗口保留在 fixture 中供后续幕次复用，不参与幕 1 渲染。
- * 直行：东进口 1230 辆/h（dws_inter_link_turn_flow_5min_mm 有值）
- * 左/右转：库内绝对流量缺值（西进口全向 GAP-WEST-SAT；东进口左/右转同缺）
+ * 东进口合计 1586.5 辆/h（周一 17:00–19:00 / step 204–227）：
+ *   左转 149.5（库）+ 直行 1337（库，6 车道合计）+ 右转 100（1 车道 × mock 100）
  * 关联影响预测：由饱和度/延误指数派生估算（非库内直读）
  *
  * 结构对齐 FLOW_INFO_WINDOWS 的 metrics 项 + 新增 turnFlow：
@@ -288,32 +288,32 @@ export const JINGSHI_EW_FLOW_WINDOWS = [
     title: '经十路 · 东入口',
     subtitle: '经十路 · 东向西 E→W',
     flowDir: '东向西 ←',
-    source: 'turn_flow_veh_h · 直行 1230',
+    source: 'turn_flow_veh_h · 合计 1586.5',
     turnFlow: {
       turns: [
         {
           key: 'left',
           label: '左转',
-          value: '—',
+          value: '149.5',
           unit: '辆/h',
-          status: 'gap',
-          hint: '东进口左转绝对流量缺值（同 GAP-NORTH-LR-FLOW 模式）',
+          status: 'normal',
+          hint: '库内 2 车道，周一 step 204–227 均值',
         },
         {
           key: 'through',
           label: '直行',
-          value: '1230',
+          value: '1337',
           unit: '辆/h',
           status: 'normal',
-          hint: '经十路:奥体东路-无名道路, 经十路:无名道路-奥体西路(东向西) 直行流量',
+          hint: '库内 6 车道合计，周一 step 204–227 均值（不是单车道）',
         },
         {
           key: 'right',
           label: '右转',
-          value: '—',
+          value: '100',
           unit: '辆/h',
           status: 'gap',
-          hint: '东进口右转绝对流量缺值（同 GAP-NORTH-LR-FLOW 模式）',
+          hint: '库内无行；实地 1 车道 × mock 100 辆/h（GAP-EAST-RIGHT-FLOW）',
         },
       ],
       impact: [
@@ -358,32 +358,32 @@ export const JINGSHI_EW_FLOW_WINDOWS = [
     title: '经十路 · 西入口',
     subtitle: '经十路 · 西向东 W→E',
     flowDir: '西向东 →',
-    source: 'GAP-WEST-SAT · 速度/延时降级',
+    source: 'GAP-WEST-SAT · 东向合计 × 0.9',
     turnFlow: {
       turns: [
         {
           key: 'left',
           label: '左转',
-          value: '—',
-          unit: '辆/h',
+          value: '134.6',
+          unit: 'pcu/h',
           status: 'gap',
-          hint: 'GAP-WEST-SAT：西进口转向流量库内全为 0',
+          hint: '库内为 0；mock = 东进口左转 × 0.9',
         },
         {
           key: 'through',
           label: '直行',
-          value: '—',
-          unit: '辆/h',
+          value: '1203.3',
+          unit: 'pcu/h',
           status: 'gap',
-          hint: 'GAP-WEST-SAT：西进口直行流量库内为 0，改用速度+延时指数降级',
+          hint: '库内为 0；mock = 东进口直行 × 0.9',
         },
         {
           key: 'right',
           label: '右转',
-          value: '—',
-          unit: '辆/h',
+          value: '90',
+          unit: 'pcu/h',
           status: 'gap',
-          hint: 'GAP-WEST-SAT：西进口转向流量库内全为 0',
+          hint: '库内为 0；mock = 东进口右转 × 0.9',
         },
       ],
       impact: [
@@ -393,7 +393,7 @@ export const JINGSHI_EW_FLOW_WINDOWS = [
           value: '待评估',
           unit: '',
           status: 'gap',
-          hint: '西进口直行饱和度 0（GAP-WEST-SAT），影响待补数',
+          hint: '库内为 0；分析成因幕饱和度 mock 0.76',
         },
         {
           key: 'turnImpact',

@@ -398,8 +398,7 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
       via,
       target,
       problemRoad,
-      queueM: beats.overflow?.queue_m || 270,
-      queueRatio: beats.overflow?.queue_ratio ?? 0.8,
+      queueM: 270,
       hopTimes,
     });
     runtime.scene.add(annot);
@@ -440,8 +439,8 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
         panel: {
           kind: 'supply',
           title: ds.title || '上游需求流量分析',
-          supply: ds.supply_vph,
-          demand: ds.demand_vph,
+          supply: ds.supply_pcu_h,
+          demand: ds.demand_pcu_h,
           conclusion: ds.conclusion || '供给小于需求，当前路段有承接能力',
         },
       });
@@ -499,26 +498,9 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
               });
 
               after(beatMs(beats, 'signal', dc.signal_ms ?? 2800), () => {
-                playPhase = 'overflow';
-                ewLayer?.setOverflowHint?.(true);
-                annot?.setBeat('overflow');
-                frameProblemLink(via, target);
-                hooks.onHud?.({
-                  phase: 'overflow',
-                  caption: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
-                  text: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
-                  panel: {
-                    kind: 'overflow',
-                    title: '溢流风险',
-                    queue_m: beats.overflow?.queue_m || 270,
-                    copy: copyText(dc, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散。'),
-                  },
-                });
-                after(beatMs(beats, 'overflow', dc.overflow_ms ?? 3600), () => {
-                  frameJingshiEw(target, problemRoad);
-                  after(dc.frame_ms ?? 900, () => {
-                    hooks.onComplete?.();
-                  });
+                frameJingshiEw(target, problemRoad);
+                after(dc.frame_ms ?? 900, () => {
+                  hooks.onComplete?.();
                 });
               });
             });

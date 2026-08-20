@@ -25,6 +25,13 @@
     "upstream_inter_id": "011wwe28fmc00001",
     "problem_link_id": "12wwe28fmwwe28ct01",
     "queue_length_m_expert": 270,
+    "jingshi_east_approach_lanes_field": {
+      "scope": "东进口主路+辅路合计",
+      "through": 7,
+      "right": 1,
+      "left": 2,
+      "total": 10
+    },
     "storage_length_m": 367.89,
     "north_through_saturation": 0.8431583333333333,
     "problem_link_speed_kmh": 7.201388888888888,
@@ -55,9 +62,9 @@
       "scene": 1,
       "field": "经十路西进口/东西向西向东饱和度",
       "severity": "dws_turn_saturation_5min_mm 西进口(dir8=6)晚高峰饱和度全为 0；西进口转向流量亦全为 0",
-      "workaround": "经十东西进口改展示 avg_speed_kmh + delay_index（见 1-1 / 1-2 ew_fallback）",
+      "workaround": "西进口库内饱和度/流量为 0。分析成因幕西侧饱和度 mock 0.76，流量 mock = 东向合计 × 0.9 = 1427.85 pcu/h；速度+延时仍展示实测",
       "db_supported": false,
-      "status": "mitigated_by_speed_delay"
+      "status": "mitigated_mock"
     },
     {
       "id": "GAP-JIEFANG-SAT",
@@ -74,6 +81,24 @@
       "severity": "dws_inter_dir_turn_perf_5min_mm 对经十路口无任何行",
       "workaround": "排队长度固定专家值 270m",
       "db_supported": false
+    },
+    {
+      "id": "GAP-JINGSHI-EAST-LANES",
+      "scene": 1,
+      "field": "经十东进口渠化转向",
+      "severity": "库内东进口主路 c_lane_num=10 为直3+左7、辅路直0+左1+右1，与实地不符",
+      "workaround": "实地覆盖：主路+辅路合计 7 直行 + 1 右转 + 2 左转（共 10 条）。几何仍用 PG，功能以实地为准",
+      "db_supported": false,
+      "status": "mitigated_expert_field"
+    },
+    {
+      "id": "GAP-EAST-RIGHT-FLOW",
+      "scene": 1,
+      "field": "经十东进口右转流量",
+      "severity": "dws_inter_link_turn_flow_5min_mm / dws_turn_saturation_5min_mm 东进口 turn_dir_no=3 无任何行；辅路 link 也无流量行",
+      "workaround": "实地 1 条右转车道 × mock 100 辆/h = 100；东进口合计 = 左转 149.5 + 直行 1337 + 右转 100 = 1586.5（周一 step 204–227）",
+      "db_supported": false,
+      "status": "mitigated_mock_100_per_lane"
     },
     {
       "id": "GAP-NORTH-LR-FLOW",
@@ -100,6 +125,14 @@
       "workaround": "已确认：可视化与讲解使用 flow_share_ratio；不要求绝对辆/h",
       "db_supported": false,
       "status": "accepted_share_only"
+    },
+    {
+      "id": "GAP-DOWNSTREAM-SAT",
+      "scene": 2,
+      "field": "龙奥北西北进口饱和度",
+      "severity": "dws_turn_saturation_5min_mm 对 011wwe28bxq00001 无任何行；该路口无转向饱和度",
+      "workaround": "主去向卡不用饱和度，改用西北进口峰值排队占比 110/592=18.6%",
+      "db_supported": false
     },
     {
       "id": "GAP-OPT-PLAN",

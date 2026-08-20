@@ -138,7 +138,7 @@ export const flowTracePhase = ref('idle');
 
 /**
  * Act2 流量溯源地图节拍
- * null | 'trace' | 'supply' | 'arterial' | 'signal' | 'overflow'
+ * null | 'trace' | 'supply' | 'arterial' | 'signal'
  */
 export const flowTraceMapBeat = ref(null);
 
