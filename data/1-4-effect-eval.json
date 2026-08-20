@@ -1,7 +1,7 @@
 {
   "meta": {
     "scene_index": 4,
-    "name": "效果评估",
+    "name": "效果预评估",
     "ui_ref": [
       "assets/效果评估.png",
       "references/agent-loop-project"
@@ -74,7 +74,7 @@
     "upstream_queue_ratio": 0.22,
     "upstream_queue_length_m": 48,
     "upstream_storage_length_m": 215.7,
-    "upstream_blocked_veh": 9,
+    "upstream_blocked_veh": 36,
     "queue_length_source": "expert_survey",
     "note": "与幕 2 溢流拍一致：专家排队 270 m、排队比 0.8（预警线）。蓄车长度仍用路段 368 m。",
     "upstream_blocked_note": "解放东路口内因下游吃满而进不来的滞留车辆峰值，取自幕 3 仿真 KPI blocked_veh"
@@ -82,15 +82,15 @@
   "trial_targets": {
     "start_queue_length_m": 270,
     "start_queue_ratio": 0.8,
-    "end_queue_length_m": 162,
-    "end_queue_ratio": 0.48,
+    "end_queue_length_m": 230,
+    "end_queue_ratio": 0.6252,
     "end_speed_kmh": 13,
     "end_delay_index": 2.1,
     "end_green_utilization": 0.68,
     "end_upstream_queue_ratio": 0.35,
-    "end_upstream_blocked_veh": 3,
-    "start_note": "试运行从专家常态 270 m、排队比 0.8（预警线）回落；不再用幕 3 仿真峰值 368 m 作为观察起点。",
-    "upstream_tradeoff_note": "北进口直行绿时压 6s，上游进口排队比由 0.22 升至 0.35（仍低于回滚线 0.9）；同时下游不再溢出、回灌消失，路口内滞留车辆由 9 辆降到 3 辆"
+    "end_upstream_blocked_veh": 9,
+    "start_note": "试运行从专家常态 270 m、排队比 0.8（预警线）回落；不再用幕 3 仿真峰值 367 m 作为观察起点。",
+    "upstream_tradeoff_note": "北进口直行绿时压 6s，上游进口排队比由 0.22 升至 0.35（仍低于回滚线 0.9）；同时下游不再溢出、回灌消失，路口内滞留车辆由 36 辆降到 9 辆"
   },
   "thresholds": {
     "queue_ratio_warning": 0.8,

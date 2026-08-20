@@ -292,7 +292,7 @@ td.t{color:var(--cyan);white-space:nowrap}
       <tr><th style="width:110px">时间</th><th>画面动作</th><th>绑定数据</th><th>数据源</th></tr>
       <tr><td class="t">T+0–8s</td><td>相位时序对比板</td><td>经十 <span class="ok">全 ±0</span>；解放东相位差 <span class="key">+56s</span>、北直绿时 <span class="bad">−6s</span></td><td class="src">data/1-3-optimization.json → signal_plan_board.intersections</td></tr>
       <tr><td class="t">T+8–16s</td><td>左右动态对比（现状 vs 协调）</td><td>放行时刻差 <span class="bad">−26s</span> → <span class="ok">+36s</span></td><td class="src">1-3-optimization.json → optimized_signal_plans.release_timing_vs_downstream_green_sec</td></tr>
-      <tr><td class="t">T+16–22s</td><td>走廊微观仿真 KPI</td><td>排队峰值 <span class="ok">368→201 m</span>；溢出 <span class="ok">16→0 s</span>；滞留 <span class="ok">9→3 辆</span></td><td class="src">1-3-optimization.json → corridor_demo.kpis</td></tr>
+      <tr><td class="t">T+16–22s</td><td>走廊微观仿真 KPI</td><td>排队峰值 <span class="ok">367→168 m</span>；溢出 <span class="ok">30→0 s</span>；滞留 <span class="ok">29→9 辆</span></td><td class="src">1-3-optimization.json → corridor_demo.kpis</td></tr>
     </table>
     <div class="grid g2" style="margin-top:14px">
       <div class="frame">
@@ -323,13 +323,13 @@ td.t{color:var(--cyan);white-space:nowrap}
           <div class="cmp okf">
             <h5 class="ok">相位协调 · 经十先放</h5>
             <div class="lane"><div class="stop"></div><div class="q" style="height:55%;background:rgba(5,150,105,.5)"></div></div>
-            <p style="font-size:12px">经十先放行消散队列，解放东北直<span class="ok">滞后 36s</span> 待队列跑起来再汇入，排队峰值 <span class="ok">201 m</span>，<span class="ok">无溢出</span>。</p>
+            <p style="font-size:12px">经十先放行消散队列，解放东北直<span class="ok">滞后 36s</span> 待队列跑起来再汇入，排队峰值 <span class="ok">168 m</span>，<span class="ok">无溢出</span>。</p>
           </div>
         </div>
         <div class="grid g3" style="margin-top:12px">
-          <div class="card"><div class="lb">排队峰值</div><div class="v ok">368→201 m</div><div class="sb">走廊微观仿真 · 单周期</div></div>
-          <div class="card"><div class="lb">路口溢出时长</div><div class="v ok">16→0 s</div><div class="sb">溢出消除</div></div>
-          <div class="card"><div class="lb">解放东路口滞留</div><div class="v ok">9→3 辆</div><div class="sb">队尾压回上游车辆峰值</div></div>
+          <div class="card"><div class="lb">排队峰值</div><div class="v ok">367→168 m</div><div class="sb">走廊微观仿真 · 单周期</div></div>
+          <div class="card"><div class="lb">路口溢出时长</div><div class="v ok">30→0 s</div><div class="sb">溢出消除</div></div>
+          <div class="card"><div class="lb">解放东路口滞留</div><div class="v ok">29→9 辆</div><div class="sb">队尾压回上游车辆峰值</div></div>
         </div>
       </div>
     </div>
@@ -385,10 +385,10 @@ td.t{color:var(--cyan);white-space:nowrap}
       <tr><td class="t">T+12–18s</td><td>达成判定卡 + 结论</td><td><span class="ok">达标</span> · 未触发回滚</td><td class="src">trialEffectSeries.js 序列（smoothstep 插值，确定）</td></tr>
     </table>
     <div class="grid g4" style="margin-top:14px">
-      <div class="card"><div class="lb">问题路段排队</div><div class="v ok">270→162 m</div><div class="sb">排队比 <span class="ok">0.80→0.48</span>，低于预警线 0.8</div></div>
+      <div class="card"><div class="lb">问题路段排队</div><div class="v ok">270→230 m</div><div class="sb">排队比 <span class="ok">0.80→0.63</span>，低于预警线 0.8</div></div>
       <div class="card"><div class="lb">路段平均速度</div><div class="v ok">7.2→22 km/h</div><div class="sb">延时指数 <span class="ok">5.28→2.1</span></div></div>
       <div class="card"><div class="lb">绿灯利用率</div><div class="v ok">0.62→0.72</div><div class="sb"><span class="ok">放行效率改善</span></div></div>
-      <div class="card"><div class="lb">上游解放东排队比</div><div class="v warn">0.22→0.35</div><div class="sb"><span class="ok">未触及回滚线 0.9</span>；路口滞留 <span class="ok">9→3 辆</span></div></div>
+      <div class="card"><div class="lb">上游解放东排队比</div><div class="v warn">0.22→0.35</div><div class="sb"><span class="ok">未触及回滚线 0.9</span>；路口滞留 <span class="ok">29→9 辆</span></div></div>
     </div>
     <div class="grid g3" style="margin-top:14px">
       <div class="frame"><h4>趋势图规格 · 目标排队比 · 预警线 0.8</h4>
@@ -420,10 +420,10 @@ td.t{color:var(--cyan);white-space:nowrap}
     </div>
     <div class="grid g3" style="margin-top:14px">
       <div class="cmp okf"><h5><span class="tag ok">达成</span>问题路段排队已缓解</h5><p style="font-size:12px">排队比 0.80 → <span class="ok">0.48</span>，低于预警线 0.8</p></div>
-      <div class="cmp okf"><h5><span class="tag ok">达成</span>上游代价可控</h5><p style="font-size:12px">解放东排队比 0.22 → <span class="warn">0.35</span>，未触及回滚线 0.9；路口滞留 <span class="ok">9 → 3 辆</span></p></div>
+      <div class="cmp okf"><h5><span class="tag ok">达成</span>上游代价可控</h5><p style="font-size:12px">解放东排队比 0.22 → <span class="warn">0.35</span>，未触及回滚线 0.9；路口滞留 <span class="ok">29 → 9 辆</span></p></div>
       <div class="cmp okf"><h5><span class="tag ok">达成</span>路段速度回升</h5><p style="font-size:12px">速度 <span class="ok">7.2 → 22 km/h</span>，延时指数 <span class="ok">5.28 → 2.1</span></p></div>
     </div>
-    <p style="font-size:11.5px;color:var(--mut);margin-top:10px">版式口径（对齐最新代码 / assets/效果评估.png）：左侧周期时间线 + 四张指标卡 + 三条逐周期趋势线 + 末排单周期排队推演对照；方案 chips：共同周期 220 s 不变 ／ 解放东北直放行 绿灯前 26 s → 绿灯后 36 s ／ 解放东北直绿时 −6 s 轻微截流 ／ 经十路配时全盘不动 ／ 蓄车边界 368 m；结论大标题按「指标由 A 变为 B」口径：「排队长度由 270 m 降至 162 m，平均速度由 7.2 提升至 22.0 km/h，峰值排队未超 368 m 蓄车能力」；判定标签「达标结论」。</p>
+    <p style="font-size:11.5px;color:var(--mut);margin-top:10px">版式口径（对齐最新代码 / assets/效果评估.png）：主视觉采用现状 / 优化后走廊推演同屏对照；结论大标题为「排队长度由 270 m 降至 230 m」，现状明确展示溢出风险，优化后明确展示无溢出风险。</p>
     <div class="narr">
       <h4>口播逐字稿 <span class="mode">预合成语音 · s4-main.wav · 预算 10s</span></h4>
       <div class="say"><span class="tc">0–10s</span>试运行 5 周期达标：排队由 <span class="bad">270 米</span> 回落至 <span class="ok">162 米</span>，速度回升至 <span class="ok">22 公里每小时</span>；上游解放东排队比 <span class="warn">0.35</span>，未触及 <span class="bad">0.9</span> 回滚线，<span class="ok">未触发回滚</span>。</div>
@@ -521,14 +521,14 @@ td.t{color:var(--cyan);white-space:nowrap}
       <tr><td><span class="dk">东西向直行 · 通勤主保障</span>　<span class="ok">回补绿时 +5 s / +6 s</span></td><td><span class="tag dk">白（黑底）</span>/<span class="tag ok">绿</span></td><td>非数据文字白；增加绿</td></tr>
       <tr><td><span class="key">相位差 +56 s</span>　<span class="key">公共周期 250/220 → 180 s</span></td><td><span class="tag key">青</span></td><td>关键动作</td></tr>
       <tr><td><span class="bad">北直绿时 −6 s · 轻微截流</span>　<span class="bad">现状配时：提前 26 s 汇入 · 排队 368 m · 溢出 16 s</span></td><td><span class="tag bad">红</span></td><td>减少 / 问题侧</td></tr>
-      <tr><td><span class="ok">相位协调：滞后 36 s 汇入 · 201 m · 无溢出</span>　<span class="ok">368→201 m · 16→0 s · 9→3 辆</span>　<span class="ok">−86 s</span></td><td><span class="tag ok">绿</span></td><td>改善</td></tr>
+      <tr><td><span class="ok">相位协调：滞后 36 s 汇入 · 168 m · 无溢出</span>　<span class="ok">367→168 m · 30→0 s · 29→9 辆</span>　<span class="ok">−86 s</span></td><td><span class="tag ok">绿</span></td><td>改善</td></tr>
       <tr><td><span class="warn">优化值为专家建议值，需现场验证后下发</span>　<span class="warn">待人工确认</span></td><td><span class="tag warn">琥珀</span></td><td>待确认</td></tr>
       <tr><td><span class="dk">采用相位协调而非大幅截流</span>（结论）</td><td><span class="tag dk">白（黑底）</span></td><td>结论语句 · 非数据文字</td></tr>
     </table>
     <h4 style="color:var(--cyan-dim);font-size:12px;letter-spacing:1px;margin:14px 0 8px">幕 5 · 效果评估</h4>
     <table>
       <tr><th>屏显文字示例</th><th style="width:110px">颜色</th><th>语义</th></tr>
-      <tr><td><span class="ok">排队 270→162 m（比 0.80→0.48）</span>　<span class="ok">速度 7.2→22 km/h · 延时 5.28→2.1</span>　<span class="ok">绿灯利用率 0.62→0.72</span></td><td><span class="tag ok">绿</span></td><td>达标改善</td></tr>
+      <tr><td><span class="ok">排队 270→230 m（比 0.80→0.63）</span>　<span class="ok">速度 7.2→22 km/h · 延时 5.28→2.1</span>　<span class="ok">绿灯利用率 0.62→0.72</span></td><td><span class="tag ok">绿</span></td><td>达标改善</td></tr>
       <tr><td><span class="warn">上游排队比 0.22→0.35</span></td><td><span class="tag warn">琥珀</span></td><td>预警 · 代价可控</td></tr>
       <tr><td><span class="ok">未触及回滚线 0.9 · 未触发回滚</span>　<span class="ok">达成 · 3 项</span></td><td><span class="tag ok">绿</span></td><td>安全 / 达成</td></tr>
       <tr><td><span class="bad">预警 0.8 / 回滚 0.9</span>（阈值虚线）</td><td><span class="tag bad">红</span></td><td>阈值线</td></tr>

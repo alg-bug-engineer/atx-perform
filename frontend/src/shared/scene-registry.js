@@ -30,7 +30,7 @@ export const sceneRegistry = [
   {
     key: '4',
     aliases: ['effect', 'eval'],
-    name: '效果评估',
+    name: '效果预评估',
     component: () => import('../scenes/scene4-effect-eval/Scene4EffectEval.vue'),
   },
   {

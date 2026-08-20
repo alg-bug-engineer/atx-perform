@@ -17,7 +17,7 @@ const arg = (k, d) => {
 const taus = arg('tau', [1.5, 1.8, 2.0, 2.2])
 const scales = arg('scale', [0.85, 0.95, 1.0])
 const losses = arg('loss', [2.5])
-const mixes = arg('mix', [0.1])
+const leftHs = arg('lefth', [1.15])
 const speeds = arg('v', [11.1])
 
 function metrics(variant) {
@@ -52,20 +52,20 @@ const rows = []
 for (const tau of taus) {
   for (const scale of scales) {
     for (const loss of losses) {
-      for (const mix of mixes) {
+      for (const leftH of leftHs) {
        for (const v of speeds) {
         const payload = JSON.parse(JSON.stringify(base))
         const sim = payload.corridor_demo.simulation
         sim.vehicle.reaction_sec = tau
         sim.vehicle.startup_loss_sec = loss
-        sim.vehicle.left_lane_through_mix = mix
+        sim.vehicle.left_headway_factor = leftH
         sim.vehicle.free_speed_mps = v
         sim.demand = { ...(sim.demand || {}), field_factor: scale }
         if (process.env.WARMUP) sim.warmup_cycles = Number(process.env.WARMUP)
         const model = buildCorridorDemo(payload)
         const b = metrics(model.variants[0])
         const a = metrics(model.variants[1])
-        rows.push({ tau, scale, loss, mix, v, b, a })
+        rows.push({ tau, scale, loss, leftH, v, b, a })
        }
       }
     }
@@ -74,11 +74,11 @@ for (const tau of taus) {
 
 const f = (x) => String(Math.round(x)).padStart(4)
 console.log(
-  'tau  scl  loss mix vf  | before: gStart gEnd preN postN peak spillS blk | after: gStart gEnd preN peak spillS',
+  'tau  scl  loss lefth vf  | before: gStart gEnd preN postN peak spillS blk | after: gStart gEnd preN peak spillS',
 )
 for (const r of rows) {
   console.log(
-    `${r.tau.toFixed(1)} ${r.scale.toFixed(2)} ${r.loss.toFixed(1)} ${r.mix.toFixed(2)} ${r.v.toFixed(1)} |` +
+    `${r.tau.toFixed(1)} ${r.scale.toFixed(2)} ${r.loss.toFixed(1)} ${r.leftH.toFixed(2)}  ${r.v.toFixed(1)} |` +
       `${f(r.b.greenStartQ)}${f(r.b.greenEndQ)}${f(r.b.preNorthQ)}${f(r.b.postNorthQ)}${f(r.b.peak)}` +
       `${f(r.b.spillSec)}${f(r.b.maxBlocked)} |` +
       `${f(r.a.greenStartQ)}${f(r.a.greenEndQ)}${f(r.a.preNorthQ)}${f(r.a.peak)}${f(r.a.spillSec)}`,

@@ -4,8 +4,7 @@ import TimeSpaceDiagram from '../scene3b-signal-plan/TimeSpaceDiagram.vue'
 import { buildSignalPlanModel } from '../scene3b-signal-plan/signalPlanModel.js'
 import PhaseSequenceBoard from './PhaseSequenceBoard.vue'
 import OffsetAlignStrip from './OffsetAlignStrip.vue'
-import CorridorStage from './CorridorStage.vue'
-import { buildCorridorDemo, findBriefingBeats, greenBands, sampleVariant } from './corridorDemo.js'
+import { buildPhasePlans, greenBands } from './corridorDemo.js'
 
 const props = defineProps({
   payload: { type: Object, required: true },
@@ -14,17 +13,17 @@ const props = defineProps({
 
 const board = computed(() => props.payload?.signal_plan_board || null)
 const tsModel = computed(() => (props.signalPlan ? buildSignalPlanModel(props.signalPlan) : null))
-const demo = computed(() => {
+const plans = computed(() => {
   try {
-    return buildCorridorDemo(props.payload)
+    return buildPhasePlans(props.payload)
   } catch (err) {
-    console.warn('[scene3] corridor demo failed', err)
+    console.warn('[scene3] phase plans failed', err)
     return null
   }
 })
 
-const before = computed(() => demo.value?.variants.find((v) => v.key === 'before') || null)
-const after = computed(() => demo.value?.variants.find((v) => v.key === 'after') || null)
+const before = computed(() => plans.value?.variants.find((v) => v.key === 'before') || null)
+const after = computed(() => plans.value?.variants.find((v) => v.key === 'after') || null)
 
 const mode = ref('optimized')
 const direction = ref('both')
@@ -32,49 +31,25 @@ const enlarged = ref(null)
 
 const clock = ref(0)
 const paused = ref(false)
-const guided = ref(false)
-const holdRemain = ref(0)
-const BEAT_IDLE = { tag: '说明', text: '解放东放行窗口对准经十路绿灯', tone: 'ok' }
-const beatCaption = ref({ ...BEAT_IDLE })
+const beatCaption = ref({ tag: '放行窗口', text: '解放东放行窗口对准经十路绿灯', tone: 'ok' })
 const speed = ref(7)
 
-const beats = computed(() => findBriefingBeats(before.value, after.value))
-const fired = new Set()
 let waitingAlignEnd = false
 
 let rafId = 0
 let lastTs = 0
 function tick(ts) {
-  if (lastTs && demo.value && !paused.value) {
+  if (lastTs && plans.value && !paused.value) {
     const dt = (ts - lastTs) / 1000
-    const cycle = demo.value.cycleLen || 220
-    if (holdRemain.value > 0) {
-      holdRemain.value -= dt
+    const cycle = cycleLen.value
+    const next = clock.value + dt * speed.value
+    if (waitingAlignEnd && next >= cycle) {
+      clock.value = cycle - 0.01
+      paused.value = true
+      waitingAlignEnd = false
+      startLightboxTour()
     } else {
-      const next = clock.value + dt * speed.value
-      if (guided.value) {
-        const hit = beats.value.find((b) => clock.value < b.t && next >= b.t && !fired.has(b.id))
-        if (hit) {
-          clock.value = hit.t
-          holdRemain.value = hit.hold
-          beatCaption.value = { tag: hit.tag, text: hit.text, tone: hit.tone }
-          fired.add(hit.id)
-        } else if (next >= cycle) {
-          clock.value = cycle - 0.01
-          guided.value = false
-          paused.value = true
-          beatCaption.value = { tag: '演示结束', text: '可再次播放', tone: 'plain' }
-        } else {
-          clock.value = next
-        }
-      } else if (waitingAlignEnd && next >= cycle) {
-        clock.value = cycle - 0.01
-        paused.value = true
-        waitingAlignEnd = false
-        startLightboxTour()
-      } else {
-        clock.value = next % cycle
-      }
+      clock.value = next % cycle
     }
   }
   lastTs = ts
@@ -95,9 +70,6 @@ onUnmounted(() => {
   cancelAnimationFrame(rafId)
   window.removeEventListener('keydown', onKey)
 })
-
-const beforeSample = computed(() => (before.value ? sampleVariant(before.value, clock.value) : null))
-const afterSample = computed(() => (after.value ? sampleVariant(after.value, clock.value) : null))
 
 const jingshiBefore = computed(() =>
   before.value
@@ -148,35 +120,12 @@ const enlargeLead = computed(() => {
   if (enlarged.value === 'wave') return 'wave'
   return ''
 })
-const cycleLen = computed(() => demo.value?.cycleLen || 220)
+const cycleLen = computed(() => plans.value?.cycleLen || 220)
 const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value} s`)
 
-const showAlignStrip = ref(true)
-const alignFading = ref(false)
-const showVehicles = ref(false)
-const showKpis = ref(false)
-
-const resultCards = computed(() => {
-  const list = (demo.value?.kpis || props.payload?.corridor_demo?.kpis || []).filter(
-    (k) => k.key !== 'cycle_end_queue',
-  )
-  return list.map((k) => {
-    const drop = k.before > 0 ? Math.round(((k.before - k.after) / k.before) * 100) : 0
-    const cleared = k.after === 0 && k.before > 0
-    return {
-      key: k.key,
-      label: k.label,
-      unit: k.unit,
-      before: k.before,
-      after: k.after,
-      delta: cleared ? '已消除' : drop > 0 ? `↓ ${drop}%` : '持平',
-    }
-  })
-})
-
 const ALIGN_PLAY_S = 6
+const ALIGN_LOOP_S = 12
 const LIGHTBOX_MS = 2000
-const ALIGN_FADE_MS = 450
 let seqTimers = []
 
 function clearSeq() {
@@ -190,16 +139,6 @@ function later(ms, fn) {
   seqTimers.push(id)
 }
 
-function startVehicleDemo() {
-  fired.clear()
-  clock.value = 0
-  holdRemain.value = 0.4
-  paused.value = false
-  guided.value = true
-  speed.value = 8
-  beatCaption.value = { tag: '演示', text: '先观察现状拥堵形成，再对比优化后通行', tone: 'plain' }
-}
-
 function startLightboxTour() {
   enlarged.value = 'phase'
   beatCaption.value = { tag: '方案细节', text: '相位相序图', tone: 'ok' }
@@ -208,33 +147,19 @@ function startLightboxTour() {
     beatCaption.value = { tag: '方案细节', text: '绿波时距图', tone: 'ok' }
     later(LIGHTBOX_MS, () => {
       enlarged.value = null
-      alignFading.value = true
-      beatCaption.value = { tag: '方案对比', text: '进入现状与优化后通行对比', tone: 'plain' }
-      later(ALIGN_FADE_MS, () => {
-        showAlignStrip.value = false
-        alignFading.value = false
-        showVehicles.value = true
-        showKpis.value = true
-        startVehicleDemo()
-      })
+      paused.value = false
+      speed.value = cycleLen.value / ALIGN_LOOP_S
+      beatCaption.value = { tag: '方案对比', text: '解放东放行窗口对准经十路绿灯', tone: 'ok' }
     })
   })
 }
 
 function playOnce() {
   clearSeq()
-  fired.clear()
   clock.value = 0
-  holdRemain.value = 0
   paused.value = false
-  guided.value = false
-  const cycle = demo.value?.cycleLen || 220
-  speed.value = cycle / ALIGN_PLAY_S
+  speed.value = cycleLen.value / ALIGN_PLAY_S
   enlarged.value = null
-  showAlignStrip.value = true
-  alignFading.value = false
-  showVehicles.value = false
-  showKpis.value = false
   waitingAlignEnd = true
   beatCaption.value = { tag: '放行窗口', text: '对比现状与优化后经十路 / 解放东绿窗', tone: 'plain' }
 }
@@ -272,7 +197,7 @@ function playOnce() {
           </button>
         </div>
       </div>
-      <div v-if="showAlignStrip && demo" class="intro" :class="{ fading: alignFading }">
+      <div v-if="plans" class="intro">
         <div class="align-stack">
           <OffsetAlignStrip
             compact
@@ -309,30 +234,6 @@ function playOnce() {
           </figure>
         </div>
       </div>
-      <div v-if="showVehicles" class="stage">
-        <CorridorStage
-          v-if="demo && before"
-          :model="demo"
-          :variant="before"
-          :sample="beforeSample"
-          show-expert-queue
-        />
-        <CorridorStage
-          v-if="demo && after"
-          :model="demo"
-          :variant="after"
-          :sample="afterSample"
-          :ghost-queue-m="beforeSample?.queueM || 0"
-        />
-        <p v-if="!demo" class="empty">走廊仿真数据未就绪</p>
-      </div>
-      <ul v-if="showKpis && resultCards.length" class="posters">
-        <li v-for="card in resultCards" :key="card.key">
-          <span class="poster-title">{{ card.label }}</span>
-          <strong>{{ fmt(card.before) }}{{ card.unit }} → {{ fmt(card.after) }}{{ card.unit }}</strong>
-          <em>{{ card.delta }}</em>
-        </li>
-      </ul>
     </div>
 
     <Teleport to="body">
@@ -532,11 +433,6 @@ function playOnce() {
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
-  opacity: 1;
-  transition: opacity 0.45s ease;
-}
-.intro.fading {
-  opacity: 0;
 }
 .align-stack {
   display: grid;
@@ -588,68 +484,6 @@ function playOnce() {
   flex: 1 1 0;
   min-height: 0;
 }
-.stage {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 0;
-}
-.stage :deep(.corridor) {
-  flex: 1 1 0;
-  min-height: 0;
-}
-.stage,
-.posters {
-  animation: appear 0.4s ease;
-}
-@keyframes appear {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.posters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  flex: none;
-}
-.posters li {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  gap: 2px 8px;
-  align-items: baseline;
-  padding: 7px 10px;
-  border: 1px solid var(--cyan-border);
-  background: rgba(0, 16, 28, 0.55);
-}
-.poster-title {
-  grid-column: 1 / -1;
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-}
-.posters strong {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-.posters em {
-  font-style: normal;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ok);
-}
-.empty {
-  margin: auto;
-  font-size: 12px;
-  color: var(--text);
-}
-
 .sheet header h3 {
   margin: 0;
   font-size: 13px;

@@ -35,7 +35,7 @@ onMounted(async () => {
     <PlanComparePanel v-if="payload" :payload="payload" :signal-plan="signalPlan" />
 
     <template #foot>
-      <button type="button" class="btn primary" @click="setScene('4')">试点后看效果评估</button>
+      <button type="button" class="btn primary" @click="setScene('4')">试点后看效果预评估</button>
     </template>
   </SceneStage>
 </template>

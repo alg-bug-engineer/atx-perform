@@ -272,7 +272,7 @@
         "label": "排队峰值",
         "unit": "m",
         "before": 368,
-        "after": 201,
+        "after": 257,
         "better": "lower",
         "source": "走廊微观仿真（单周期）"
       },
@@ -280,7 +280,7 @@
         "key": "spill_duration",
         "label": "路口溢出时长",
         "unit": "s",
-        "before": 16,
+        "before": 84,
         "after": 0,
         "better": "lower",
         "source": "走廊微观仿真（单周期）"
@@ -290,7 +290,7 @@
         "label": "周期末残余排队",
         "unit": "m",
         "before": 368,
-        "after": 201,
+        "after": 208,
         "better": "lower",
         "source": "走廊微观仿真（单周期）"
       },
@@ -298,8 +298,8 @@
         "key": "blocked_veh",
         "label": "路口滞留车辆",
         "unit": "辆",
-        "before": 9,
-        "after": 3,
+        "before": 36,
+        "after": 9,
         "better": "lower",
         "note": "队尾压回上游、当前周期进不了本路段的车辆峰值"
       }
@@ -374,30 +374,35 @@
             "from_upstream": 3
           }
         ],
-        "field_note": "现场观测（东→西）：上游 左转·直行·公交专用道；展宽段 左转+掉头·左转·直行·直行·右转借道+公交专用道"
+        "field_note": "现场观测（东→西）：上游 左转·直行·公交专用道；展宽段 左转+掉头·左转·直行·直行·右转借道+公交专用道；拥堵时少量直行车借最西侧车道排队，并在停止线前并回相邻直行道"
       },
-      "vehicle": {
-        "space_m": 7,
+    "vehicle": {
+      "length_m": 5.4,
+      "space_m": 7,
         "free_speed_mps": 11.1,
         "reaction_sec": 1.5,
         "accel_mps2": 2.3,
-        "stopped_speed_mps": 1.2,
-        "enter_speed_mps": 7.5,
-        "left_lane_through_mix": 0.1,
-        "capacity_note": "停止线饱和车头时距：本路段进口 2.6 s/车道（≈1385 pcu/h/车道，展宽只有 100 m、换道摩擦与右转借用公交道压低了饱和流率），上游解放东路口进口取常规 2.2 s/车道；跟驰另用 Newell 三角基本图，起动波速 = 车头间距 ÷ 反应时 ≈ 4.7 m/s",
+      "stopped_speed_mps": 1.2,
+      "enter_speed_mps": 7.5,
+      "through_from_bus_share": 0.2,
+      "through_from_bus_note": "约 20% 直行车辆在拥堵时借用最西侧右转/公交车道排队，并在展宽段内向相邻直行车道变道；用于复现现场车道利用与交织现象",
+      "capacity_note": "停止线饱和车头时距：本路段进口 3.05 s/车道（≈1180 pcu/h/车道，展宽只有 100 m、换道摩擦与右转借用公交道压低了饱和流率），上游解放东路口进口取常规 2.2 s/车道；跟驰另用 Newell 三角基本图，起动波速 = 车头间距 ÷ 反应时 ≈ 4.7 m/s",
         "startup_loss_sec": 2.5,
-        "saturation_headway_sec": 2.6,
+      "saturation_headway_sec": 3.05,
         "source_headway_sec": 2.2,
         "right_yield_factor": 2.2,
-        "right_yield_note": "右转借道 + 公交道常放，但南北直行相位外需让行冲突流，放行车头时距按此系数放大"
+        "right_yield_note": "右转借道 + 公交道常放，但南北直行相位外需让行冲突流，放行车头时距按此系数放大",
+        "left_headway_factor": 1.15,
+        "uturn_headway_factor": 1.8,
+        "left_headway_note": "左转转弯半径小于直行，饱和车头时距按此系数放大；第一条左转道兼掉头，掉头车几乎要停车打方向，单独取更大系数。两条左转道合计放行能力约 24 辆/周期（直行 44 辆）"
       },
       "turn_split": {
-        "left": 0.24,
-        "through": 0.6,
-        "right": 0.16,
-        "source": "dws_inter_link_turn_flow_5min_mm（经十路口 011wwe28ctu00001，周一 17:00-19:00）",
+        "left": 0.39,
+        "through": 0.49,
+        "right": 0.12,
+        "source": "dws_inter_link_turn_flow_5min_mm（经十路口 011wwe28ctu00001，周一 17:00-19:00）+ demand.proxy 对向南进口转向流量",
         "db_supported": false,
-        "note": "北进口只有直行有记录 545.8 pcu/h、饱和度 0.87，左转/右转记录为 0（无检测，GAP）。直行为主流向与幕 1/2 的问题定位一致；左/右按展宽段车道功能（2 条左转 + 1 条右转借道）给保守占比"
+        "note": "北进口只有直行有记录 545.8 pcu/h、饱和度 0.87，左转/右转记录为 0（无检测，GAP）。左占比按 demand.proxy 的对向南进口实测（左 625 pcu/h，高于直行检测值）反推：左转需求与直行同量级，故不再按 0.24 的保守值取。现取值使左转与直行同步过饱和、排队峰值比 0.9，且直行仍略高于左转（与幕 1/2 依据唯一实测流向的问题定位一致）。代价是右转压到 0.12、低于代理实测的 0.22——上游解放东路口每周期只能放行约 86 辆，要同时喂饱左转与直行两股过饱和车流，只能从右转/公交道匀出需求"
       },
       "sources": [
         {
@@ -478,8 +483,8 @@
         },
         "db_supported": false,
         "note": "北进口左转/右转库内记录为 0（无检测，GAP）；且过饱和时段检测流量只反映已放行量，低于真实需求。仿真按上游各相位放行能力设定汇入量，并用现场观测的排队剖面校核",
-        "field_factor": 0.85,
-        "field_factor_note": "各汇入相位实际放行量 / 该相位理论放行能力，按现场观测的排队剖面反标定为 0.85"
+        "field_factor": 1.0,
+        "field_factor_note": "各汇入相位实际放行量 / 该相位理论放行能力，按现场观测的排队剖面反标定；上限为 1.0（上游解放东路口每周期最多放行约 86 辆，超出部分只能滞留在上游进口）"
       }
     }
   },

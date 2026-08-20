@@ -122,15 +122,15 @@
     },
     "4": {
       "title": "效果评估",
-      "total_duration_sec": 9.64,
+      "total_duration_sec": 6.36,
       "segments": [
         {
           "id": "s4-main",
           "file": "scene4/s4-main.wav",
           "approx_sec": 10,
-          "text": "试运行后，奥体西路平均最大排队长度由270米降至230米，高峰时段溢出次数由20次降至5次。",
-          "duration_sec": 9.64,
-          "chars": 46
+          "text": "试运行后，奥体西路平均最大排队长度由270米降至230米。",
+          "duration_sec": 6.36,
+          "chars": 29
         }
       ]
     },
@@ -149,7 +149,7 @@
       ]
     }
   },
-  "generated_at": "2026-08-20T12:28:54+0800",
+  "generated_at": "2026-08-20T22:01:24+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000

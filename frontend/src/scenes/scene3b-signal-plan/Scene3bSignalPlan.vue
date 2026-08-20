@@ -33,7 +33,7 @@ onMounted(async () => {
 
     <template #foot>
       <button type="button" class="btn ghost" @click="setScene('3')">返回渠化仿真</button>
-      <button type="button" class="btn primary" @click="setScene('4')">试点后看效果评估</button>
+      <button type="button" class="btn primary" @click="setScene('4')">试点后看效果预评估</button>
     </template>
   </SceneStage>
 </template>

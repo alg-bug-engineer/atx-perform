@@ -11,7 +11,8 @@ function anchorStart(plan, cycleLen, leadIn) {
   return ((w.start - leadIn) % cycleLen + cycleLen) % cycleLen
 }
 
-function buildVariant(payload, sim, variantKey) {
+/** 两个路口的阶段绿窗 + 展示锚点，不跑微观仿真 */
+function buildPlans(payload, sim, variantKey) {
   const cycleLen = sim.cycle_len_sec
   const jingshi = intersectionOf(payload, 'jingshi')
   const jiefang = intersectionOf(payload, 'jiefang')
@@ -31,27 +32,46 @@ function buildVariant(payload, sim, variantKey) {
     greenKey,
   )
 
-  const displayStartS = anchorStart(jingshiPlan, cycleLen, sim.display_anchor.lead_in_sec)
+  return {
+    cycleLen,
+    jingshiPlan,
+    jiefangPlan,
+    displayStartS: anchorStart(jingshiPlan, cycleLen, sim.display_anchor.lead_in_sec),
+  }
+}
 
-  const result = runCorridorSim(
-    {
-      cycleLen,
-      stepSec: sim.step_sec,
-      warmupCycles: sim.warmup_cycles,
-      seed: sim.seed,
-      lengthM: sim.geometry.length_m,
-      widenLenM: sim.geometry.widen_len_m,
-      taperLenM: sim.geometry.taper_len_m,
-      vehicle: sim.vehicle,
-      turnSplit: sim.turn_split,
-      sources: sim.sources,
-      jingshiPlan,
-      jiefangPlan,
-      displayStartS,
-      inflowFactor: sim.demand?.field_factor ?? 1,
-    },
-    variantKey,
-  )
+/** 只要绿窗对齐（幕 3 相位差条），不跑微观仿真 */
+export function buildPhasePlans(optimization) {
+  const sim = optimization?.corridor_demo?.simulation
+  if (!sim) return null
+  return {
+    cycleLen: sim.cycle_len_sec,
+    variants: ['before', 'after'].map((key) => ({
+      key,
+      ...buildPlans(optimization, sim, key),
+    })),
+  }
+}
+
+function buildVariant(payload, sim, variantKey) {
+  const { cycleLen, jingshiPlan, jiefangPlan, displayStartS } = buildPlans(payload, sim, variantKey)
+
+  const result = runCorridorSim({
+    cycleLen,
+    stepSec: sim.step_sec,
+    warmupCycles: sim.warmup_cycles,
+    seed: sim.seed,
+    lengthM: sim.geometry.length_m,
+    widenLenM: sim.geometry.widen_len_m,
+    taperLenM: sim.geometry.taper_len_m,
+    vehicle: sim.vehicle,
+    turnSplit: sim.turn_split,
+    sources: sim.sources,
+    jingshiPlan,
+    jiefangPlan,
+    displayStartS,
+    inflowFactor: sim.demand?.field_factor ?? 1,
+  })
 
   return { result, jingshiPlan, jiefangPlan, displayStartS }
 }
@@ -111,16 +131,18 @@ export function sampleVariant(variant, t) {
   const cars = []
   for (const tr of r.tracks) {
     if (step < tr.from || step > tr.to) continue
-    const x = tr.xs[step - tr.from]
+    const i = step - tr.from
+    const x = tr.xs[i]
     if (Number.isNaN(x)) continue
-    const prev = step > tr.from ? tr.xs[step - tr.from - 1] : x
     cars.push({
       id: tr.id,
       x,
       turn: tr.turn,
       upLane: tr.upLane,
       downLane: tr.downLane,
-      moving: (x - prev) / r.dt > 1.2,
+      borrowedThrough: tr.borrowedThrough,
+      // 直接用仿真逐步记下的排队标记，与队尾长度同源，标记才落在最后一辆停住的车上
+      moving: !tr.stops[i],
     })
   }
 
