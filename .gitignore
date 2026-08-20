@@ -50,3 +50,6 @@ frontend/.vite/
 .playwright-cli/
 .playwright/
 scene-*.png
+
+# 本地导出产物
+exports/
