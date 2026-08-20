@@ -51,7 +51,6 @@ const pausedTone = computed(() => barrierPaused.value || pauseAfterActRequested.
       <div v-if="visible" class="task-bar" :class="{ paused: pausedTone }">
         <span class="tb-dot" :class="{ pulse: pulse && !pausedTone, hold: pausedTone }"></span>
         <span class="tb-label">{{ label }}</span>
-        <span v-if="pausedTone" class="tb-kbd">Space</span>
       </div>
     </transition>
   </Teleport>
@@ -109,17 +108,6 @@ const pausedTone = computed(() => barrierPaused.value || pauseAfterActRequested.
   font-size: 12px;
   letter-spacing: 1px;
   color: rgba(220, 240, 255, 0.88);
-  font-family: 'Courier New', monospace;
-}
-
-.tb-kbd {
-  flex-shrink: 0;
-  font-size: 10px;
-  letter-spacing: 0.5px;
-  color: rgba(255, 193, 74, 0.9);
-  border: 1px solid rgba(255, 193, 74, 0.4);
-  padding: 1px 6px;
-  border-radius: 3px;
   font-family: 'Courier New', monospace;
 }
 

@@ -115,8 +115,6 @@ onUnmounted(() => {
       <div class="status-strip" :class="{ paused: pausedTone }">
         <span class="status-dot" aria-hidden="true" />
         <span class="status-text">{{ statusText }}</span>
-        <kbd class="status-kbd" :class="{ space: pausedTone }">空格</kbd>
-        <kbd class="status-kbd">← →</kbd>
       </div>
     </div>
   </header>
@@ -295,21 +293,6 @@ onUnmounted(() => {
   font-size: 12px;
   letter-spacing: 1px;
   color: var(--text);
-}
-
-.status-kbd {
-  font-family: inherit;
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: rgba(160, 200, 220, 0.55);
-  border: 1px solid rgba(160, 200, 220, 0.28);
-  border-radius: 2px;
-  padding: 0 5px;
-}
-
-.status-kbd.space {
-  color: rgba(240, 246, 255, 0.9);
-  border-color: rgba(240, 246, 255, 0.4);
 }
 
 @keyframes blink {

@@ -67,6 +67,8 @@ export function buildTrialEffectSeries(payload = {}) {
   const endGreen = num(targets.end_green_utilization, 0.68)
   const endUpRatio = num(targets.end_upstream_queue_ratio, 0.35)
   const endUpBlocked = num(targets.end_upstream_blocked_veh, null)
+  const overflowBefore = Math.round(num(targets.start_overflow_count, num(baselineIn.overflow_count, 20)))
+  const overflowAfter = Math.round(num(targets.end_overflow_count, 5))
 
   const cycles = []
   for (let i = 0; i < n; i += 1) {
@@ -188,6 +190,7 @@ export function buildTrialEffectSeries(payload = {}) {
     successConditions: Array.isArray(trial.success_conditions) ? trial.success_conditions : [],
     rollbackRules: Array.isArray(trial.rollback_rules) ? trial.rollback_rules : [],
     outcomeHighlights,
+    overflowCounts: { before: overflowBefore, after: overflowAfter },
     overflowRelieved,
     upstreamSafe,
     speedImproved,

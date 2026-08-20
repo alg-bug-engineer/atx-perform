@@ -24,14 +24,10 @@
     "fail": "排队比回升或上游触及回滚线",
     "metrics": [
       "queue_length_m",
-      "queue_ratio",
-      "avg_speed_kmh",
-      "delay_index",
-      "upstream_queue_ratio"
+      "overflow_count"
     ],
     "success_conditions": [
-      "问题路段排队比降至预警线 0.8 以下",
-      "路段速度回升、拥堵延时指数下降",
+      "问题路段最大排队由 270 m 降至 230 m",
       "上游解放东路口排队比未触及回滚线 0.9"
     ],
     "rollback_rules": [
@@ -82,8 +78,10 @@
   "trial_targets": {
     "start_queue_length_m": 270,
     "start_queue_ratio": 0.8,
-    "end_queue_length_m": 162,
-    "end_queue_ratio": 0.48,
+    "end_queue_length_m": 230,
+    "end_queue_ratio": 0.63,
+    "start_overflow_count": 20,
+    "end_overflow_count": 5,
     "end_speed_kmh": 13,
     "end_delay_index": 2.1,
     "end_green_utilization": 0.68,

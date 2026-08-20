@@ -4,7 +4,7 @@
  */
 import { computed } from 'vue'
 import CycleQueueChart from './CycleQueueChart.vue'
-import { buildTrialEffectSeries, fmtPct, fmtPlain, fmtRatio2 } from './trialEffectSeries.js'
+import { buildTrialEffectSeries, fmtPct, fmtRatio2 } from './trialEffectSeries.js'
 
 const props = defineProps({
   payload: { type: Object, required: true },
@@ -14,14 +14,6 @@ const props = defineProps({
 const emit = defineEmits(['finish', 'home'])
 
 const series = computed(() => buildTrialEffectSeries(props.payload))
-const corridor = computed(() => props.optimization?.corridor_demo || null)
-const storageM = computed(
-  () => corridor.value?.link?.storage_length_m ?? series.value.baseline.storage_length_m,
-)
-const peaks = computed(() => {
-  const kpi = (corridor.value?.kpis || []).find((k) => k.key === 'peak_queue')
-  return kpi ? { before: kpi.before, after: kpi.after } : null
-})
 
 const activeCycle = computed(() => {
   const list = series.value.cycles
@@ -33,13 +25,7 @@ const headline = computed(() => {
   const c = activeCycle.value
   if (!c) return '试运行观察中…'
   const b = baseline.value
-  const cap = Math.round(storageM.value)
-  const overflow = peaks.value ? peaks.value.after > storageM.value : false
-  return [
-    `排队长度由 ${b.queue_length_m} m 降至 ${c.queue_length_m} m`,
-    `平均速度由 ${fmtPlain(b.avg_speed_kmh)} 提升至 ${fmtPlain(c.avg_speed_kmh)} km/h`,
-    overflow ? `峰值排队仍超 ${cap} m 蓄车能力` : `峰值排队未超 ${cap} m 蓄车能力`,
-  ].join('，')
+  return `最大排队长度由 ${b.queue_length_m} m 降至 ${c.queue_length_m} m`
 })
 
 function trendOf(now, base) {
