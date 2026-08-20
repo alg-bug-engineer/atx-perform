@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>排队溢出处置方法 · 济南交管支队信控智能体</title>
+    <style>
+      :root {
+        --bg: #040c1e;
+        --panel: rgba(0, 16, 28, 0.72);
+        --cyan: #00e5ff;
+        --text: #e6f4ff;
+        --muted: #8fb3c4;
+        --border: rgba(0, 229, 255, 0.28);
+        --node: #042030;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        line-height: 1.65;
+      }
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(1200px 500px at 12% -10%, rgba(0, 229, 255, 0.12), transparent 55%),
+          radial-gradient(900px 420px at 100% 0%, rgba(51, 204, 136, 0.08), transparent 50%),
+          var(--bg);
+      }
+      .wrap {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 880px);
+        gap: 28px;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 28px 24px 64px;
+      }
+      .toc {
+        position: sticky;
+        top: 24px;
+        align-self: start;
+        padding: 16px 14px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+      }
+      .toc strong {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 12px;
+        letter-spacing: 2px;
+        color: var(--cyan);
+      }
+      .toc a {
+        display: block;
+        padding: 5px 0;
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13px;
+      }
+      .toc a:hover { color: var(--cyan); }
+      header.hero {
+        margin-bottom: 28px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 12px;
+        letter-spacing: 3px;
+        color: var(--cyan);
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 32px;
+        letter-spacing: 2px;
+        font-weight: 700;
+      }
+      .lead { margin: 0; color: var(--muted); }
+      h2 {
+        margin: 36px 0 12px;
+        font-size: 20px;
+        letter-spacing: 1px;
+        color: var(--cyan);
+      }
+      h3 { margin: 22px 0 8px; font-size: 16px; }
+      p { margin: 0 0 12px; }
+      ol, ul { margin: 0 0 14px; padding-left: 1.3em; }
+      li { margin: 4px 0; }
+      strong { color: #fff; }
+      .note {
+        padding: 10px 12px;
+        margin: 0 0 18px;
+        border-left: 3px solid var(--cyan);
+        background: rgba(0, 229, 255, 0.06);
+        color: var(--muted);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 18px;
+        font-size: 14px;
+      }
+      th, td {
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: rgba(0, 229, 255, 0.08);
+        color: var(--cyan);
+        font-weight: 600;
+      }
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 16px 0 22px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        background: rgba(2, 10, 22, 0.7);
+      }
+      .flow.col {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .box, .diamond {
+        padding: 10px 12px;
+        border: 1px solid var(--cyan);
+        background: var(--node);
+        color: var(--text);
+        text-align: center;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .diamond {
+        border-color: #ffcc00;
+        background: rgba(40, 32, 8, 0.9);
+      }
+      .arrow {
+        color: var(--cyan);
+        text-align: center;
+        font-size: 16px;
+        letter-spacing: 0;
+      }
+      .flow.col .arrow { line-height: 1; }
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .edge {
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+      footer {
+        margin-top: 40px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      @media (max-width: 860px) {
+        .wrap { grid-template-columns: 1fr; padding: 18px 16px 48px; }
+        .toc { position: static; }
+        .split { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav class="toc" aria-label="目录">
+        <strong>目录</strong>
+        <a href="#s1">1. 目的与适用范围</a>
+        <a href="#s2">2. 空间对象</a>
+        <a href="#s3">3. 约束与手段分层</a>
+        <a href="#s4">4. 五步诊断</a>
+        <a href="#s5">5. 总流程与协调升级</a>
+        <a href="#s6">6. 附录：奥体西对照</a>
+      </nav>
+
+      <main>
+        <header class="hero">
+          <p class="eyebrow">济南交管支队信控智能体</p>
+          <h1>排队溢出处置方法</h1>
+          <p class="lead">通用诊断口径。不绑定某一条走廊；文末奥体西仅为对照示例。</p>
+        </header>
+
+        <p class="note">
+          某路段排队过长、队尾压回上游路口时，按本文五步定位成因，再分层给出手段。路段承载与渠化是既成现实，短期无法进行土建；<strong>红绿灯协调</strong>才是可落地的短期解，组织优化只作为中长期建议。
+        </p>
+
+        <h2 id="s1">1. 目的与适用范围</h2>
+        <p>适用于：进口道或路段排队接近/超过蓄车长度，存在溢出到上游路口（交叉口内部或上游进口）的风险。</p>
+        <p>不适用于：仅因事故、施工占道导致的临时阻断（先清障，再谈信控）。</p>
+        <p>诊断目标是回答三件事：</p>
+        <ol>
+          <li>车从哪来、往哪走。</li>
+          <li>本进口还有没有加绿或调相序的空间。</li>
+          <li>短期靠哪一级路口做信号协调或截流。</li>
+        </ol>
+
+        <h2 id="s2">2. 空间对象</h2>
+        <p>沿问题路段主方向定义：</p>
+        <div class="flow">
+          <div class="box">上游的上游</div>
+          <span class="arrow">→</span>
+          <div class="box">上游路口</div>
+          <span class="arrow">→</span>
+          <div class="box">问题路段</div>
+          <span class="arrow">→</span>
+          <div class="box">本路口</div>
+          <span class="arrow">→</span>
+          <div class="box">下游主要出口</div>
+        </div>
+        <p style="margin-top:-8px;color:var(--muted);font-size:13px;">本路口同时相交「垂直方向」主干，与主方向垂直。</p>
+        <table>
+          <thead>
+            <tr><th>对象</th><th>含义</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>问题路段</td><td>排队过长、存在溢出风险的那一段</td></tr>
+            <tr><td>本路口</td><td>问题路段下游停车线所在交叉口</td></tr>
+            <tr><td>上游路口</td><td>问题路段上游端交叉口，溢出首先回灌此处</td></tr>
+            <tr><td>下游主要出口</td><td>本路口放行后流量最大的去向</td></tr>
+            <tr><td>垂直方向</td><td>本路口相交道路（常为另一条干道）</td></tr>
+            <tr><td>上游的上游</td><td>两口无法协调时，再向上一跳用于截流的交叉口</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="s3">3. 约束与手段分层</h2>
+        <p><strong>硬约束</strong>：当前路段的蓄车长度、展宽、车道功能、相交道路等级，都是既成现实。诊断可以指出渠化是否放大了溢出，但不能把「立刻改渠化」当成短期方案。</p>
+        <table>
+          <thead>
+            <tr><th>时限</th><th>手段</th><th>能做什么</th><th>不能做什么</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>短期</td>
+              <td>红绿灯协调</td>
+              <td>相位差、放行先后、在不引发更上游溢出的前提下轻微截流</td>
+              <td>加不出相交主干道已经占用的绿灯</td>
+            </tr>
+            <tr>
+              <td>中长期</td>
+              <td>组织优化建议</td>
+              <td>车道功能、禁限、诱导、土建/渠化改造</td>
+              <td>假装几何已经改完</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>先给出能当天试运行的信控方案，再并列写出组织建议，避免把建议误当成已实施方案。</p>
+        <div class="flow col">
+          <div class="box">路段承载与渠化已是现实</div>
+          <span class="arrow">↓</span>
+          <div class="split">
+            <div class="box">短期：红绿灯协调</div>
+            <div class="box">中长期：组织优化建议</div>
+          </div>
+        </div>
+
+        <h2 id="s4">4. 五步诊断</h2>
+        <p>按顺序做。每一步的输出是下一步的输入，不要跳步用信控「试配」。</p>
+
+        <h3>步骤 1 · 上游流量溯源</h3>
+        <p><strong>看什么</strong>：问题路段进口各来向的流量份额（比例），必要时向上追溯有限跳数。</p>
+        <p><strong>判什么</strong>：哪个方向来量最大 → 锁定<strong>主要上游</strong>。</p>
+        <p><strong>产出</strong>：主上游路口、主来向（直行 / 左转 / 右转）。</p>
+
+        <h3>步骤 2 · 下游主要出口</h3>
+        <p><strong>看什么</strong>：本路口该进口放行后的去向份额。</p>
+        <p><strong>判什么</strong>：哪个方向是主要出口；下游承接是否已经卡口。</p>
+        <p><strong>产出</strong>：主出口方向；下游是否构成约束。</p>
+
+        <h3>步骤 3 · 本路口垂直方向流量</h3>
+        <p><strong>看什么</strong>：相交道路等级、垂直向流量/拥堵、本进口现有绿时与饱和情况。</p>
+        <p><strong>判什么</strong>：</p>
+        <ul>
+          <li>相交道路是否主干道、是否必须保障。</li>
+          <li>本进口是否还有加绿、拉长周期或调相序的<strong>操作空间</strong>。</li>
+        </ul>
+        <p><strong>产出</strong>：</p>
+        <ul>
+          <li>有空间 → 本口配时仍可作为手段之一。</li>
+          <li>无空间（主干道东西向已占满周期）→ 本口不能再向问题方向加绿，后续只能协调或向上截流。</li>
+        </ul>
+
+        <h3>步骤 4 · 查看渠化</h3>
+        <p>短路段必须看：蓄车短、展宽不够、车道功能与转向不匹配，都会把同样的到达强度放大成溢出。</p>
+        <p><strong>产出</strong>：组织优化建议（改车道功能、展宽、禁限等），<strong>不是</strong>立即施工项。几何结论用于解释「为什么这么容易溢」，并约束短期信控只能在现有蓄车长度内做文章。</p>
+
+        <h3>步骤 5 · 本口与上游口信号</h3>
+        <p><strong>看什么</strong>：本路口与步骤 1 锁定的上游路口的周期、相位差、放行先后。</p>
+        <p><strong>判什么</strong>：两口能否通过相位协调（谁先绿、汇入是否赶在消散之后）缓解溢出。</p>
+        <ul>
+          <li><strong>能协调</strong>：短期方案 = 两口红绿灯协调（相位差 / 放行顺序）。可含对上游的轻微截流，前提是需求未明显超过供给、截流不至于把溢出再向上推一跳。</li>
+          <li><strong>两口都无法协调</strong>：再向上一跳，看<strong>上游的上游</strong>能否截流，把到达强度压到本路段蓄车可承受的范围。</li>
+        </ul>
+
+        <h2 id="s5">5. 总流程与协调升级</h2>
+        <div class="flow col">
+          <div class="box">发现问题路段排队过长，有溢出风险</div>
+          <span class="arrow">↓</span>
+          <div class="box">1 上游流量溯源，锁定主要来向</div>
+          <span class="arrow">↓</span>
+          <div class="box">2 下游去向，锁定主要出口</div>
+          <span class="arrow">↓</span>
+          <div class="box">3 本进口垂直方向是否主干道，本口有无操作空间</div>
+          <span class="arrow">↓</span>
+          <div class="box">4 查看渠化（尤其短路段）</div>
+          <span class="arrow">↓</span>
+          <div class="box">5 查看本口与上游口信号</div>
+          <span class="arrow">↓</span>
+          <div class="diamond">两口能否相位协调？</div>
+          <div class="split">
+            <div>
+              <p class="edge">能</p>
+              <div class="box">短期方案：红绿灯协调</div>
+            </div>
+            <div>
+              <p class="edge">不能</p>
+              <div class="box">向上一跳：上游的上游能否截流</div>
+            </div>
+          </div>
+          <span class="arrow">↓</span>
+          <div class="box">中长期组织优化建议（渠化 / 承载不改）</div>
+        </div>
+        <p>协调升级只解决「在哪一级路口动手」，不改变硬约束：截流点可以上移，路段几何仍然不改。</p>
+        <div class="flow col">
+          <div class="box">本口 + 上游口</div>
+          <span class="arrow">↓</span>
+          <div class="diamond">相位差或放行先后能对上？</div>
+          <div class="split">
+            <div>
+              <p class="edge">能</p>
+              <div class="box">试运行两口协调</div>
+            </div>
+            <div>
+              <p class="edge">不能</p>
+              <div class="box">评估上游的上游截流 → 再试运行</div>
+            </div>
+          </div>
+          <span class="arrow">↓</span>
+          <div class="box">监测本路段排队，以及更上游是否出现新的溢出</div>
+        </div>
+
+        <h2 id="s6">6. 附录：奥体西对照（示例，不是方法本身）</h2>
+        <p>晚高峰奥体西路北向南，解放东路 → 经十路路段排队过长，存在溢出到解放东路口的风险。下表只说明五步如何落到这一例，不作为通用流程的唯一形态。</p>
+        <table>
+          <thead>
+            <tr><th>步骤</th><th>本例对照</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>问题路段</td><td>奥体西路北→南，解放东 → 经十；专家排队 270 m</td></tr>
+            <tr><td>1 上游溯源</td><td>主来向来自上游解放东路–奥体西路口</td></tr>
+            <tr><td>2 下游出口</td><td>本口为经十路–奥体西；北进口放行后主要进入南段等去向</td></tr>
+            <tr><td>3 垂直方向</td><td>经十路为东西向通勤主干，周期内难再向南北向加绿；本进口操作空间不足</td></tr>
+            <tr><td>4 渠化</td><td>短路段、蓄车有限，几何既成；只形成组织建议，不改土建</td></tr>
+            <tr><td>5 信号</td><td>两口可做相位协调：现状解放东先放会溢出；优化后经十先放、队列消散后再汇入。需求未超供给，故用轻微截流而不是加绿</td></tr>
+          </tbody>
+        </table>
+        <p>本例的短期解是<strong>相位协调</strong>（放行先后），不是给北进口加绿。若解放东与经十两口无法协调，才需要再向上看解放东的上游能否截流——本例未走到这一跳。</p>
+
+      </main>
+    </div>
+  </body>
+</html>
