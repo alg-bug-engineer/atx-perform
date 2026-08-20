@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>绿波时距图 · 引擎原样数据（space-time.json）</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: #f1f5f9;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #0f172a;
+  }
+  .card {
+    max-width: 1060px; margin: 0 auto; background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px 20px;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .muted { color: #64748b; font-size: 12px; }
+  .kpis { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+  .kpi {
+    flex: 1 1 150px; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 12px; background: #f8fafc;
+  }
+  .kpi span { display: block; font-size: 12px; color: #64748b; }
+  .kpi strong { font-size: 18px; color: #0f172a; }
+  svg { display: block; width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+  .summary { margin-top: 14px; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
+  .summary h2 { font-size: 13px; margin: 6px 0; color: #334155; }
+  table { border-collapse: collapse; font-size: 12px; width: 100%; }
+  th, td { border: 1px solid #e2e8f0; padding: 4px 8px; text-align: left; }
+  th { background: #f8fafc; color: #475569; }
+  .num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>绿波时距图 · 引擎原样数据</h1>
+  <div class="muted">数据源 <span class="num">data/deepagent-raw/space-time.json</span>
+    · operation=<span id="m-op" class="num"></span>
+    · 拉取于 <span id="m-time" class="num"></span>
+    · <span id="m-ctx" class="num"></span><br>
+    渲染口径与配色完全对齐引擎工作台 <span class="num">CorridorSpaceTimeDiagram.tsx</span>（白底、4 周期、轨迹采样上限 180、绿窗直接用 diagram.green_windows）</div>
+  <div class="kpis">
+    <div class="kpi"><span>延误（direction_kpis[0]）</span><strong id="k-delay">—</strong></div>
+    <div class="kpi"><span>停车率</span><strong id="k-stop">—</strong></div>
+    <div class="kpi"><span>正向链式带宽</span><strong id="k-fwd">—</strong></div>
+    <div class="kpi"><span>反向链式带宽</span><strong id="k-rev">—</strong></div>
+  </div>
+  <svg id="svg" viewBox="0 0 920 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label="干线绿波时距图"></svg>
+  <div class="summary">
+    <h2>引擎返回数据摘要（比对用）</h2>
+    <table>
+      <tr><th>路口</th><th>里程 m</th><th>相位差 s</th><th>工作台重铺绿时 fwd / rev（s）</th></tr>
+      <tbody id="tbl-nodes"></tbody>
+      <tr><td colspan="4">green_windows 原始 <span id="s-win" class="num"></span> 个（coord <span id="s-win-coord" class="num"></span> / left_feeder <span id="s-win-feed" class="num"></span>，t 范围 <span id="s-win-t" class="num"></span> s）</td></tr>
+      <tr><td colspan="4">vehicles 原始 <span id="s-veh" class="num"></span> 条（fwd <span id="s-veh-f" class="num"></span> / rev <span id="s-veh-r" class="num"></span>，图上采样显示 <span id="s-veh-s" class="num"></span> 条）</td></tr>
+      <tr><td colspan="4">queue_tails <span id="s-qt" class="num"></span> 条 · bandwidth_bands <span id="s-bb" class="num"></span> 条（<span id="s-bb-meta" class="num"></span>）</td></tr>
+    </table>
+  </div>
+</div>
+<script>
+const DATA = {"meta": {"operation": "evaluate", "pulled_at": "2026-08-20T19:04:39+0800", "raw_windows": 44, "raw_vehicles": 229, "raw_tails": 5, "raw_bands": 2, "day_of_week": 1, "period_window": "17:00-19:00"}, "cycle_s": 220.0, "cum_distance_m": [0.0, 216.1, 585.3], "names": ["坤顺路", "解放东路", "经十路"], "green_windows": [{"node_index": 0, "direction": "forward", "role": "coord", "start_s": 220.0, "end_s": 259.0}, {"node_index": 0, "direction": "forward", "role": "coord", "start_s": 440.0, "end_s": 479.0}, {"node_index": 0, "direction": "forward", "role": "coord", "start_s": 660.0, "end_s": 699.0}, {"node_index": 0, "direction": "forward", "role": "coord", "start_s": 880.0, "end_s": 919.0}, {"node_index": 0, "direction": "reverse", "role": "coord", "start_s": 220.0, "end_s": 259.0}, {"node_index": 0, "direction": "reverse", "role": "coord", "start_s": 440.0, "end_s": 479.0}, {"node_index": 0, "direction": "reverse", "role": "coord", "start_s": 660.0, "end_s": 699.0}, {"node_index": 0, "direction": "reverse", "role": "coord", "start_s": 880.0, "end_s": 919.0}, {"node_index": 1, "direction": "forward", "role": "coord", "start_s": 215.0, "end_s": 275.0}, {"node_index": 1, "direction": "forward", "role": "left_feeder", "start_s": 136.0, "end_s": 172.0}, {"node_index": 1, "direction": "forward", "role": "coord", "start_s": 435.0, "end_s": 495.0}, {"node_index": 1, "direction": "forward", "role": "left_feeder", "start_s": 356.0, "end_s": 392.0}, {"node_index": 1, "direction": "forward", "role": "coord", "start_s": 655.0, "end_s": 715.0}, {"node_index": 1, "direction": "forward", "role": "left_feeder", "start_s": 576.0, "end_s": 612.0}, {"node_index": 1, "direction": "forward", "role": "coord", "start_s": 875.0, "end_s": 935.0}, {"node_index": 1, "direction": "forward", "role": "left_feeder", "start_s": 796.0, "end_s": 832.0}, {"node_index": 1, "direction": "reverse", "role": "coord", "start_s": 215.0, "end_s": 275.0}, {"node_index": 1, "direction": "reverse", "role": "left_feeder", "start_s": 136.0, "end_s": 172.0}, {"node_index": 1, "direction": "reverse", "role": "coord", "start_s": 435.0, "end_s": 495.0}, {"node_index": 1, "direction": "reverse", "role": "left_feeder", "start_s": 356.0, "end_s": 392.0}, {"node_index": 1, "direction": "reverse", "role": "coord", "start_s": 655.0, "end_s": 715.0}, {"node_index": 1, "direction": "reverse", "role": "left_feeder", "start_s": 576.0, "end_s": 612.0}, {"node_index": 1, "direction": "reverse", "role": "coord", "start_s": 875.0, "end_s": 935.0}, {"node_index": 1, "direction": "reverse", "role": "left_feeder", "start_s": 796.0, "end_s": 832.0}, {"node_index": 2, "direction": "forward", "role": "coord", "start_s": 241.0, "end_s": 287.0}, {"node_index": 2, "direction": "forward", "role": "left_feeder", "start_s": 209.0, "end_s": 238.0}, {"node_index": 2, "direction": "forward", "role": "coord", "start_s": 461.0, "end_s": 507.0}, {"node_index": 2, "direction": "forward", "role": "left_feeder", "start_s": 429.0, "end_s": 458.0}, {"node_index": 2, "direction": "forward", "role": "coord", "start_s": 681.0, "end_s": 727.0}, {"node_index": 2, "direction": "forward", "role": "left_feeder", "start_s": 649.0, "end_s": 678.0}, {"node_index": 2, "direction": "forward", "role": "coord", "start_s": 901.0, "end_s": 947.0}, {"node_index": 2, "direction": "forward", "role": "left_feeder", "start_s": 869.0, "end_s": 898.0}, {"node_index": 2, "direction": "reverse", "role": "coord", "start_s": 241.0, "end_s": 287.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 197.0, "end_s": 206.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 209.0, "end_s": 238.0}, {"node_index": 2, "direction": "reverse", "role": "coord", "start_s": 461.0, "end_s": 507.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 417.0, "end_s": 426.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 429.0, "end_s": 458.0}, {"node_index": 2, "direction": "reverse", "role": "coord", "start_s": 681.0, "end_s": 727.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 637.0, "end_s": 646.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 649.0, "end_s": 678.0}, {"node_index": 2, "direction": "reverse", "role": "coord", "start_s": 901.0, "end_s": 947.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 857.0, "end_s": 866.0}, {"node_index": 2, "direction": "reverse", "role": "left_feeder", "start_s": 869.0, "end_s": 898.0}], "bandwidth_bands": [{"direction": "forward", "points": [[0.0, 0.0], [39.0, 0.0], [15.559199999999999, 216.1], [54.5592, 216.1], [42.1416, 585.3], [81.1416, 585.3]], "meta": {"bandwidth_s": 39.0, "cycle_s": 220.0}}, {"direction": "reverse", "points": [[21.0, 585.3], [28.4176, 585.3], [47.5824, 216.1], [55.0, 216.1], [63.1416, 0.0], [70.5592, 0.0]], "meta": {"bandwidth_s": 7.4176, "cycle_s": 220.0}}], "vehicles": [{"direction": "forward", "points": [[0.0, 585.3], [23.0, 585.3]], "render": true, "meta": {"depart_s": -182.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[0.0, 257.76666666666665], [23.11439999999999, 578.7999999999998], [24.931999999999988, 578.7999999999998], [25.400000000000006, 585.3]], "render": true, "meta": {"depart_s": -3.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[0.0, 224.43333333333325], [25.046399999999977, 572.2999999999996], [26.863999999999976, 572.2999999999996], [27.80000000000001, 585.3]], "render": true, "meta": {"depart_s": -0.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[1.8000000000000114, 216.1], [26.978399999999965, 565.7999999999994], [28.795999999999964, 565.7999999999994], [30.200000000000017, 585.3]], "render": true, "meta": {"depart_s": 1.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[4.200000000000017, 216.1], [28.910399999999953, 559.2999999999992], [30.727999999999952, 559.2999999999992], [32.599999999999994, 585.3]], "render": true, "meta": {"depart_s": 4.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[6.600000000000023, 216.1], [30.84239999999994, 552.7999999999988], [32.65999999999994, 552.7999999999988], [35.00000000000003, 585.3]], "render": true, "meta": {"depart_s": 6.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[9.000000000000028, 216.1], [32.77439999999993, 546.2999999999986], [34.59199999999993, 546.2999999999986], [37.400000000000034, 585.3]], "render": true, "meta": {"depart_s": 9.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[2.0, 0.0], [44.14159999999998, 585.3]], "render": true, "meta": {"depart_s": 2.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[4.400000000000006, 0.0], [46.54160000000002, 585.3]], "render": true, "meta": {"depart_s": 4.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[6.800000000000011, 0.0], [48.94160000000005, 585.3]], "render": true, "meta": {"depart_s": 6.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[9.200000000000017, 0.0], [51.341600000000085, 585.3]], "render": true, "meta": {"depart_s": 9.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[11.600000000000023, 0.0], [53.74160000000012, 585.3]], "render": true, "meta": {"depart_s": 11.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[14.000000000000028, 0.0], [56.14160000000015, 585.3]], "render": true, "meta": {"depart_s": 14.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[16.400000000000034, 0.0], [58.54160000000019, 585.3]], "render": true, "meta": {"depart_s": 16.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[18.80000000000004, 0.0], [60.94160000000022, 585.3]], "render": true, "meta": {"depart_s": 18.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[21.200000000000045, 0.0], [63.341600000000255, 585.3]], "render": true, "meta": {"depart_s": 21.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[23.60000000000005, 0.0], [65.74160000000029, 585.3]], "render": true, "meta": {"depart_s": 23.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[26.000000000000057, 0.0], [68.14160000000032, 585.3]], "render": true, "meta": {"depart_s": 26.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[28.400000000000063, 0.0], [70.54160000000036, 585.3]], "render": true, "meta": {"depart_s": 28.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[30.800000000000068, 0.0], [72.94160000000039, 585.3]], "render": true, "meta": {"depart_s": 30.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[33.200000000000074, 0.0], [75.34160000000043, 585.3]], "render": true, "meta": {"depart_s": 33.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[35.60000000000008, 0.0], [77.74160000000046, 585.3]], "render": true, "meta": {"depart_s": 35.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[38.00000000000006, 0.0], [80.1416000000005, 585.3], [243.0, 585.3]], "render": true, "meta": {"depart_s": 38.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[217.0, 216.1], [243.1144, 578.7999999999998], [244.93200000000002, 578.7999999999998], [245.40000000000003, 585.3]], "render": true, "meta": {"depart_s": 217.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[219.39999999999998, 216.1], [245.0464, 572.2999999999998], [246.86400000000003, 572.2999999999998], [247.80000000000007, 585.3]], "render": true, "meta": {"depart_s": 219.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[221.79999999999995, 216.1], [246.97840000000002, 565.7999999999998], [248.79600000000005, 565.7999999999998], [250.2000000000001, 585.3]], "render": true, "meta": {"depart_s": 221.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[224.19999999999993, 216.1], [248.91040000000004, 559.2999999999998], [250.72800000000007, 559.2999999999998], [252.60000000000014, 585.3]], "render": true, "meta": {"depart_s": 224.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[226.5999999999999, 216.1], [250.84240000000005, 552.7999999999998], [252.66000000000008, 552.7999999999998], [255.00000000000017, 585.3]], "render": true, "meta": {"depart_s": 226.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[228.9999999999999, 216.1], [252.77440000000007, 546.2999999999998], [254.5920000000001, 546.2999999999998], [257.4000000000002, 585.3]], "render": true, "meta": {"depart_s": 229.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[222.0, 0.0], [264.1416, 585.3]], "render": true, "meta": {"depart_s": 222.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[224.39999999999998, 0.0], [266.5416, 585.3]], "render": true, "meta": {"depart_s": 224.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[226.79999999999995, 0.0], [268.94160000000005, 585.3]], "render": true, "meta": {"depart_s": 226.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[229.19999999999993, 0.0], [271.3416000000001, 585.3]], "render": true, "meta": {"depart_s": 229.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[231.5999999999999, 0.0], [273.7416000000001, 585.3]], "render": true, "meta": {"depart_s": 231.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[233.9999999999999, 0.0], [276.14160000000015, 585.3]], "render": true, "meta": {"depart_s": 234.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[236.39999999999986, 0.0], [278.5416000000002, 585.3]], "render": true, "meta": {"depart_s": 236.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[238.79999999999984, 0.0], [280.9416000000002, 585.3]], "render": true, "meta": {"depart_s": 238.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[241.19999999999982, 0.0], [283.34160000000026, 585.3]], "render": true, "meta": {"depart_s": 241.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[243.5999999999998, 0.0], [285.7416000000003, 585.3]], "render": true, "meta": {"depart_s": 243.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[245.99999999999977, 0.0], [288.1416000000003, 585.3]], "render": true, "meta": {"depart_s": 246.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[248.39999999999975, 0.0], [290.54160000000036, 585.3]], "render": true, "meta": {"depart_s": 248.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[250.79999999999973, 0.0], [292.94160000000034, 585.3]], "render": true, "meta": {"depart_s": 250.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[253.1999999999997, 0.0], [295.3416000000004, 585.3]], "render": true, "meta": {"depart_s": 253.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[255.59999999999968, 0.0], [297.7416000000004, 585.3]], "render": true, "meta": {"depart_s": 255.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[257.99999999999966, 0.0], [300.1416000000005, 585.3], [463.0, 585.3]], "render": true, "meta": {"depart_s": 258.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[437.0, 216.1], [463.11440000000005, 578.8000000000006], [464.932, 578.8000000000006], [465.4, 585.3]], "render": true, "meta": {"depart_s": 437.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[439.4, 216.1], [465.04640000000006, 572.3000000000006], [466.86400000000003, 572.3000000000006], [467.79999999999995, 585.3]], "render": true, "meta": {"depart_s": 439.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[441.79999999999995, 216.1], [466.9784000000001, 565.8000000000006], [468.79600000000005, 565.8000000000006], [470.20000000000005, 585.3]], "render": true, "meta": {"depart_s": 441.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[444.19999999999993, 216.1], [468.9104000000001, 559.3000000000006], [470.72800000000007, 559.3000000000006], [472.6, 585.3]], "render": true, "meta": {"depart_s": 444.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[446.5999999999999, 216.1], [470.8424000000001, 552.8000000000006], [472.6600000000001, 552.8000000000006], [475.0, 585.3]], "render": true, "meta": {"depart_s": 446.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[448.9999999999999, 216.1], [472.7744000000001, 546.3000000000006], [474.5920000000001, 546.3000000000006], [477.4000000000001, 585.3]], "render": true, "meta": {"depart_s": 449.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[442.0, 0.0], [484.14160000000004, 585.3]], "render": true, "meta": {"depart_s": 442.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[444.4, 0.0], [486.5416, 585.3]], "render": true, "meta": {"depart_s": 444.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[446.79999999999995, 0.0], [488.9416, 585.3]], "render": true, "meta": {"depart_s": 446.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[449.19999999999993, 0.0], [491.34159999999997, 585.3]], "render": true, "meta": {"depart_s": 449.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[451.5999999999999, 0.0], [493.74159999999995, 585.3]], "render": true, "meta": {"depart_s": 451.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[453.9999999999999, 0.0], [496.1415999999999, 585.3]], "render": true, "meta": {"depart_s": 454.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[456.39999999999986, 0.0], [498.5415999999999, 585.3]], "render": true, "meta": {"depart_s": 456.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[458.79999999999984, 0.0], [500.9415999999999, 585.3]], "render": true, "meta": {"depart_s": 458.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[461.1999999999998, 0.0], [503.34159999999986, 585.3]], "render": true, "meta": {"depart_s": 461.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[463.5999999999998, 0.0], [505.74159999999983, 585.3]], "render": true, "meta": {"depart_s": 463.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[465.9999999999998, 0.0], [508.1415999999998, 585.3]], "render": true, "meta": {"depart_s": 466.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[468.39999999999975, 0.0], [510.5415999999998, 585.3]], "render": true, "meta": {"depart_s": 468.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[470.7999999999997, 0.0], [512.9415999999998, 585.3]], "render": true, "meta": {"depart_s": 470.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[473.1999999999997, 0.0], [515.3415999999997, 585.3]], "render": true, "meta": {"depart_s": 473.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[475.5999999999997, 0.0], [517.7415999999997, 585.3]], "render": true, "meta": {"depart_s": 475.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[477.99999999999966, 0.0], [520.1415999999997, 585.3], [683.0, 585.3]], "render": true, "meta": {"depart_s": 478.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[657.0, 216.1], [683.1144, 578.8000000000006], [684.932, 578.8000000000006], [685.4, 585.3]], "render": true, "meta": {"depart_s": 657.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[659.4, 216.1], [685.0464000000001, 572.3000000000006], [686.864, 572.3000000000006], [687.8, 585.3]], "render": true, "meta": {"depart_s": 659.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[661.8, 216.1], [686.9784000000001, 565.8000000000006], [688.796, 565.8000000000006], [690.2, 585.3]], "render": true, "meta": {"depart_s": 661.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[664.1999999999999, 216.1], [688.9104000000001, 559.3000000000006], [690.7280000000001, 559.3000000000006], [692.6, 585.3]], "render": true, "meta": {"depart_s": 664.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[666.5999999999999, 216.1], [690.8424000000001, 552.8000000000006], [692.6600000000001, 552.8000000000006], [695.0, 585.3]], "render": true, "meta": {"depart_s": 666.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[668.9999999999999, 216.1], [692.7744000000001, 546.3000000000006], [694.5920000000001, 546.3000000000006], [697.4000000000001, 585.3]], "render": true, "meta": {"depart_s": 669.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[662.0, 0.0], [704.1416, 585.3]], "render": true, "meta": {"depart_s": 662.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[664.4, 0.0], [706.5416, 585.3]], "render": true, "meta": {"depart_s": 664.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[666.8, 0.0], [708.9416, 585.3]], "render": true, "meta": {"depart_s": 666.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[669.1999999999999, 0.0], [711.3416, 585.3]], "render": true, "meta": {"depart_s": 669.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[671.5999999999999, 0.0], [713.7416, 585.3]], "render": true, "meta": {"depart_s": 671.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[673.9999999999999, 0.0], [716.1415999999999, 585.3]], "render": true, "meta": {"depart_s": 674.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[676.3999999999999, 0.0], [718.5415999999999, 585.3]], "render": true, "meta": {"depart_s": 676.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[678.7999999999998, 0.0], [720.9415999999999, 585.3]], "render": true, "meta": {"depart_s": 678.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[681.1999999999998, 0.0], [723.3415999999999, 585.3]], "render": true, "meta": {"depart_s": 681.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[683.5999999999998, 0.0], [725.7415999999998, 585.3]], "render": true, "meta": {"depart_s": 683.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[685.9999999999998, 0.0], [728.1415999999998, 585.3]], "render": true, "meta": {"depart_s": 686.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[688.3999999999997, 0.0], [730.5415999999998, 585.3]], "render": true, "meta": {"depart_s": 688.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[690.7999999999997, 0.0], [732.9415999999998, 585.3]], "render": true, "meta": {"depart_s": 690.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[693.1999999999997, 0.0], [735.3415999999997, 585.3]], "render": true, "meta": {"depart_s": 693.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[695.5999999999997, 0.0], [737.7415999999997, 585.3]], "render": true, "meta": {"depart_s": 695.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[697.9999999999997, 0.0], [740.1415999999997, 585.3], [880.0, 585.3]], "render": true, "meta": {"depart_s": 698.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[877.0, 216.1], [880.0, 257.76666666666665]], "render": true, "meta": {"depart_s": 877.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "forward", "points": [[879.4000000000001, 216.1], [880.0, 224.43333333333206]], "render": true, "meta": {"depart_s": 879.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[0.0, 174.4333333333333], [12.559200000000004, 0.0]], "render": true, "meta": {"depart_s": -3.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[0.0, 207.7666666666667], [14.95920000000001, 0.0]], "render": true, "meta": {"depart_s": -0.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[1.8000000000000114, 216.09999999999997], [17.359200000000016, 0.0]], "render": true, "meta": {"depart_s": 1.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[4.200000000000017, 216.09999999999997], [19.75920000000002, 0.0]], "render": true, "meta": {"depart_s": 4.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[6.600000000000023, 216.09999999999997], [22.159200000000027, 0.0]], "render": true, "meta": {"depart_s": 6.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[9.000000000000028, 216.09999999999997], [24.559200000000033, 0.0]], "render": true, "meta": {"depart_s": 9.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[11.400000000000034, 216.09999999999997], [26.95920000000004, 0.0]], "render": true, "meta": {"depart_s": 11.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[13.80000000000004, 216.09999999999997], [29.359200000000044, 0.0]], "render": true, "meta": {"depart_s": 13.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[16.200000000000045, 216.09999999999997], [31.75920000000005, 0.0]], "render": true, "meta": {"depart_s": 16.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[18.60000000000005, 216.09999999999997], [34.159200000000055, 0.0]], "render": true, "meta": {"depart_s": 18.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[21.000000000000057, 216.09999999999997], [36.55920000000009, 0.0]], "render": true, "meta": {"depart_s": 21.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[23.400000000000063, 216.09999999999997], [38.95920000000012, 0.0]], "render": true, "meta": {"depart_s": 23.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[25.800000000000068, 216.09999999999997], [41.35920000000016, 0.0]], "render": true, "meta": {"depart_s": 25.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[28.200000000000074, 216.09999999999997], [43.75920000000019, 0.0]], "render": true, "meta": {"depart_s": 28.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[30.60000000000008, 216.09999999999997], [46.159200000000226, 0.0]], "render": true, "meta": {"depart_s": 30.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[33.000000000000085, 216.09999999999997], [48.55920000000026, 0.0]], "render": true, "meta": {"depart_s": 33.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[35.40000000000009, 216.09999999999997], [50.959200000000294, 0.0]], "render": true, "meta": {"depart_s": 35.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[23.0, 585.3], [65.14159999999998, 0.0]], "render": true, "meta": {"depart_s": 23.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[25.400000000000006, 585.3], [67.54160000000002, 0.0]], "render": true, "meta": {"depart_s": 25.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[27.80000000000001, 585.3], [69.94160000000005, 0.0]], "render": true, "meta": {"depart_s": 27.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[30.200000000000017, 585.3], [72.34160000000008, 0.0]], "render": true, "meta": {"depart_s": 30.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[32.60000000000002, 585.3], [74.74160000000012, 0.0]], "render": true, "meta": {"depart_s": 32.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[35.00000000000003, 585.3], [77.14160000000015, 0.0]], "render": true, "meta": {"depart_s": 35.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[37.400000000000034, 585.3], [79.54160000000019, 0.0]], "render": true, "meta": {"depart_s": 37.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[39.80000000000001, 585.3], [81.94160000000022, 0.0]], "render": true, "meta": {"depart_s": 39.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[42.19999999999999, 585.3], [84.34160000000026, 0.0]], "render": true, "meta": {"depart_s": 42.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[44.599999999999966, 585.3], [86.74160000000029, 0.0]], "render": true, "meta": {"depart_s": 44.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[46.99999999999994, 585.3], [89.14160000000032, 0.0]], "render": true, "meta": {"depart_s": 47.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[49.39999999999992, 585.3], [91.54160000000036, 0.0]], "render": true, "meta": {"depart_s": 49.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[51.7999999999999, 585.3], [93.94160000000039, 0.0]], "render": true, "meta": {"depart_s": 51.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[54.199999999999875, 585.3], [96.34160000000043, 0.0]], "render": true, "meta": {"depart_s": 54.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[56.59999999999985, 585.3], [98.74160000000046, 0.0]], "render": true, "meta": {"depart_s": 56.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[58.99999999999983, 585.3], [101.1416000000005, 0.0]], "render": true, "meta": {"depart_s": 59.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[61.39999999999981, 585.3], [103.54160000000053, 0.0]], "render": true, "meta": {"depart_s": 61.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[217.0, 216.09999999999997], [232.55919999999998, 0.0]], "render": true, "meta": {"depart_s": 217.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[219.39999999999998, 216.09999999999997], [234.9592, 0.0]], "render": true, "meta": {"depart_s": 219.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[221.79999999999995, 216.09999999999997], [237.35920000000004, 0.0]], "render": true, "meta": {"depart_s": 221.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[224.19999999999993, 216.09999999999997], [239.75920000000008, 0.0]], "render": true, "meta": {"depart_s": 224.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[226.5999999999999, 216.09999999999997], [242.1592000000001, 0.0]], "render": true, "meta": {"depart_s": 226.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[228.9999999999999, 216.09999999999997], [244.55920000000015, 0.0]], "render": true, "meta": {"depart_s": 229.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[231.39999999999986, 216.09999999999997], [246.95920000000018, 0.0]], "render": true, "meta": {"depart_s": 231.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[233.79999999999984, 216.09999999999997], [249.35920000000021, 0.0]], "render": true, "meta": {"depart_s": 233.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[236.19999999999982, 216.09999999999997], [251.75920000000025, 0.0]], "render": true, "meta": {"depart_s": 236.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[238.5999999999998, 216.09999999999997], [254.15920000000028, 0.0]], "render": true, "meta": {"depart_s": 238.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[240.99999999999977, 216.09999999999997], [256.5592000000003, 0.0]], "render": true, "meta": {"depart_s": 241.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[243.39999999999975, 216.09999999999997], [258.95920000000035, 0.0]], "render": true, "meta": {"depart_s": 243.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[245.79999999999973, 216.09999999999997], [261.3592000000004, 0.0]], "render": true, "meta": {"depart_s": 245.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[248.1999999999997, 216.09999999999997], [263.7592000000004, 0.0]], "render": true, "meta": {"depart_s": 248.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[250.59999999999968, 216.09999999999997], [266.15920000000045, 0.0]], "render": true, "meta": {"depart_s": 250.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[252.99999999999966, 216.09999999999997], [268.5592000000005, 0.0]], "render": true, "meta": {"depart_s": 253.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[255.39999999999964, 216.09999999999997], [270.9592000000005, 0.0]], "render": true, "meta": {"depart_s": 255.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[243.0, 585.3], [285.1416, 0.0]], "render": true, "meta": {"depart_s": 243.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[245.39999999999998, 585.3], [287.5416, 0.0]], "render": true, "meta": {"depart_s": 245.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[247.79999999999995, 585.3], [289.94160000000005, 0.0]], "render": true, "meta": {"depart_s": 247.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[250.19999999999993, 585.3], [292.3416000000001, 0.0]], "render": true, "meta": {"depart_s": 250.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[252.5999999999999, 585.3], [294.7416000000002, 0.0]], "render": true, "meta": {"depart_s": 252.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[254.9999999999999, 585.3], [297.14160000000015, 0.0]], "render": true, "meta": {"depart_s": 255.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[257.39999999999986, 585.3], [299.54160000000024, 0.0]], "render": true, "meta": {"depart_s": 257.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[259.79999999999984, 585.3], [301.9416000000002, 0.0]], "render": true, "meta": {"depart_s": 259.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[262.1999999999998, 585.3], [304.3416000000003, 0.0]], "render": true, "meta": {"depart_s": 262.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[264.5999999999998, 585.3], [306.7416000000003, 0.0]], "render": true, "meta": {"depart_s": 264.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[266.9999999999998, 585.3], [309.1416000000004, 0.0]], "render": true, "meta": {"depart_s": 267.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[269.39999999999975, 585.3], [311.54160000000036, 0.0]], "render": true, "meta": {"depart_s": 269.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[271.7999999999997, 585.3], [313.94160000000034, 0.0]], "render": true, "meta": {"depart_s": 271.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[274.1999999999997, 585.3], [316.3416000000003, 0.0]], "render": true, "meta": {"depart_s": 274.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[276.5999999999997, 585.3], [318.7416000000003, 0.0]], "render": true, "meta": {"depart_s": 276.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[278.99999999999966, 585.3], [321.14160000000027, 0.0]], "render": true, "meta": {"depart_s": 279.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[281.39999999999964, 585.3], [323.54160000000024, 0.0]], "render": true, "meta": {"depart_s": 281.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[437.0, 216.09999999999997], [452.55920000000003, 0.0]], "render": true, "meta": {"depart_s": 437.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[439.4, 216.09999999999997], [454.9592, 0.0]], "render": true, "meta": {"depart_s": 439.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[441.79999999999995, 216.09999999999997], [457.3592, 0.0]], "render": true, "meta": {"depart_s": 441.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[444.19999999999993, 216.09999999999997], [459.75919999999996, 0.0]], "render": true, "meta": {"depart_s": 444.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[446.5999999999999, 216.09999999999997], [462.15919999999994, 0.0]], "render": true, "meta": {"depart_s": 446.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[448.9999999999999, 216.09999999999997], [464.5591999999999, 0.0]], "render": true, "meta": {"depart_s": 449.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[451.39999999999986, 216.09999999999997], [466.9591999999999, 0.0]], "render": true, "meta": {"depart_s": 451.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[453.79999999999984, 216.09999999999997], [469.3591999999999, 0.0]], "render": true, "meta": {"depart_s": 453.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[456.1999999999998, 216.09999999999997], [471.75919999999985, 0.0]], "render": true, "meta": {"depart_s": 456.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[458.5999999999998, 216.09999999999997], [474.1591999999998, 0.0]], "render": true, "meta": {"depart_s": 458.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[460.9999999999998, 216.09999999999997], [476.5591999999998, 0.0]], "render": true, "meta": {"depart_s": 461.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[463.39999999999975, 216.09999999999997], [478.9591999999998, 0.0]], "render": true, "meta": {"depart_s": 463.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[465.7999999999997, 216.09999999999997], [481.35919999999976, 0.0]], "render": true, "meta": {"depart_s": 465.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[468.1999999999997, 216.09999999999997], [483.75919999999974, 0.0]], "render": true, "meta": {"depart_s": 468.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[470.5999999999997, 216.09999999999997], [486.1591999999997, 0.0]], "render": true, "meta": {"depart_s": 470.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[472.99999999999966, 216.09999999999997], [488.5591999999997, 0.0]], "render": true, "meta": {"depart_s": 473.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[475.39999999999964, 216.09999999999997], [490.95919999999967, 0.0]], "render": true, "meta": {"depart_s": 475.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[463.0, 585.3], [505.14160000000004, 0.0]], "render": true, "meta": {"depart_s": 463.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[465.4, 585.3], [507.5416, 0.0]], "render": true, "meta": {"depart_s": 465.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[467.79999999999995, 585.3], [509.9416, 0.0]], "render": true, "meta": {"depart_s": 467.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[470.19999999999993, 585.3], [512.3416, 0.0]], "render": true, "meta": {"depart_s": 470.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[472.5999999999999, 585.3], [514.7416, 0.0]], "render": true, "meta": {"depart_s": 472.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[474.9999999999999, 585.3], [517.1415999999999, 0.0]], "render": true, "meta": {"depart_s": 475.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[477.39999999999986, 585.3], [519.5415999999999, 0.0]], "render": true, "meta": {"depart_s": 477.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[479.79999999999984, 585.3], [521.9415999999999, 0.0]], "render": true, "meta": {"depart_s": 479.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[482.1999999999998, 585.3], [524.3415999999999, 0.0]], "render": true, "meta": {"depart_s": 482.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[484.5999999999998, 585.3], [526.7415999999998, 0.0]], "render": true, "meta": {"depart_s": 484.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[486.9999999999998, 585.3], [529.1415999999998, 0.0]], "render": true, "meta": {"depart_s": 487.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[489.39999999999975, 585.3], [531.5415999999998, 0.0]], "render": true, "meta": {"depart_s": 489.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[491.7999999999997, 585.3], [533.9415999999998, 0.0]], "render": true, "meta": {"depart_s": 491.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[494.1999999999997, 585.3], [536.3415999999997, 0.0]], "render": true, "meta": {"depart_s": 494.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[496.5999999999997, 585.3], [538.7415999999997, 0.0]], "render": true, "meta": {"depart_s": 496.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[498.99999999999966, 585.3], [541.1415999999997, 0.0]], "render": true, "meta": {"depart_s": 499.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[501.39999999999964, 585.3], [543.5415999999997, 0.0]], "render": true, "meta": {"depart_s": 501.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[657.0, 216.09999999999997], [672.5592, 0.0]], "render": true, "meta": {"depart_s": 657.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[659.4, 216.09999999999997], [674.9592, 0.0]], "render": true, "meta": {"depart_s": 659.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[661.8, 216.09999999999997], [677.3592, 0.0]], "render": true, "meta": {"depart_s": 661.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[664.1999999999999, 216.09999999999997], [679.7592, 0.0]], "render": true, "meta": {"depart_s": 664.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[666.5999999999999, 216.09999999999997], [682.1591999999999, 0.0]], "render": true, "meta": {"depart_s": 666.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[668.9999999999999, 216.09999999999997], [684.5591999999999, 0.0]], "render": true, "meta": {"depart_s": 669.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[671.3999999999999, 216.09999999999997], [686.9591999999999, 0.0]], "render": true, "meta": {"depart_s": 671.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[673.7999999999998, 216.09999999999997], [689.3591999999999, 0.0]], "render": true, "meta": {"depart_s": 673.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[676.1999999999998, 216.09999999999997], [691.7591999999999, 0.0]], "render": true, "meta": {"depart_s": 676.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[678.5999999999998, 216.09999999999997], [694.1591999999998, 0.0]], "render": true, "meta": {"depart_s": 678.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[680.9999999999998, 216.09999999999997], [696.5591999999998, 0.0]], "render": true, "meta": {"depart_s": 681.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[683.3999999999997, 216.09999999999997], [698.9591999999998, 0.0]], "render": true, "meta": {"depart_s": 683.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[685.7999999999997, 216.09999999999997], [701.3591999999998, 0.0]], "render": true, "meta": {"depart_s": 685.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[688.1999999999997, 216.09999999999997], [703.7591999999997, 0.0]], "render": true, "meta": {"depart_s": 688.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[690.5999999999997, 216.09999999999997], [706.1591999999997, 0.0]], "render": true, "meta": {"depart_s": 690.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[692.9999999999997, 216.09999999999997], [708.5591999999997, 0.0]], "render": true, "meta": {"depart_s": 693.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[695.3999999999996, 216.09999999999997], [710.9591999999997, 0.0]], "render": true, "meta": {"depart_s": 695.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[683.0, 585.3], [725.1416, 0.0]], "render": true, "meta": {"depart_s": 683.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[685.4, 585.3], [727.5416, 0.0]], "render": true, "meta": {"depart_s": 685.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[687.8, 585.3], [729.9416, 0.0]], "render": true, "meta": {"depart_s": 687.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[690.1999999999999, 585.3], [732.3416, 0.0]], "render": true, "meta": {"depart_s": 690.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[692.5999999999999, 585.3], [734.7416, 0.0]], "render": true, "meta": {"depart_s": 692.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[694.9999999999999, 585.3], [737.1415999999999, 0.0]], "render": true, "meta": {"depart_s": 695.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[697.3999999999999, 585.3], [739.5415999999999, 0.0]], "render": true, "meta": {"depart_s": 697.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[699.7999999999998, 585.3], [741.9415999999999, 0.0]], "render": true, "meta": {"depart_s": 699.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[702.1999999999998, 585.3], [744.3415999999999, 0.0]], "render": true, "meta": {"depart_s": 702.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[704.5999999999998, 585.3], [746.7415999999998, 0.0]], "render": true, "meta": {"depart_s": 704.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[706.9999999999998, 585.3], [749.1415999999998, 0.0]], "render": true, "meta": {"depart_s": 707.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[709.3999999999997, 585.3], [751.5415999999998, 0.0]], "render": true, "meta": {"depart_s": 709.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[711.7999999999997, 585.3], [753.9415999999998, 0.0]], "render": true, "meta": {"depart_s": 711.8, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[714.1999999999997, 585.3], [756.3415999999997, 0.0]], "render": true, "meta": {"depart_s": 714.2, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[716.5999999999997, 585.3], [758.7415999999997, 0.0]], "render": true, "meta": {"depart_s": 716.6, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[718.9999999999997, 585.3], [761.1415999999997, 0.0]], "render": true, "meta": {"depart_s": 719.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[721.3999999999996, 585.3], [763.5415999999997, 0.0]], "render": true, "meta": {"depart_s": 721.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[877.0, 216.09999999999997], [880.0, 174.43333333333308]], "render": true, "meta": {"depart_s": 877.0, "depart_phase": "green", "side_arrival": false, "role": "main"}}, {"direction": "reverse", "points": [[879.4000000000001, 216.09999999999997], [880.0, 207.76666666666785]], "render": true, "meta": {"depart_s": 879.4, "depart_phase": "green", "side_arrival": false, "role": "main"}}], "queue_tails": [{"kind": "queue_growth", "direction": "forward", "points": [[0.0, 579.7218937147793], [23.11439999999999, 578.7999999999998], [25.046399999999977, 572.2999999999996], [26.978399999999965, 565.7999999999994], [28.910399999999953, 559.2999999999992], [30.84239999999994, 552.7999999999988], [32.77439999999993, 546.2999999999986]]}, {"kind": "queue_growth", "direction": "forward", "points": [[80.1416000000005, 585.3], [243.1144, 578.7999999999998], [245.0464, 572.2999999999998], [246.97840000000002, 565.7999999999998], [248.91040000000004, 559.2999999999998], [250.84240000000005, 552.7999999999998], [252.77440000000007, 546.2999999999998]]}, {"kind": "queue_growth", "direction": "forward", "points": [[300.1416000000005, 585.3], [463.11440000000005, 578.8000000000006], [465.04640000000006, 572.3000000000006], [466.9784000000001, 565.8000000000006], [468.9104000000001, 559.3000000000006], [470.8424000000001, 552.8000000000006], [472.7744000000001, 546.3000000000006]]}, {"kind": "queue_growth", "direction": "forward", "points": [[520.1415999999997, 585.3], [683.1144, 578.8000000000006], [685.0464000000001, 572.3000000000006], [686.9784000000001, 565.8000000000006], [688.9104000000001, 559.3000000000006], [690.8424000000001, 552.8000000000006], [692.7744000000001, 546.3000000000006]]}, {"kind": "queue_growth", "direction": "forward", "points": [[740.1415999999997, 585.3], [880.0, 579.7218937147786]]}], "plan_nodes": [{"off": 0, "green": 39, "green_fwd": 49.0, "green_rev": 105.0}, {"off": 215, "green": 60, "green_fwd": 67.0, "green_rev": 105.0}, {"off": 21, "green": 46, "green_fwd": 59.0, "green_rev": 52.0}], "plan_links": [{"dist_m": 216.1, "fwd_kmh": 50.0, "rev_kmh": 50.0}, {"dist_m": 369.2, "fwd_kmh": 50.0, "rev_kmh": 50.0}], "kpis": {"mean_delay_s": 0.0, "stop_rate": 0.0, "chained_fwd_s": 109.27600000000001, "chained_rev_s": 35.85839999999999}};
+
+/* ============ 常量与算法逐值照抄工作台 CorridorSpaceTimeDiagram.tsx ============ */
+const PLOT_W = 920, PLOT_H = 520, PAD_L = 64, PAD_R = 24, PAD_T = 36, PAD_B = 42;
+const SIGNAL_BAR_W = 8, SIGNAL_BAR_LEFT = -12, SIGNAL_BAR_RIGHT = 4;
+const FWD_STOP_DX = SIGNAL_BAR_LEFT + SIGNAL_BAR_W / 2;  /* -8 */
+const REV_STOP_DX = SIGNAL_BAR_RIGHT + SIGNAL_BAR_W / 2; /* +8 */
+const ST_MAX_VEH = 180;
+
+const x0 = PAD_L, x1 = PLOT_W - PAD_R, y0 = PAD_T, y1 = PLOT_H - PAD_B;
+const plotW = x1 - x0, plotH = y1 - y0;
+const C = DATA.cycle_s;
+const pxPerS = plotH / (C * 4);        /* scaleY=1 => cyclesExact=4 */
+const tVisSpan = C * 4;
+const xMax = DATA.cum_distance_m[DATA.cum_distance_m.length - 1] || 1;
+const pxPerM = plotW / xMax;
+
+const sx = (d) => x0 + d * pxPerM;
+const sy = (t) => y1 - t * pxPerS;
+const clipY = (t) => Math.min(y1, Math.max(y0, sy(t)));
+const barRect = (a, b) => {
+  const yy0 = clipY(b), yy1 = clipY(a);
+  return { y: Math.min(yy0, yy1), h: Math.max(1, Math.abs(yy1 - yy0)) };
+};
+const pathFromPoints = (pts, laneDx) => {
+  if (!pts || pts.length < 2) return '';
+  return pts.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${(sx(p[1]) + laneDx).toFixed(2)} ${sy(p[0]).toFixed(2)}`).join(' ');
+};
+const splitMoveWaitRuns = (pts) => {
+  const moveRuns = [], waitRuns = [];
+  let cur = null;
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const p0 = pts[i], p1 = pts[i + 1];
+    const dt = p1[0] - p0[0], dx = Math.abs(p1[1] - p0[1]);
+    const isWait = dx < 0.5 && dt > 0.5;
+    if (!cur || cur.wait !== isWait) {
+      cur = { wait: isWait, pts: [p0, p1] };
+      (isWait ? waitRuns : moveRuns).push(cur);
+    } else cur.pts.push(p1);
+  }
+  return { moveRuns, waitRuns };
+};
+function sampleVehicles(list, maxN, cycleS) {
+  const flt = list.filter((v) => v.render !== false && (v.points || []).length >= 2);
+  if (flt.length <= maxN) return flt;
+  const Cc = Math.max(1e-6, cycleS || 90);
+  const buckets = new Map();
+  flt.forEach((v) => {
+    const t0 = Number(v.meta && v.meta.depart_s != null ? v.meta.depart_s : (v.points[0] ? v.points[0][0] : 0));
+    const k = Number.isFinite(t0) ? Math.max(0, Math.floor(t0 / Cc)) : 0;
+    const arr = buckets.get(k) ?? [];
+    arr.push(v); buckets.set(k, arr);
+  });
+  const keys = Array.from(buckets.keys()).sort((a, b) => a - b);
+  const per = Math.max(1, Math.floor(maxN / Math.max(keys.length, 1)));
+  const picked = [];
+  keys.forEach((k) => {
+    const arr = buckets.get(k) || [];
+    const step = Math.max(1, Math.ceil(arr.length / per));
+    for (let i = 0; i < arr.length && picked.length < maxN; i += step) picked.push(arr[i]);
+  });
+  return picked;
+}
+
+/* ============ 工作台几何重铺：红绿灯条 + 重叠梯形带宽带 ============ */
+function normalizeTime(t, cycle) {
+  const Cc = Math.max(1e-6, cycle);
+  return (((Number(t) || 0) % Cc) + Cc) % Cc;
+}
+function greenSegments(offset, green, cycle) {
+  const Cc = cycle;
+  const o = normalizeTime(offset, Cc);
+  const g = Math.min(green, Cc);
+  if (g <= 0) return [];
+  if (o + g <= Cc) return [[o, o + g]];
+  return [[o, Cc], [0, o + g - Cc]];
+}
+function redSegments(offset, green, cycle) {
+  const gSegs = greenSegments(offset, green, cycle).sort((a, b) => a[0] - b[0]);
+  if (!gSegs.length) return [[0, cycle]];
+  const rSegs = [];
+  let t = 0;
+  gSegs.forEach(([a, b]) => {
+    if (a > t) rSegs.push([t, a]);
+    t = Math.max(t, b);
+  });
+  if (t < cycle) rSegs.push([t, cycle]);
+  return rSegs;
+}
+function repeatedSegmentsInRange(base, cycle, tMin, tMax) {
+  const Cc = Math.max(1e-6, cycle);
+  const k0 = Math.floor(tMin / Cc) - 1;
+  const k1 = Math.ceil(tMax / Cc) + 1;
+  const out = [];
+  for (let k = k0; k <= k1; k += 1) {
+    base.forEach(([a, b]) => {
+      const aa = a + k * Cc;
+      const bb = b + k * Cc;
+      if (bb <= tMin || aa >= tMax) return;
+      out.push([Math.max(aa, tMin), Math.min(bb, tMax)]);
+    });
+  }
+  return out;
+}
+function travelTimeS(distanceM, speedKmh) {
+  const v = Math.max(0.1, Number(speedKmh) || 40);
+  return distanceM / (v / 3.6);
+}
+function repeatedSegments(base, cycle, cyclesToShow, fromK) {
+  const out = [];
+  for (let k = fromK; k < cyclesToShow; k += 1) {
+    base.forEach(([a, b]) => out.push([a + k * cycle, b + k * cycle]));
+  }
+  return out;
+}
+function collectOverlapBands(nodes, dists, cum, cycleS, designSpeed, links, cyclesToShow, tVisEnd, sxLane, reverse) {
+  const bands = [];
+  const repeatedGreenExtended = (offset, green) => {
+    const base = greenSegments(offset, green, cycleS);
+    return repeatedSegments(base, cycleS, cyclesToShow + 1, -1);
+  };
+  const linkSpeed = (i) => {
+    const link = links[i];
+    if (!link) return designSpeed;
+    if (reverse && link.rev_kmh != null) return Number(link.rev_kmh) || designSpeed;
+    return Number(link.fwd_kmh ?? designSpeed) || designSpeed;
+  };
+  if (!reverse) {
+    for (let i = 0; i < nodes.length - 1; i += 1) {
+      const left = nodes[i];
+      const right = nodes[i + 1];
+      const travel = travelTimeS(dists[i], linkSpeed(i));
+      const leftSegs = repeatedGreenExtended(left.off, left.gFwd);
+      const rightSegs = repeatedGreenExtended(right.off, right.gFwd);
+      leftSegs.forEach(([la, lb]) => {
+        rightSegs.forEach(([ra, rb]) => {
+          const overlapStart = Math.max(la, ra - travel);
+          const overlapEnd = Math.min(lb, rb - travel);
+          if (overlapEnd <= overlapStart) return;
+          if (overlapEnd < 0 || overlapStart > tVisEnd) return;
+          bands.push({ xStart: sxLane(cum[i]), xEnd: sxLane(cum[i + 1]), start: overlapStart, end: overlapEnd, travel });
+        });
+      });
+    }
+  } else {
+    for (let i = nodes.length - 1; i > 0; i -= 1) {
+      const right = nodes[i];
+      const left = nodes[i - 1];
+      const linkIdx = i - 1;
+      const travel = travelTimeS(dists[linkIdx], linkSpeed(linkIdx));
+      const rightSegs = repeatedGreenExtended(right.off, right.gRev);
+      const leftSegs = repeatedGreenExtended(left.off, left.gRev);
+      rightSegs.forEach(([ra, rb]) => {
+        leftSegs.forEach(([la, lb]) => {
+          const overlapStart = Math.max(ra, la - travel);
+          const overlapEnd = Math.min(rb, lb - travel);
+          if (overlapEnd <= overlapStart) return;
+          if (overlapEnd < 0 || overlapStart > tVisEnd) return;
+          bands.push({ xStart: sxLane(cum[i]), xEnd: sxLane(cum[i - 1]), start: overlapStart, end: overlapEnd, travel });
+        });
+      });
+    }
+  }
+  return bands;
+}
+const sxFwd = (d) => sx(d) + FWD_STOP_DX;
+const sxRev = (d) => sx(d) + REV_STOP_DX;
+const polygonOf = (band) => [
+  [band.xStart, sy(band.start)],
+  [band.xEnd, sy(band.start + band.travel)],
+  [band.xEnd, sy(band.end + band.travel)],
+  [band.xStart, sy(band.end)],
+].map((p) => `${p[0]},${p[1]}`).join(' ');
+
+/* ============ 图元组装（颜色全部照抄工作台） ============ */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('svg');
+const el = (tag, attrs) => {
+  const n = document.createElementNS(SVG_NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+};
+
+/* 背景与坐标轴 */
+svg.appendChild(el('rect', { x: 0, y: 0, width: PLOT_W, height: PLOT_H, fill: '#ffffff' }));
+svg.appendChild(el('line', { x1: x0, y1: y1, x2: x1, y2: y1, stroke: '#cbd5e1' }));
+svg.appendChild(el('line', { x1: x0, y1: y0, x2: x0, y2: y1, stroke: '#cbd5e1' }));
+{
+  const t = el('text', { x: (x0 + x1) / 2, y: PLOT_H - 10, textAnchor: 'middle', fontSize: 11, fill: '#64748b' });
+  t.textContent = '距离 / 路口位置（米）'; svg.appendChild(t);
+}
+{
+  const t = el('text', { transform: `rotate(-90 14 ${(y0 + y1) / 2})`, x: 14, y: (y0 + y1) / 2, textAnchor: 'middle', fontSize: 11, fill: '#64748b' });
+  t.textContent = '时间（秒，自下而上）'; svg.appendChild(t);
+}
+
+/* 周期网格与刻度 */
+for (let t = 0; t <= tVisSpan + 1e-6; t += C) {
+  const yy = sy(t);
+  if (yy < y0 - 1 || yy > y1 + 1) continue;
+  svg.appendChild(el('line', { x1: x0, y1: yy, x2: x1, y2: yy, stroke: '#e2e8f0', strokeDasharray: '4 3' }));
+  const tx = el('text', { x: x0 - 8, y: yy + 4, textAnchor: 'end', fontSize: 10, fill: '#475569' });
+  tx.textContent = String(t); svg.appendChild(tx);
+}
+
+/* 裁剪区：绘图主体 */
+const clipId = 'st-plot-clip';
+const defs = el('defs');
+defs.appendChild(el('clipPath', { id: clipId }));
+defs.firstChild.appendChild(el('rect', { x: x0, y: y0, width: plotW, height: plotH }));
+svg.appendChild(defs);
+const clipG = el('g', { clipPath: `url(#${clipId})` });
+svg.appendChild(clipG);
+
+/* 路口竖线 + 红绿灯条：与工作台一致，按 coordination.nodes 几何重铺 */
+const hasPlan = Array.isArray(DATA.plan_nodes) && DATA.plan_nodes.length === DATA.cum_distance_m.length;
+const planViews = hasPlan ? DATA.plan_nodes.map((n) => {
+  const off = Number(n.off != null ? n.off : 0);
+  const gFwdNum = Number(n.green_fwd);
+  const gRevNum = Number(n.green_rev);
+  return {
+    off,
+    gFwd: Number.isFinite(gFwdNum) && gFwdNum > 0 ? gFwdNum : Number(n.green || 0),
+    gRev: Number.isFinite(gRevNum) && gRevNum > 0 ? gRevNum : Number(n.green || 0),
+  };
+}) : [];
+DATA.cum_distance_m.forEach((x, i) => {
+  const xx = sx(x);
+  const line = el('line', { x1: xx, y1: y0, x2: xx, y2: y1, stroke: '#cbd5e1', strokeDasharray: '4 4' });
+  clipG.appendChild(line);
+  if (hasPlan) {
+    const pv = planViews[i];
+    const fwdRed = repeatedSegmentsInRange(redSegments(pv.off, pv.gFwd, C), C, 0, tVisSpan);
+    const revRed = repeatedSegmentsInRange(redSegments(pv.off, pv.gRev, C), C, 0, tVisSpan);
+    const fwdGreen = repeatedSegmentsInRange(greenSegments(pv.off, pv.gFwd, C), C, 0, tVisSpan);
+    const revGreen = repeatedSegmentsInRange(greenSegments(pv.off, pv.gRev, C), C, 0, tVisSpan);
+    for (const [a, b] of fwdRed) {
+      const r = barRect(a, b);
+      clipG.appendChild(el('rect', { x: xx + SIGNAL_BAR_LEFT, y: r.y, width: SIGNAL_BAR_W, height: r.h, fill: 'rgba(239,68,68,.55)', rx: 1 }));
+    }
+    for (const [a, b] of revRed) {
+      const r = barRect(a, b);
+      clipG.appendChild(el('rect', { x: xx + SIGNAL_BAR_RIGHT, y: r.y, width: SIGNAL_BAR_W, height: r.h, fill: 'rgba(220,38,38,.45)', rx: 1 }));
+    }
+    for (const [a, b] of fwdGreen) {
+      const r = barRect(a, b);
+      clipG.appendChild(el('rect', { x: xx + SIGNAL_BAR_LEFT, y: r.y, width: SIGNAL_BAR_W, height: r.h, fill: 'rgba(34,197,94,.88)', rx: 1 }));
+    }
+    for (const [a, b] of revGreen) {
+      const r = barRect(a, b);
+      clipG.appendChild(el('rect', { x: xx + SIGNAL_BAR_RIGHT, y: r.y, width: SIGNAL_BAR_W, height: r.h, fill: 'rgba(21,128,61,.72)', rx: 1 }));
+    }
+  } else {
+    /* 无 coordination 数据回退：全条红底，绿窗由 diagram 窗盖上 */
+    clipG.appendChild(el('rect', { x: xx + SIGNAL_BAR_LEFT, y: y0, width: SIGNAL_BAR_W, height: plotH, fill: 'rgba(239,68,68,.55)', rx: 1 }));
+    clipG.appendChild(el('rect', { x: xx + SIGNAL_BAR_RIGHT, y: y0, width: SIGNAL_BAR_W, height: plotH, fill: 'rgba(220,38,38,.45)', rx: 1 }));
+  }
+  /* 路口名（上下两处，同工作台） */
+  const name = (DATA.names[i] || `N${i + 1}`);
+  const label = name.length > 10 ? `${name.slice(0, 9)}…` : name;
+  const up = el('text', { x: xx, y: y0 - 10, textAnchor: 'middle', fontSize: 11, fontWeight: 600, fill: '#1e293b' });
+  up.textContent = label; svg.appendChild(up);
+  const dn = el('text', { x: xx, y: y1 + 16, textAnchor: 'middle', fontSize: 10, fill: '#334155' });
+  dn.textContent = label; svg.appendChild(dn);
+});
+
+/* 左转喂流窗：diagram.green_windows（工作台同源，无 plan 时 coord 窗也由此回退） */
+for (const w of DATA.green_windows) {
+  const xx = sx(DATA.cum_distance_m[w.node_index ?? 0] || 0);
+  const r = barRect(Number(w.start_s), Number(w.end_s));
+  if (w.role === 'left_feeder') {
+    /* 左转喂流窗：琥珀，宽 6，同工作台 feederWindows */
+    clipG.appendChild(el('rect', { x: xx + SIGNAL_BAR_LEFT, y: r.y, width: 6, height: r.h, fill: 'rgba(251,191,36,.55)', rx: 1 }));
+  } else if (w.role === 'coord' && !hasPlan) {
+    const fwd = w.direction !== 'reverse';
+    clipG.appendChild(el('rect', {
+      x: xx + (fwd ? SIGNAL_BAR_LEFT : SIGNAL_BAR_RIGHT), y: r.y, width: SIGNAL_BAR_W, height: r.h,
+      fill: fwd ? 'rgba(34,197,94,.88)' : 'rgba(21,128,61,.72)', rx: 1,
+    }));
+  }
+}
+
+/* 绿波带：与工作台一致，几何重叠梯形带优先；几何带为空才回退服务端带宽带 */
+if (hasPlan) {
+  const dists = DATA.cum_distance_m.slice(0, -1).map((_, i) =>
+    Math.max(0, (DATA.cum_distance_m[i + 1] || 0) - (DATA.cum_distance_m[i] || 0)));
+  const designSpeed = 40;
+  const fwdBands = collectOverlapBands(
+    planViews, dists, DATA.cum_distance_m, C, designSpeed, DATA.plan_links || [], 4, tVisSpan, sxFwd, false);
+  const revBands = collectOverlapBands(
+    planViews, dists, DATA.cum_distance_m, C, designSpeed, DATA.plan_links || [], 4, tVisSpan, sxRev, true);
+  if (!fwdBands.length && !revBands.length) {
+    for (const b of DATA.bandwidth_bands) {
+      const laneDx = b.direction === 'reverse' ? REV_STOP_DX : FWD_STOP_DX;
+      clipG.appendChild(el('path', {
+        d: pathFromPoints(b.points, laneDx), fill: 'none',
+        stroke: b.direction === 'reverse' ? 'rgba(56,189,248,.55)' : 'rgba(74,222,128,.55)',
+        strokeWidth: 2.5,
+      }));
+    }
+  } else {
+    for (const band of fwdBands) {
+      clipG.appendChild(el('polygon', {
+        points: polygonOf(band), fill: 'rgba(74, 222, 128, .48)', stroke: 'rgba(22, 163, 74, .9)', strokeWidth: 1,
+      }));
+    }
+    for (const band of revBands) {
+      clipG.appendChild(el('polygon', {
+        points: polygonOf(band), fill: 'rgba(22, 163, 74, .22)', stroke: 'rgba(21, 128, 61, .85)',
+        strokeWidth: 1, strokeDasharray: '5 4',
+      }));
+    }
+  }
+} else {
+  for (const b of DATA.bandwidth_bands) {
+    const laneDx = b.direction === 'reverse' ? REV_STOP_DX : FWD_STOP_DX;
+    clipG.appendChild(el('path', {
+      d: pathFromPoints(b.points, laneDx), fill: 'none',
+      stroke: b.direction === 'reverse' ? 'rgba(56,189,248,.55)' : 'rgba(74,222,128,.55)',
+      strokeWidth: 2.5,
+    }));
+  }
+}
+
+/* 排队尾部 */
+for (const q of DATA.queue_tails) {
+  const isGrowth = q.kind === 'queue_growth';
+  const laneDx = q.direction === 'reverse' ? REV_STOP_DX : FWD_STOP_DX;
+  clipG.appendChild(el('path', {
+    d: pathFromPoints(q.points, laneDx), fill: 'none',
+    stroke: isGrowth ? 'rgba(249,115,22,.75)' : 'rgba(234,88,12,.85)',
+    strokeWidth: isGrowth ? 1.4 : 1.8,
+    strokeDasharray: isGrowth ? '2 3' : '4 3', strokeLinejoin: 'round',
+  }));
+}
+
+/* 车辆轨迹：采样 + 行驶/等待分段配色 */
+const shownVehicles = sampleVehicles(DATA.vehicles, ST_MAX_VEH, C);
+for (const v of shownVehicles) {
+  const meta = { ...(v.meta || {}), direction: v.direction || (v.meta && v.meta.direction) || 'forward' };
+  const isRedDepart = meta.depart_phase === 'red' || !!meta.side_arrival;
+  const isFeeder = meta.role === 'left_feeder';
+  const laneDx = meta.direction === 'reverse' ? REV_STOP_DX : FWD_STOP_DX;
+  const { moveRuns, waitRuns } = splitMoveWaitRuns(v.points || []);
+  for (const run of moveRuns) {
+    let stroke = isRedDepart ? 'rgba(252,165,165,.9)' : 'rgba(22,163,74,.75)';
+    if (isFeeder) stroke = 'rgba(251,191,36,.85)';
+    if (meta.direction === 'reverse' && !isFeeder && !isRedDepart) stroke = 'rgba(56,189,248,.8)';
+    clipG.appendChild(el('path', {
+      d: pathFromPoints(run.pts, laneDx), fill: 'none', stroke,
+      strokeWidth: isRedDepart || isFeeder ? 1.35 : 1.15, strokeLinejoin: 'round', strokeLinecap: 'round',
+    }));
+  }
+  for (const run of waitRuns) {
+    let stroke = isRedDepart ? 'rgba(248,113,113,.98)' : 'rgba(185,28,28,.98)';
+    if (isFeeder) stroke = 'rgba(234,88,12,.95)';
+    const waitDx = laneDx + (meta.direction === 'reverse' ? 3 : -3);
+    clipG.appendChild(el('path', {
+      d: pathFromPoints(run.pts, waitDx), fill: 'none', stroke,
+      strokeWidth: 3, strokeLinejoin: 'round', strokeLinecap: 'round',
+    }));
+  }
+}
+
+/* 图例（照抄工作台） */
+{
+  const lg = el('g', {});
+  lg.appendChild(el('rect', { x: x1 - 268, y: y0 + 4, width: 264, height: 44, rx: 5, fill: 'rgba(255,255,255,.94)', stroke: '#e2e8f0' }));
+  lg.appendChild(el('line', { x1: x1 - 256, y1: y0 + 20, x2: x1 - 236, y2: y0 + 20, stroke: 'rgba(22,163,74,.9)', strokeWidth: 2.2 }));
+  const t1 = el('text', { x: x1 - 232, y: y0 + 24, fontSize: 11, fill: '#166534' }); t1.textContent = '行驶'; lg.appendChild(t1);
+  lg.appendChild(el('line', { x1: x1 - 196, y1: y0 + 20, x2: x1 - 176, y2: y0 + 20, stroke: 'rgba(185,28,28,.95)', strokeWidth: 3 }));
+  const t2 = el('text', { x: x1 - 172, y: y0 + 24, fontSize: 11, fill: '#b91c1c' }); t2.textContent = '红等/排队'; lg.appendChild(t2);
+  lg.appendChild(el('line', { x1: x1 - 92, y1: y0 + 20, x2: x1 - 72, y2: y0 + 20, stroke: 'rgba(234,88,12,.85)', strokeWidth: 1.8, strokeDasharray: '4 2' }));
+  const t3 = el('text', { x: x1 - 68, y: y0 + 24, fontSize: 11, fill: '#c2410c' }); t3.textContent = '队尾'; lg.appendChild(t3);
+  const t4 = el('text', { x: x1 - 256, y: y0 + 40, fontSize: 10, fill: '#64748b' });
+  t4.textContent = '绿窗=协调相位 · 琥珀=左转喂流 · 数据为引擎原样返回'; lg.appendChild(t4);
+  svg.appendChild(lg);
+}
+
+/* ============ 头部 KPI 与摘要表 ============ */
+const fmt = (v, d = 1) => (v == null || v === '' || !Number.isFinite(Number(v))) ? '—' : Number(v).toFixed(d);
+document.getElementById('m-op').textContent = DATA.meta.operation || 'evaluate';
+document.getElementById('m-time').textContent = DATA.meta.pulled_at || '—';
+{
+  const dow = DATA.meta.day_of_week;
+  const win = DATA.meta.period_window;
+  const week = {1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六', 7: '周日'};
+  document.getElementById('m-ctx').textContent = [
+    dow != null ? `${week[dow] || '周' + dow}` : '未指定星期',
+    win ? `时段 ${win}` : '未指定时段',
+  ].join(' · ');
+}
+document.getElementById('k-delay').textContent = fmt(DATA.kpis.mean_delay_s);
+document.getElementById('k-stop').textContent = fmt(DATA.kpis.stop_rate, 2);
+document.getElementById('k-fwd').textContent = fmt(DATA.kpis.chained_fwd_s) + ' s';
+document.getElementById('k-rev').textContent = fmt(DATA.kpis.chained_rev_s) + ' s';
+
+const tbody = document.getElementById('tbl-nodes');
+DATA.cum_distance_m.forEach((m, i) => {
+  const name = DATA.names[i] || 'N' + (i + 1);
+  const tr = document.createElement('tr');
+  if (hasPlan) {
+    const pv = planViews[i];
+    tr.innerHTML = `<td>${name}</td><td class="num">${m}</td><td class="num">${pv.off}</td><td class="num">${pv.gFwd} / ${pv.gRev}</td>`;
+  } else {
+    const c0 = DATA.green_windows.filter((w) => w.node_index === i && w.role === 'coord');
+    const pick = (dir) => {
+      const w = c0.find((x) => x.direction === dir);
+      if (!w) return '—';
+      return `${Number(w.start_s).toFixed(0)}..${Number(w.end_s).toFixed(0)} s（绿 ${(w.end_s - w.start_s).toFixed(0)} s）`;
+    };
+    tr.innerHTML = `<td>${name}</td><td class="num">${m}</td><td class="num">—</td><td class="num">${pick('forward')} / ${pick('reverse')}</td>`;
+  }
+  tbody.appendChild(tr);
+});
+{
+  const ws = DATA.green_windows;
+  const tmin = Math.min(...ws.map((w) => w.start_s)), tmax = Math.max(...ws.map((w) => w.end_s));
+  document.getElementById('s-win').textContent = String(ws.length);
+  document.getElementById('s-win-coord').textContent = String(ws.filter((w) => w.role === 'coord').length);
+  document.getElementById('s-win-feed').textContent = String(ws.filter((w) => w.role === 'left_feeder').length);
+  document.getElementById('s-win-t').textContent = `${tmin.toFixed(0)}..${tmax.toFixed(0)}`;
+  document.getElementById('s-veh').textContent = String(DATA.vehicles.length);
+  document.getElementById('s-veh-f').textContent = String(DATA.vehicles.filter((v) => v.direction === 'forward').length);
+  document.getElementById('s-veh-r').textContent = String(DATA.vehicles.filter((v) => v.direction === 'reverse').length);
+  document.getElementById('s-veh-s').textContent = String(shownVehicles.length);
+  document.getElementById('s-qt').textContent = String(DATA.queue_tails.length);
+  document.getElementById('s-bb').textContent = String(DATA.bandwidth_bands.length);
+  document.getElementById('s-bb-meta').textContent = DATA.bandwidth_bands
+    .map((b) => `${b.direction} ${fmt(b.meta.bandwidth_s)} s`).join(' / ');
+}
+</script>
+</body>
+</html>
