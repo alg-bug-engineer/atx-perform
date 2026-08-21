@@ -482,6 +482,12 @@ const inflowArrows = computed(() => {
         </g>
 
         <!-- 路口名 + 灯态 -->
+        <text
+          class="road-name"
+          :x="(GEO.jiefangR + GEO.jingshiL) / 2"
+          y="14"
+          text-anchor="middle"
+        >奥体西路 · 北向南</text>
         <g class="sig" :transform="`translate(${(GEO.jiefangL + GEO.jiefangR) / 2}, 10)`">
           <circle r="7" :class="['lamp', jiefangSig.green ? 'g' : 'r']" />
           <text class="inter-name" y="22" text-anchor="middle">解放东路口</text>
@@ -677,8 +683,14 @@ const inflowArrows = computed(() => {
 .ruler line { stroke: rgba(0, 229, 255, 0.24); stroke-width: 1; }
 .ruler text { font-size: 9px; fill: rgba(220, 245, 255, 0.72); font-family: var(--font-mono); }
 
-.inter-name { font-size: 12px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 1px; }
-.inter-name.trunk { fill: rgba(220, 245, 255, 0.92); }
+.inter-name { font-size: 12px; font-weight: 700; fill: rgba(220, 245, 255, 0.96); letter-spacing: 1px; }
+.inter-name.trunk { fill: rgba(220, 245, 255, 0.96); }
+.road-name {
+  font-size: 17px;
+  font-weight: 700;
+  fill: rgba(220, 245, 255, 0.96);
+  letter-spacing: 2px;
+}
 .sig .lamp { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1; }
 .sig .lamp.g { fill: #33cc88; }
 .sig .lamp.r { fill: #ff4444; }
