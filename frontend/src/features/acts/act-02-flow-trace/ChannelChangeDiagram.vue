@@ -29,21 +29,21 @@ const props = defineProps({
   durationSec: { type: Number, default: 0 },
 });
 
-/** 口播原文（与 data/tts/scripts.json 的 a2f.channel_change 逐字一致，共 91 字） */
+/** 口播原文（与 data/tts/scripts.json 的 a2f.channel_change 逐字一致，共 87 字） */
 const SCRIPT =
-  '渠化上，路段90米处3车道拓宽为5车道，当排队车辆超过渠化拓宽范围后，排队长度会急剧增加，'
+  '路段90米处3车道拓宽为5车道，当排队车辆超过渠化拓宽范围后，排队长度会急剧增加，'
   + '同时上游解放东路口周期200秒，下游经十路口220秒，周期不相等，未协调，容易导致排队溢出。';
 
 /** 分镜节点：口播念到第 chars 字时触发（按字数比例换算成秒） */
 const NODES = [
-  { key: 'redbox', chars: 6 }, // 「渠化上，路段」→ 红框 + 90m 标注
-  { key: 'capacity', chars: 19 }, // 「3车道拓宽为5车道」→ 通行能力徽标
-  { key: 'queue', chars: 22 }, // 「当排队车辆…」→ 车流从上游 3 车道驶入、分流填满进口 5 车道
-  { key: 'overflow', chars: 34 }, // 「超过渠化拓宽范围后」→ 左转排满溢出占用上游直行道
-  { key: 'cycleLeft', chars: 60 }, // 「上游解放东路口周期200秒」→ 解放东路周期高亮
-  { key: 'cycleRight', chars: 71 }, // 「下游经十路口220秒」→ 经十路周期高亮
-  { key: 'mismatch', chars: 81 }, // 「周期不相等，未协调」→ 信号灯红绿错位 + 220≠200 徽标
-  { key: 'stall', chars: 83 }, // 「容易导致排队溢出」→ 直行车队滞留、通行效率下降
+  { key: 'redbox', chars: 2 }, // 「路段」→ 红框 + 90m 标注
+  { key: 'capacity', chars: 15 }, // 「3车道拓宽为5车道」→ 通行能力徽标
+  { key: 'queue', chars: 18 }, // 「当排队车辆…」→ 车流从上游 3 车道驶入、分流填满进口 5 车道
+  { key: 'overflow', chars: 30 }, // 「超过渠化拓宽范围后」→ 左转排满溢出占用上游直行道
+  { key: 'cycleLeft', chars: 56 }, // 「上游解放东路口周期200秒」→ 解放东路周期高亮
+  { key: 'cycleRight', chars: 67 }, // 「下游经十路口220秒」→ 经十路周期高亮
+  { key: 'mismatch', chars: 77 }, // 「周期不相等，未协调」→ 信号灯红绿错位 + 220≠200 徽标
+  { key: 'stall', chars: 79 }, // 「容易导致排队溢出」→ 直行车队滞留、通行效率下降
 ];
 
 const stage = ref(0);
@@ -110,8 +110,8 @@ const queueCarGroups = [
   { beat: 'queue', kind: 'thru', dn: 2, up: 1, front: STOP_X, gap: 40, count: 4, delay: 0.4, step: 0.3 }, // 直行道1（新增车道）
   { beat: 'queue', kind: 'thru', dn: 3, up: 1, front: STOP_X, gap: 40, count: 5, delay: 0.5, step: 0.3 }, // 直行道2
   // ② overflow 拍：左转车队越过渐变段占用上游内侧直行道；直行车队被挤得只能继续向上游排
-  { beat: 'overflow', kind: 'turn', dn: 1, up: 0, front: 792, gap: 34, count: 11, delay: 0.1, step: 0.16 }, // 左转溢出车流（队尾延至 x452）
-  { beat: 'overflow', kind: 'thru', dn: 3, up: 1, front: 762, gap: 40, count: 6, delay: 0.8, step: 0.22 }, // 直行排队向上游延伸（队尾 x562，短于左转溢出队）
+  { beat: 'overflow', kind: 'turn', dn: 1, up: 0, front: 792, gap: 34, count: 17, delay: 0.1, step: 0.13 }, // 左转溢出车流（队尾延至 x248，近上游解放东路口）
+  { beat: 'overflow', kind: 'thru', dn: 3, up: 1, front: 762, gap: 40, count: 11, delay: 0.8, step: 0.18 }, // 直行排队向上游延伸（队尾 x362，短于左转溢出队）
 ];
 
 /** 展开为逐车渲染配置：(x0,y0) 驶入起点 → (x1,y1) 停车位，delay 按组内序号递增 */
@@ -286,7 +286,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
     <!-- ── 排队溢出：车辆从上游 3 车道（本地左侧，旋转后上方）驶入，渐变段分流进 5 车道后依次减速停下 ── -->
     <g class="queue-cars" :class="{ stalled: has('stall') }">
       <!-- 被左转溢出占掉的直行排队空间（上游内侧直行道，overflow 拍淡入） -->
-      <rect class="overflow-zone" :class="{ on: has('overflow') }" x="444" y="356" width="298" height="30" />
+      <rect class="overflow-zone" :class="{ on: has('overflow') }" x="240" y="356" width="502" height="30" />
       <g
         v-for="car in queueCars"
         :key="car.key"
@@ -643,7 +643,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 /* 排队影响说明（随 overflow 拍的溢出车队成形后淡入） */
 .queue-note {
   opacity: 0;
-  transition: opacity 0.5s ease 3.2s;
+  transition: opacity 0.5s ease 3.5s;
 }
 .queue-note.on {
   opacity: 1;
