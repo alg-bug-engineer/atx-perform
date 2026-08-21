@@ -8,7 +8,8 @@
  * 对向（南向北）车道完全不压缩；新增左转车道贴绿化带侧。
  * 渠化渐变段距经十路口约 100m（路段约 1/3 处）；进口 5 车道为
  * 左转×2（贴绿化带）+ 直行×2 + 右转×1（最外侧）；排队阶段表现渠化影响：
- * 拓宽区短，左转车排满后溢出占用最左直行道，直行通行效率下降。
+ * 车辆从上游一辆辆驶入依次减速停下，拓宽区短，左转车排满后溢出
+ * 占用最左直行道，直行通行效率下降（无循环车流）。
  * 分镜跟 a2f.channel_change 口播逐句对齐——
  *   红框强调渠化变化点 → 3 车道拓宽为 5 车道（绿化带压缩 + 车道线生长）→ 通行能力变化 →
  *   两路口周期 200s/220s 交替高亮 + 信号灯错位 → 排队溢出堆积。
@@ -63,14 +64,16 @@ function has(key) {
   return i >= 0 && stage.value >= i + 1;
 }
 
-/** 排队车队（小汽车模型）：左转车排满拓宽区 → 溢出占用最左直行道 → 直行被堵蔓延 */
+/** 排队车队（小汽车模型）：车辆从上游一辆辆驶入、依次减速停到位（靠停止线的先停） */
+const DRIVE_IN = 400; // 默认驶入距离（px）：从队列位后方开来
+const DRIVE_SPEED = 220; // 驶入速度（px/s），按距离换算行驶时长
 const queueCarGroups = [
-  { cars: [944, 904, 864, 824], y: 340, delay: 0, step: 0.12, turn: true }, // 左转道1 排满（拓宽区内）
-  { cars: [944, 904, 864, 824], y: 362, delay: 0.12, step: 0.12, turn: true }, // 左转道2 排满（拓宽区内）
-  { cars: [944, 904, 864, 824, 784, 744], y: 384, delay: 0.6, step: 0.12, turn: true }, // 溢出占最左直行道（进口/渐变段）
-  { cars: [704, 664, 624, 584], y: 364, delay: 1.4, step: 0.1, turn: true }, // 溢出延伸出拓宽区，占用路段最内侧直行道
-  { cars: [944, 904, 864, 824, 784, 744, 704, 664, 624, 584], y: 406, delay: 1.7, step: 0.08, turn: false }, // 直行道2 被堵排队向路段蔓延
-  { cars: [704, 664, 624, 584], y: 428, delay: 1.9, step: 0.08, turn: false }, // 外侧直行道排队蔓延（进口右转道畅通不排）
+  { cars: [944, 904, 864, 824], y: 340, delay: 0, step: 0.5, turn: true, from: 740 }, // 左转道1：从拓宽区入口驶入
+  { cars: [944, 904, 864, 824], y: 362, delay: 0.25, step: 0.5, turn: true, from: 740 }, // 左转道2：从拓宽区入口驶入
+  { cars: [944, 904, 864, 824, 784, 744], y: 384, delay: 0.9, step: 0.5, turn: true }, // 溢出占最左直行道（进口/渐变段）
+  { cars: [704, 664, 624, 584], y: 364, delay: 1.8, step: 0.5, turn: true }, // 溢出延伸出拓宽区，占用路段最内侧直行道
+  { cars: [944, 904, 864, 824, 784, 744, 704, 664, 624, 584], y: 406, delay: 1.2, step: 0.35, turn: false }, // 直行道2 被堵排队向路段蔓延
+  { cars: [704, 664, 624, 584], y: 428, delay: 2.0, step: 0.5, turn: false }, // 外侧直行道排队蔓延（进口右转道畅通不排）
 ];
 
 /** 斑马线条纹（路口形态）：横跨纵向路的横排（竖条纹）与横跨横向路的竖排（横条纹） */
@@ -82,7 +85,6 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
 <template>
   <svg
     class="channel-diagram"
-    :class="{ 'queue-on': has('queue') }"
     viewBox="0 0 1200 620"
     preserveAspectRatio="xMidYMid meet"
     role="img"
@@ -184,31 +186,6 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
       <path d="M620 313 h-34 m10 -8 l-10 8 l10 8" />
     </g>
 
-    <!-- 北向南车流（循环示意，小汽车模型；外层 g 定位 y，内层 g 跑位移动画） -->
-    <g class="cars">
-      <g transform="translate(0 384)">
-        <g class="car">
-          <rect class="qc-body car-white" width="26" height="13" rx="4" />
-          <rect class="qc-glass" x="5" y="2.5" width="3" height="8" rx="1" />
-          <rect class="qc-glass" x="18" y="2.5" width="3" height="8" rx="1" />
-        </g>
-      </g>
-      <g transform="translate(0 406)">
-        <g class="car c2">
-          <rect class="qc-body car-white" width="26" height="13" rx="4" />
-          <rect class="qc-glass" x="5" y="2.5" width="3" height="8" rx="1" />
-          <rect class="qc-glass" x="18" y="2.5" width="3" height="8" rx="1" />
-        </g>
-      </g>
-      <g transform="translate(0 428)">
-        <g class="car c3">
-          <rect class="qc-body car-white" width="26" height="13" rx="4" />
-          <rect class="qc-glass" x="5" y="2.5" width="3" height="8" rx="1" />
-          <rect class="qc-glass" x="18" y="2.5" width="3" height="8" rx="1" />
-        </g>
-      </g>
-    </g>
-
     <!-- ── 拓宽动画（widen 阶段，渐变段 x735→885，距经十路口约100m/路段1/3处）── -->
     <!-- 绿化带压缩 + 5 车道（每道 22px）网格从渐变段向路口生长 -->
     <g class="widen-lines" :class="{ on: has('widen') }">
@@ -292,16 +269,21 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
       </g>
     </g>
 
-    <!-- ── 排队溢出（queue 阶段）：左转排满 → 溢出占直行道 → 直行被堵 ── -->
-    <g class="queue-cars" :class="{ on: has('queue') }">
+    <!-- ── 排队溢出（queue 阶段）：车辆从上游一辆辆驶入、依次减速停到位 ── -->
+    <g class="queue-cars">
       <template v-for="(grp, gi) in queueCarGroups" :key="gi">
         <g
           v-for="(x, i) in grp.cars"
           :key="`${gi}-${i}`"
           class="queue-car"
-          :class="grp.turn ? 'queue-turn' : 'queue-thru'"
-          :transform="`translate(${x} ${grp.y})`"
-          :style="{ transitionDelay: `${grp.delay + i * grp.step}s` }"
+          :class="[grp.turn ? 'queue-turn' : 'queue-thru', { arrive: has('queue') }]"
+          :style="{
+            '--x0': `${grp.from ?? x - DRIVE_IN}px`,
+            '--x1': `${x}px`,
+            '--y': `${grp.y}px`,
+            transitionDelay: `${grp.delay + i * grp.step}s`,
+            transitionDuration: `${Math.max(0.7, (x - (grp.from ?? x - DRIVE_IN)) / DRIVE_SPEED).toFixed(2)}s`,
+          }"
         >
           <rect class="qc-body" width="26" height="13" rx="4" />
           <rect class="qc-glass" x="5" y="2.5" width="3" height="8" rx="1" />
@@ -391,29 +373,9 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
   stroke-linejoin: round;
 }
 
-/* 车流（小汽车模型：内层 g 跑位移动画） */
-.car {
-  animation: car-move 7.5s linear infinite;
-}
-.car.c2 {
-  animation-duration: 8.5s;
-  animation-delay: -3.1s;
-}
-.car.c3 {
-  animation-duration: 8s;
-  animation-delay: -5.6s;
-}
-@keyframes car-move {
-  from { transform: translateX(-60px); }
-  to { transform: translateX(1260px); }
-}
-
 /* 小汽车造型：车身 + 前后挡风玻璃 */
 .qc-body {
   fill: #ff5252;
-}
-.car-white {
-  fill: rgba(236, 243, 250, 0.85);
 }
 .queue-turn .qc-body {
   fill: #ff9f43;
@@ -569,19 +531,28 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
   50%, 100% { opacity: 1; }
 }
 
-/* 排队车队（小汽车模型）：逐辆出现（橙色=左转排队/溢出，红色=直行被堵） */
+/* 排队车队（小汽车模型）：从上游驶入、依次减速停到位（靠停止线的先停）
+   —— 起点在队列位后方（左转道从拓宽区入口驶入），到点后减速刹车 */
 .queue-car {
+  transform: translate(var(--x0), var(--y));
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
 }
-.queue-cars.on .queue-car {
-  opacity: 0.95;
+.queue-car.arrive {
+  transform: translate(var(--x1), var(--y));
+  opacity: 1;
+  animation: car-pop 0.25s ease;
+}
+@keyframes car-pop {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* 排队影响说明 */
 .queue-note {
   opacity: 0;
-  transition: opacity 0.5s ease 2.4s;
+  transition: opacity 0.5s ease 4.6s;
 }
 .queue-note.on {
   opacity: 1;
@@ -590,11 +561,6 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
   fill: #ff9f43;
   font-size: 14px;
   letter-spacing: 1px;
-}
-
-/* 排队阶段：循环车流淡出（车流被排队打断） */
-.queue-on .car {
-  opacity: 0.22;
 }
 
 /* 静态标注 */
