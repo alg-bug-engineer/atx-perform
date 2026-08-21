@@ -59,7 +59,7 @@
           "id": "a2f.supply",
           "file": "scene2/s2-supply.wav",
           "approx_sec": 5,
-          "text": "路段的汇入需求为超过下游路口的通行能力。"
+          "text": "路段的汇入需求未超过下游路口的通行能力。"
         },
         {
           "id": "a2f.channel_change",

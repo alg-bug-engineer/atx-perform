@@ -311,7 +311,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
     <!-- ── 以下标注不随图形旋转，在上北下南竖版坐标系单独排版保持正向 ── -->
     <!-- 100m 距离标注文字（纵线顶端上方，道路左侧） -->
     <g class="dist-100" :class="{ on: has('redbox') }">
-      <text x="177" y="716" text-anchor="middle">距经十路口 100m</text>
+      <text x="177" y="716" text-anchor="middle">距经十路口 90m</text>
     </g>
 
     <!-- ── 徽标：车道数 / 通行能力（道路右侧，对齐拓宽段高度）── -->

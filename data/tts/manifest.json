@@ -40,7 +40,7 @@
     },
     "2": {
       "title": "分析成因",
-      "total_duration_sec": 31.94,
+      "total_duration_sec": 31.86,
       "segments": [
         {
           "id": "a2f.trace",
@@ -54,8 +54,8 @@
           "id": "a2f.supply",
           "file": "scene2/s2-supply.wav",
           "approx_sec": 5,
-          "text": "路段的汇入需求为超过下游路口的通行能力。",
-          "duration_sec": 4.2,
+          "text": "路段的汇入需求未超过下游路口的通行能力。",
+          "duration_sec": 4.12,
           "chars": 20
         },
         {
@@ -119,7 +119,7 @@
       ]
     }
   },
-  "generated_at": "2026-08-21T20:25:00+0800",
+  "generated_at": "2026-08-21T20:42:46+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000
