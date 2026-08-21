@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""把 deepagent 原始方案 JSON 蒸馏成幕「信控方案调节」用的 data/1-3-signal-plan.json。
+"""把工作台权威方案蒸馏成幕「信控方案调节」用的 data/1-3-signal-plan.json。
 
 输入：data/deepagent-raw/plan-generation.json（gitignore，见 scripts/pull_deepagent_plan.py）
 输出：data/1-3-signal-plan.json（入库）
 
-只取奥体西路晚高峰优化子区 opt-3，保留：公共周期 / 相位差 / 各路口阶段配时前后对比 /
-绿波带宽与 KPI / 回归告警与数据缺口说明。带宽为 0 的口径原样保留，不做美化。
+只接受 ``sync_workbench_signal_plan.py`` 写入且通过指纹校验的数据，禁止直接 API 重跑
+结果覆盖工作台口径。保留公共周期 / 相位差 / 阶段配时 / 时距图 / KPI 与回归告警。
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,7 @@ RAW = ROOT / "data" / "deepagent-raw" / "plan-generation.json"
 ST = ROOT / "data" / "deepagent-raw" / "space-time.json"
 OUT = ROOT / "data" / "1-3-signal-plan.json"
 
-SEGMENT_KEY = "opt-3:晚高峰"
+DEFAULT_SEGMENT_KEY = "opt-5:早高峰"
 # road9.dim_line_inter_rltn，line_id=wwe2bswwwe23pb01 的累计里程
 CUM_LENGTH_M = {
     "011wwe28vhw00001": 4464.7,
@@ -213,6 +214,7 @@ def build_diagram(st: dict[str, Any], cycle_s: float) -> dict[str, Any] | None:
     只保留几何，丢掉 meta / 饱和度等诊断字段。
     """
     d = st.get("diagram") or {}
+    evaluation = st.get("evaluation") or {}
     cum = d.get("cum_distance_m") or []
     if not cum:
         return None
@@ -264,16 +266,45 @@ def build_diagram(st: dict[str, Any], cycle_s: float) -> dict[str, Any] | None:
             {"dir": b.get("direction") or "forward", "pts": pts(b.get("points"))}
             for b in d.get("bandwidth_bands") or []
         ],
+        # 保留时距评价的真实方向 KPI，供前端展示延误/停车率。
+        "evaluation": {
+            "chained_bandwidth_forward_s": r1(evaluation.get("chained_bandwidth_forward_s")),
+            "chained_bandwidth_reverse_s": r1(evaluation.get("chained_bandwidth_reverse_s")),
+            "direction_kpis": [
+                {
+                    key: r1(value) if isinstance(value, (int, float)) else value
+                    for key, value in row.items()
+                }
+                for row in evaluation.get("direction_kpis") or []
+            ],
+            "notes": evaluation.get("notes") or [],
+            "warnings": evaluation.get("warnings") or [],
+        },
     }
 
 
 def main() -> int:
     if not RAW.exists():
-        raise SystemExit(f"缺少原始数据 {RAW}，请先运行 scripts/pull_deepagent_plan.py")
-    raw = json.loads(RAW.read_text(encoding="utf-8"))
-    segs = [s for s in raw.get("segment_plans") or [] if s.get("segment_key") == SEGMENT_KEY]
+        raise SystemExit(f"缺少工作台数据 {RAW}，请先运行 scripts/sync_workbench_signal_plan.py")
+    run_meta_path = ROOT / "data" / "deepagent-raw" / "_meta.json"
+    run_meta = json.loads(run_meta_path.read_text(encoding="utf-8")) if run_meta_path.exists() else {}
+    if run_meta.get("source_kind") != "workbench_authoritative":
+        raise SystemExit(
+            "拒绝提取非工作台数据：请先运行 scripts/sync_workbench_signal_plan.py，"
+            "直接 API 重跑只可用于诊断，不能覆盖页面 JSON"
+        )
+    raw_bytes = RAW.read_bytes()
+    actual_sha = hashlib.sha256(raw_bytes).hexdigest()
+    expected_sha = str(run_meta.get("source_sha256") or "")
+    if not expected_sha or actual_sha != expected_sha:
+        raise SystemExit(
+            f"拒绝提取：工作台方案 SHA256 不匹配（actual={actual_sha}, expected={expected_sha}）"
+        )
+    raw = json.loads(raw_bytes)
+    segment_key = str(run_meta.get("segment_key") or DEFAULT_SEGMENT_KEY)
+    segs = [s for s in raw.get("segment_plans") or [] if s.get("segment_key") == segment_key]
     if not segs:
-        raise SystemExit(f"原始数据中没有区间 {SEGMENT_KEY}")
+        raise SystemExit(f"工作台数据中没有区间 {segment_key}")
     sp = segs[0]
 
     coord = sp["plan"]["coordination"]
@@ -281,6 +312,15 @@ def main() -> int:
     # 口径不一致的字段冒充（正向按协调阶段绿算、反向按方向合计绿算，两者不可比）。
     st = json.loads(ST.read_text(encoding="utf-8")) if ST.exists() else {}
     st_eval = st.get("evaluation") or {}
+    expected_bandwidth = (run_meta.get("workbench_signature") or {}).get("bandwidth") or []
+    actual_bandwidth = [
+        r1(st_eval.get("chained_bandwidth_forward_s")),
+        r1(st_eval.get("chained_bandwidth_reverse_s")),
+    ]
+    if actual_bandwidth != expected_bandwidth:
+        raise SystemExit(
+            f"拒绝提取：时距图带宽不匹配（actual={actual_bandwidth}, expected={expected_bandwidth}）"
+        )
     by_diagram = {d["intersection_id"]: d for d in sp.get("intersection_stage_diagrams") or []}
     by_baseline = {n["intersection_id"]: n for n in sp["baseline_comparison"]["nodes"]}
 
@@ -327,6 +367,11 @@ def main() -> int:
     brief = sp["recommendation_brief"]
     meta = sp["plan"]["meta"]
     min_green = float((sp["request"].get("constraints") or {}).get("min_green_s") or 0)
+    period_label = str(sp.get("period_label") or run_meta.get("period_label") or "早高峰")
+    period_window = {
+        "早高峰": "07:00-09:00",
+        "晚高峰": "17:00-19:00",
+    }.get(period_label, "")
     min_green_violations = [
         {
             "inter_id": n["inter_id"],
@@ -342,19 +387,28 @@ def main() -> int:
     payload = {
         "meta": {
             "title": "信控方案调节",
-            "subtitle": "奥体西路干线协调 · 晚高峰 17:00–19:00",
+            "subtitle": (
+                f"奥体西路干线协调 · {period_label} {period_window.replace('-', '–')}"
+                if period_window
+                else f"奥体西路干线协调 · {period_label}"
+            ),
             "source": {
                 "engine": "traffic_signal_deepagent · 干线方案生成",
                 "algorithm": meta.get("algorithm"),
                 "version": meta.get("version"),
                 "line_id": sp["plan"]["corridor_id"],
                 "line_name": "奥体西路（书堂街--龙奥南路）",
-                "segment_key": SEGMENT_KEY,
+                "segment_key": segment_key,
                 "raw_json": "data/deepagent-raw/plan-generation.json（本地留存，不入库）",
+                "source_project": run_meta.get("source_project"),
+                "pulled_at": run_meta.get("pulled_at"),
+                "source_kind": run_meta.get("source_kind"),
+                "source_file": run_meta.get("source_file"),
+                "source_sha256": run_meta.get("source_sha256"),
             },
             "db_supported": True,
-            "period_label": "晚高峰",
-            "period_window": "17:00-19:00",
+            "period_label": period_label,
+            "period_window": period_window,
             "scenario_label": sp.get("scenario_label"),
             "strategy_package": sp.get("strategy_package_name"),
             "strategy": sp.get("strategy"),
@@ -373,7 +427,7 @@ def main() -> int:
             "reverse_dir8": coord.get("reverse_dir8") or 4,
             "forward_label": "北向南（解放东路 → 经十路）",
             "reverse_label": "南向北（经十路 → 解放东路）",
-            "coordinated_direction": "reverse",
+            "coordinated_direction": coord.get("coordination_direction") or "reverse",
             # 工作台「绿波时距图」面板显示的两个数，取自 space-time evaluate，
             # 标签与工作台一致（正向/反向链式带宽 · s）。
             "bandwidth": {
