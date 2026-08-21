@@ -4,7 +4,7 @@
  * 幕 1 已改为「指挥家时间轴」分段讲解（conductor 按拍取用
  * getConductorSegments），不再由本模块整段抢播；
  * 幕 3（成因分析）a2f 逐拍经 narrateBeat 走预合成 WAV（统一音色）；
- * 幕 3/3b/4/5 仍走进场整段播报。
+ * 幕 4/5 仍走进场整段播报。
  */
 import scripts from '@data/tts/scripts.json'
 import manifest from '@data/tts/manifest.json'
@@ -20,14 +20,13 @@ import s2Signal from '@data/tts/scene2/s2-signal.wav?url'
 import s2ChannelChange from '@data/tts/scene2/s2-channel-change.wav?url'
 import s2Done from '@data/tts/scene2/s2-done.wav?url'
 import s3Main from '@data/tts/scene3/s3-main.wav?url'
-import s3bMain from '@data/tts/scene3b/s3b-main.wav?url'
 import s4Main from '@data/tts/scene4/s4-main.wav?url'
 import s5Main from '@data/tts/scene5/s5-main.wav?url'
 
 import { clearBroadcastQueue, triggerBroadcast } from './broadcast-bus.js'
 import { stopCurrent } from './tts.js'
 
-const NARRATED = new Set(['3', '3b', '4', '5'])
+const NARRATED = new Set(['3', '4', '5'])
 
 const AUDIO_BY_FILE = {
   'scene1/s1-lock.wav': s1Lock,
@@ -41,7 +40,6 @@ const AUDIO_BY_FILE = {
   'scene2/s2-channel-change.wav': s2ChannelChange,
   'scene2/s2-done.wav': s2Done,
   'scene3/s3-main.wav': s3Main,
-  'scene3b/s3b-main.wav': s3bMain,
   'scene4/s4-main.wav': s4Main,
   'scene5/s5-main.wav': s5Main,
 }

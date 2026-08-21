@@ -211,8 +211,8 @@ const JINGSHI_EW_CAM_H = 122;
 
 /** 渠化变化弹窗最小停留：静默（无口播）模式下避免截图一闪而过 */
 const CHANNEL_CHANGE_HOLD_MS = 4000;
-/** 口播第一句结束（silence_end ≈ 9.01s）：切到两路口红框 */
-const CHANNEL_CHANGE_SPLIT_MS = 9014;
+/** 口播切点：新文案前半（渠化 3→5，45/97 字）约 46%，实测 20.2s → 切到两路口红框 */
+const CHANNEL_CHANGE_SPLIT_MS = 9400;
 /** 静默模式提前切到两路口红框，保证 4s 停留内两拍都看得到 */
 const CHANNEL_CHANGE_SILENT_SPLIT_MS = 1600;
 /** 弹窗淡出后到交棒的收束间隙 */
@@ -572,8 +572,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                   playPhase = 'channel_change';
                   emitHud({
                     phase: 'channel_change',
-                    caption: captionFor(beats, 'channel_change', '100米处道路渠化由3车道拓宽为5车道，通行能力发生变化'),
-                    text: captionFor(beats, 'channel_change', '100米处道路渠化由3车道拓宽为5车道，通行能力发生变化'),
+                    caption: captionFor(beats, 'channel_change', '路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'),
+                    text: captionFor(beats, 'channel_change', '路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'),
                     headline: '',
                   });
                   const splitMs = broadcastSilent.value
@@ -583,8 +583,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                     playPhase = 'cycle_mismatch';
                     emitHud({
                       phase: 'cycle_mismatch',
-                      caption: captionFor(beats, 'cycle_mismatch', '两个路口红绿灯周期不协调，容易导致排队溢出'),
-                      text: captionFor(beats, 'cycle_mismatch', '两个路口红绿灯周期不协调，容易导致排队溢出'),
+                      caption: captionFor(beats, 'cycle_mismatch', '两路口周期200秒/220秒相位不协调，上游车辆向下消散难，导致溢出风险'),
+                      text: captionFor(beats, 'cycle_mismatch', '两路口周期200秒/220秒相位不协调，上游车辆向下消散难，导致溢出风险'),
                       headline: '',
                     });
                   });

@@ -2,7 +2,7 @@
   "scenes": {
     "1": {
       "title": "问题定位",
-      "total_duration_sec": 16.18,
+      "total_duration_sec": 16.98,
       "segments": [
         {
           "id": "s1-lock",
@@ -16,9 +16,9 @@
           "id": "s1-metrics",
           "file": "scene1/s1-metrics.wav",
           "approx_sec": 6,
-          "text": "路段排队270米，通行速度7.2公里每小时。",
-          "duration_sec": 4.44,
-          "chars": 22
+          "text": "路段平均最大排队270米，通行速度7.2公里每小时。",
+          "duration_sec": 5.24,
+          "chars": 26
         },
         {
           "id": "s1-sat",
@@ -40,47 +40,39 @@
     },
     "2": {
       "title": "分析成因",
-      "total_duration_sec": 39.79,
+      "total_duration_sec": 37.18,
       "segments": [
         {
           "id": "a2f.trace",
           "file": "scene2/s2-trace.wav",
-          "approx_sec": 5,
-          "text": "追溯上游来源，按流量占比还原汇入路径。",
-          "duration_sec": 4.2,
-          "chars": 19
+          "approx_sec": 6,
+          "text": "追溯上游来源，车流主要来自奥体西路北直行和解放东路西进口右转。",
+          "duration_sec": 6.28,
+          "chars": 31
         },
         {
           "id": "a2f.supply",
           "file": "scene2/s2-supply.wav",
           "approx_sec": 5,
-          "text": "当前通行需求未超过绿灯供给。",
-          "duration_sec": 3.09,
-          "chars": 14
+          "text": "路段的汇入需求未超过下游路口的通行能力。",
+          "duration_sec": 4.12,
+          "chars": 20
         },
         {
           "id": "a2f.arterial",
           "file": "scene2/s2-arterial.wav",
-          "approx_sec": 8,
-          "text": "因经十路为通勤主干道，所以信号优先保障东西向通行。",
-          "duration_sec": 5.56,
-          "chars": 25
-        },
-        {
-          "id": "a2f.signal",
-          "file": "scene2/s2-signal.wav",
-          "approx_sec": 7,
-          "text": "当前周期内难以增加北向南直行绿灯时间，所以北向南车流短时难以消散。",
-          "duration_sec": 7.08,
-          "chars": 33
+          "approx_sec": 5,
+          "text": "下游经十路东西向为通勤主干道，信号需优先保障。",
+          "duration_sec": 5.24,
+          "chars": 23
         },
         {
           "id": "a2f.channel_change",
           "file": "scene2/s2-channel-change.wav",
-          "approx_sec": 18,
-          "text": "奥体西路经十路北向南路段，100米处道路渠化由3车道拓宽为5车道，通行能力发生变化。解放东路路口红绿灯周期200秒，经十路路口220秒，两个路口红绿灯周期不协调，容易导致排队溢出。",
-          "duration_sec": 18.52,
-          "chars": 90
+          "approx_sec": 20,
+          "text": "渠化上，路段100米处3车道变为5车道，当排队车辆超过渠化拓宽范围后，排队长度会急剧增加，同时上游解放东路口周期200秒，下游经十路口220秒，周期相位不协调，上游车辆向下消散难，导致溢出风险。",
+          "duration_sec": 20.2,
+          "chars": 97
         },
         {
           "id": "a2f.done",
@@ -94,43 +86,29 @@
     },
     "3": {
       "title": "优化方案",
-      "total_duration_sec": 19.56,
+      "total_duration_sec": 22.76,
       "segments": [
         {
           "id": "s3-main",
           "file": "scene3/s3-main.wav",
-          "approx_sec": 14,
-          "text": "为保障经十路晚高峰通勤，本路段通行需求未超过绿灯供给，轻微截流不致上游溢出，所以方案采用相位协调：现状解放东先放会溢出；优化后经十先放、队列消散后再汇入，避免溢出。",
-          "duration_sec": 19.56,
-          "chars": 82
-        }
-      ]
-    },
-    "3b": {
-      "title": "信控方案调节",
-      "total_duration_sec": 13.08,
-      "segments": [
-        {
-          "id": "s3b-main",
-          "file": "scene3b/s3b-main.wav",
-          "approx_sec": 13,
-          "text": "干线7个路口周期统一到180秒、相位差重排，绿波带宽显著提升，协调方向通行时间缩短86秒、平均延误下降，方案待人工确认后下发。",
-          "duration_sec": 13.08,
-          "chars": 63
+          "approx_sec": 21,
+          "text": "为降低本路段溢出风险，将坤顺路奥体西路、解放东路奥体西路划入到经十路子区，周期统一到220秒，采用拥堵协调策略，优化解放东路相对与经十路的相位差，实现经十路北口先放、排队启动消散后上游解放东路车流再汇入，避免溢出。",
+          "duration_sec": 22.76,
+          "chars": 107
         }
       ]
     },
     "4": {
       "title": "效果评估",
-      "total_duration_sec": 6.36,
+      "total_duration_sec": 7.08,
       "segments": [
         {
           "id": "s4-main",
           "file": "scene4/s4-main.wav",
-          "approx_sec": 10,
-          "text": "试运行后，奥体西路平均最大排队长度由270米降至230米。",
-          "duration_sec": 6.36,
-          "chars": 29
+          "approx_sec": 7,
+          "text": "采用新方案后预估，奥体西路平均最大排队长度由270米降至230米。",
+          "duration_sec": 7.08,
+          "chars": 33
         }
       ]
     },
@@ -149,7 +127,7 @@
       ]
     }
   },
-  "generated_at": "2026-08-21T12:00:17+0800",
+  "generated_at": "2026-08-21T13:59:36+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000

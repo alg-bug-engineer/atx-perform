@@ -68,8 +68,8 @@ const highlightChannelPoint = computed(() => flowTraceHud.value.phase === 'chann
 const highlightIntersections = computed(() => flowTraceHud.value.phase === 'cycle_mismatch');
 const channelCaption = computed(() => flowTraceHud.value.caption
   || (highlightIntersections.value
-    ? '两个路口红绿灯周期不协调，容易导致排队溢出'
-    : '100米处道路渠化由3车道拓宽为5车道，通行能力发生变化'));
+    ? '两路口周期200秒/220秒相位不协调，上游车辆向下消散难，导致溢出风险'
+    : '路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'));
 
 const headline = computed(() => {
   const phase = flowTraceHud.value.phase;
