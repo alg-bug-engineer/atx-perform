@@ -1,0 +1,388 @@
+<mxfile host="app.diagrams.net" agent="Qoder" version="24.0.0">
+  <diagram id="traffic-agent-platform" name="城市交通智能体平台总体架构">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0" background="#FFFFFF">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 标题与图例 -->
+        <mxCell id="title" value="城市交通智能体平台总体架构" style="text;html=1;align=left;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1F2933;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="30" y="16" width="600" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="图例" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B0BEC5;dashed=1;fontColor=#455A64;fontSize=12;fontStyle=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=6;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="14" width="290" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-line-1" style="endArrow=none;html=1;strokeColor=#7A8BA0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1306" y="46" as="sourcePoint" />
+            <mxPoint x="1344" y="46" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-txt-1" value="数据流" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#455A64;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="1352" y="38" width="100" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-line-2" style="endArrow=none;html=1;dashed=1;strokeColor=#E0863E;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1306" y="68" as="sourcePoint" />
+            <mxPoint x="1344" y="68" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-txt-2" value="控制 / 闭环" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#455A64;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="1352" y="60" width="110" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-line-3" style="endArrow=none;html=1;strokeColor=#5A6B80;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1470" y="46" as="sourcePoint" />
+            <mxPoint x="1518" y="46" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-txt-3" value="主链路" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#455A64;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="1526" y="38" width="70" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- 第 6 层 · 应用层 -->
+        <mxCell id="L6" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#EAF3FB;strokeColor=#4A90D9;fontColor=#3B6E9E;fontSize=14;fontStyle=1;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="10" y="90" width="1580" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="L6-name" value="应用层" style="text;html=1;rotation=90;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#4A90D9;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="26" y="111" width="26" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="app-1" value="交警调度指挥大屏&lt;br&gt;（指挥中心）" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8E8F7;strokeColor=#4A90D9;fontColor=#2B4A66;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="106" width="215" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="app-2" value="智能调度工作台&lt;br&gt;（Web 前端调度界面）" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8E8F7;strokeColor=#4A90D9;fontColor=#2B4A66;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="312" y="106" width="215" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="app-3" value="移动警务 APP" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8E8F7;strokeColor=#4A90D9;fontColor=#2B4A66;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="544" y="106" width="215" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="app-4" value="三维可视化仿真推演" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8E8F7;strokeColor=#4A90D9;fontColor=#2B4A66;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="776" y="106" width="215" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="app-5" value="报表分析中心" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8E8F7;strokeColor=#4A90D9;fontColor=#2B4A66;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1008" y="106" width="215" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="app-6" value="开放 API 与系统集成&lt;br&gt;（对接信号控制系统、集成指挥平台等）" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D8E8F7;strokeColor=#4A90D9;fontColor=#2B4A66;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="106" width="250" height="58" as="geometry" />
+        </mxCell>
+
+        <!-- 第 5 层 · 业务层 -->
+        <mxCell id="L5" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#E8F4F1;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=14;fontStyle=1;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="10" y="200" width="1580" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L5-name" value="业务层" style="text;html=1;rotation=90;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#3E8E7E;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="26" y="222" width="26" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-1" value="交通态势监测" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-2" value="信号配时优化" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="262" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-3" value="拥堵诊断治理" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="444" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-4" value="应急事件处置" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="626" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-5" value="特勤警卫保障" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="808" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-6" value="交通组织优化（渠化）" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="990" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-7" value="优化效果评估" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1172" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="biz-8" value="知识资产管理" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D4E8E3;strokeColor=#3E8E7E;fontColor=#24584E;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1354" y="214" width="170" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- 第 4 层 · 智能体集群层（视觉重心） -->
+        <mxCell id="L4" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#EBEDF8;strokeColor=#4F5DAA;fontColor=#3D4A8C;fontSize=14;fontStyle=1;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="10" y="300" width="1580" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="L4-name" value="智能体集群层" style="text;html=1;rotation=90;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#4F5DAA;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="26" y="380" width="26" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="agent-mod" value="多智能体集群" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#F4F5FB;strokeColor=#4F5DAA;strokeWidth=1.5;fontColor=#3D4A8C;fontSize=13;fontStyle=1;fontFamily=HarmonyOS Sans;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="70" y="312" width="880" height="226" as="geometry" />
+        </mxCell>
+        <mxCell id="master" value="城市级信控主控调度智能体&lt;br&gt;（任务编排与分发）" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#4F5DAA;strokeColor=#3D4A8C;strokeWidth=2;fontColor=#FFFFFF;fontSize=12;fontStyle=1;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="470" y="322" width="280" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="diag-group" value="认知诊断组" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#7A8BE0;fontColor=#4F5DAA;fontSize=11;fontStyle=1;fontFamily=HarmonyOS Sans;verticalAlign=top;align=left;spacingLeft=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="84" y="376" width="290" height="152" as="geometry" />
+        </mxCell>
+        <mxCell id="diag-1" value="交通 CT 场景认知智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="94" y="404" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="diag-2" value="拥堵成因诊断智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="94" y="442" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="diag-3" value="信控问题诊断智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="94" y="480" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-group" value="策略管控组" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#7A8BE0;fontColor=#4F5DAA;fontSize=11;fontStyle=1;fontFamily=HarmonyOS Sans;verticalAlign=top;align=left;spacingLeft=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="386" y="376" width="552" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-1" value="分级控制策略生成智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="398" y="404" width="168" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-2" value="区域级管控智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="576" y="404" width="168" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-3" value="干线级协调管控智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="754" y="404" width="168" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-4" value="路口级精调管控智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="398" y="444" width="168" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-5" value="应急事件管控智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="576" y="444" width="168" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="eval-group" value="评价进化组" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#7A8BE0;fontColor=#4F5DAA;fontSize=11;fontStyle=1;fontFamily=HarmonyOS Sans;verticalAlign=top;align=left;spacingLeft=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="84" y="494" width="866" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="eval-card" value="评价反馈与闭环进化智能体" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#DDE1F5;strokeColor=#7A8BE0;fontColor=#2E386B;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="502" width="340" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-mod" value="专家技能包" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#F4F5FB;strokeColor=#4F5DAA;strokeWidth=1.5;fontColor=#3D4A8C;fontSize=13;fontStyle=1;fontFamily=HarmonyOS Sans;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="962" y="312" width="600" height="226" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-1" value="干线绿波协调" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="974" y="350" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-2" value="相位相序优化" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="350" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-3" value="信号配时生成" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1366" y="350" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-4" value="排队溢流防控" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="974" y="402" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-5" value="区域协调控制" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="402" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-6" value="路口渠化优化" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1366" y="402" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-7" value="应急绿波保障" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="974" y="454" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-8" value="优化效果评估" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="454" width="182" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skill-9" value="时空图诊断分析" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E3E6F7;strokeColor=#8C98DC;fontColor=#3D4A8C;fontSize=10;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1366" y="454" width="182" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第 3 层 · 数据层 -->
+        <mxCell id="L3" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#E7F4F2;strokeColor=#2A9D8F;fontColor=#1F5C55;fontSize=14;fontStyle=1;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="10" y="570" width="1580" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="L3-name" value="数据层" style="text;html=1;rotation=90;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#2A9D8F;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="26" y="596" width="26" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="store-1" value="PostgreSQL&lt;br&gt;路网/流量/配时/方案" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D3EAE6;strokeColor=#2A9D8F;fontColor=#1F5C55;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="580" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="store-2" value="向量数据库&lt;br&gt;专家知识/RAG 检索" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D3EAE6;strokeColor=#2A9D8F;fontColor=#1F5C55;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="580" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="store-3" value="时序数据库&lt;br&gt;流量与指标时序" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D3EAE6;strokeColor=#2A9D8F;fontColor=#1F5C55;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="480" y="580" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="store-4" value="对象存储&lt;br&gt;视频/图片/日志" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D3EAE6;strokeColor=#2A9D8F;fontColor=#1F5C55;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="680" y="580" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="store-5" value="Redis 缓存&lt;br&gt;实时路况热点" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#D3EAE6;strokeColor=#2A9D8F;fontColor=#1F5C55;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="880" y="580" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="etl-bar" value="数据接入 · 清洗治理 · 标准化 · 数据服务 API" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#BFDFDA;strokeColor=#2A9D8F;fontColor=#1F5C55;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="640" width="980" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- 第 2 层 · 服务器层 -->
+        <mxCell id="L2" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#E9EFF6;strokeColor=#3D5A80;fontColor=#2B4360;fontSize=14;fontStyle=1;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="10" y="695" width="1580" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="L2-name" value="服务器层" style="text;html=1;rotation=90;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#3D5A80;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="26" y="722" width="26" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="server-1" value="AI 推理服务器 #1&lt;br&gt;4×Atlas 300I Duo（8 NPU）" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#D4E0EE;strokeColor=#3D5A80;fontColor=#2B4360;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="705" width="170" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="server-2" value="AI 推理服务器 #2&lt;br&gt;4×Atlas 300I Duo（8 NPU）" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#D4E0EE;strokeColor=#3D5A80;fontColor=#2B4360;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="705" width="170" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="server-3" value="AI 推理服务器 #3&lt;br&gt;4×Atlas 300I Duo（8 NPU）" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#D4E0EE;strokeColor=#3D5A80;fontColor=#2B4360;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="705" width="170" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="npu-note" value="集群共 12 卡 · 24 NPU" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontColor=#607D9B;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="772" width="170" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="model-1" value="Qwen 35B ×1&lt;br&gt;主力深度推理" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#C9D9EA;strokeColor=#3D5A80;fontColor=#2B4360;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="761" width="170" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="model-2" value="Qwen 2B ×3&lt;br&gt;轻量快速响应" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#C9D9EA;strokeColor=#3D5A80;fontColor=#2B4360;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="761" width="170" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 第 1 层 · 设备层 -->
+        <mxCell id="L1" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#EEF2F7;strokeColor=#5B7A99;fontColor=#33475B;fontSize=14;fontStyle=1;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="10" y="810" width="1580" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="L1-name" value="设备层" style="text;html=1;rotation=90;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#5B7A99;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="26" y="836" width="26" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="sense-1" value="电子警察&lt;br&gt;违法行为抓拍" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="820" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sense-2" value="地磁感应器&lt;br&gt;流量/存在检测" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="248" y="820" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sense-3" value="雷视一体机&lt;br&gt;分车道流量/速度/排队" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="416" y="820" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sense-4" value="高清卡口&lt;br&gt;过车识别" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="584" y="820" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sense-5" value="视频监控&lt;br&gt;全景态势" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="752" y="820" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sense-6" value="环形线圈/微波检测器&lt;br&gt;断面流量" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="920" y="820" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-dev-1" value="可变情报板/交通诱导屏&lt;br&gt;信息发布" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="820" width="170" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ctrl-dev-2" value="信号机&lt;br&gt;相位/配时执行" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#DDE7F0;strokeColor=#5B7A99;fontColor=#33475B;fontSize=11;fontFamily=HarmonyOS Sans;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="820" width="150" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- 关键数据流箭头 -->
+        <!-- 1. 感知采集链（粗实线）设备层 → 数据层 -->
+        <mxCell id="edge-sense" style="endArrow=classic;html=1;strokeColor=#5A6B80;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="810" as="sourcePoint" />
+            <mxPoint x="540" y="675" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-sense" value="车流量/排队/速度/相位数据汇聚" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontColor=#455A64;labelBackgroundColor=#FFFFFF;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="552" y="728" width="220" height="16" as="geometry" />
+        </mxCell>
+        <!-- 2. 算力支撑链（虚线）服务器层 → 智能体集群层 -->
+        <mxCell id="edge-infer" style="endArrow=classic;html=1;dashed=1;strokeColor=#7A8BA0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1095" y="761" as="sourcePoint" />
+            <mxPoint x="1095" y="550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-infer" value="模型推理服务" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontColor=#455A64;labelBackgroundColor=#FFFFFF;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="1105" y="610" width="110" height="16" as="geometry" />
+        </mxCell>
+        <!-- 部署线（服务器 → 模型） -->
+        <mxCell id="edge-deploy-1" style="endArrow=classic;html=1;dashed=1;strokeColor=#7A8BA0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1090" y="753" as="sourcePoint" />
+            <mxPoint x="1095" y="761" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-deploy-2" style="endArrow=classic;html=1;dashed=1;strokeColor=#7A8BA0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1275" y="753" as="sourcePoint" />
+            <mxPoint x="1295" y="761" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- 3. 数据读写链（双向实线）数据层 ↔ 智能体集群层 -->
+        <mxCell id="edge-db" style="startArrow=classic;endArrow=classic;html=1;strokeColor=#7A8BA0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="660" y="550" as="sourcePoint" />
+            <mxPoint x="660" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-db" value="取数分析/结论回写" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontColor=#455A64;labelBackgroundColor=#FFFFFF;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="672" y="556" width="120" height="16" as="geometry" />
+        </mxCell>
+        <!-- 4. 技能调用链（双向实线）多智能体集群 ↔ 专家技能包 -->
+        <mxCell id="edge-skill" style="startArrow=classic;endArrow=classic;html=1;strokeColor=#7A8BA0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="420" as="sourcePoint" />
+            <mxPoint x="962" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-skill" value="技能调用 / 策略输出" style="text;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#455A64;labelBackgroundColor=#FFFFFF;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="944" y="400" width="120" height="16" as="geometry" />
+        </mxCell>
+        <!-- 5. 技能固化闭环（虚线回环）评价进化组 → 专家技能包 -->
+        <mxCell id="edge-fix" style="endArrow=classic;html=1;dashed=1;strokeColor=#3ECF8E;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="516" as="sourcePoint" />
+            <mxPoint x="962" y="516" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-fix" value="有效策略固化为新技能" style="text;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#2E9E6E;labelBackgroundColor=#FFFFFF;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="640" y="504" width="180" height="16" as="geometry" />
+        </mxCell>
+        <!-- 6. 能力输出链（粗实线）智能体集群层 → 业务层 → 应用层 -->
+        <mxCell id="edge-cap-1" style="endArrow=classic;html=1;strokeColor=#5A6B80;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="800" y="300" as="sourcePoint" />
+            <mxPoint x="800" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-cap-2" style="endArrow=classic;html=1;strokeColor=#5A6B80;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="800" y="200" as="sourcePoint" />
+            <mxPoint x="800" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- 7. 闭环控制链（右缘竖向虚线）应用层 → 信号机 -->
+        <mxCell id="edge-loop" style="endArrow=classic;html=1;dashed=1;strokeColor=#E0863E;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1490" y="135" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="1570" y="135" />
+              <mxPoint x="1570" y="848" />
+            </Array>
+            <mxPoint x="1530" y="848" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-loop" value="优化信控方案下发执行" style="text;html=1;rotation=90;align=center;verticalAlign=middle;fontSize=11;fontColor=#E0863E;labelBackgroundColor=#FFFFFF;fontFamily=HarmonyOS Sans;" vertex="1" parent="1">
+          <mxGeometry x="1576" y="390" width="22" height="150" as="geometry" />
+        </mxCell>
+        <!-- 任务分发（主控 → 各组智能体） -->
+        <mxCell id="edge-task-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="diag-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-task-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.35;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="diag-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-task-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.2;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="diag-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-task-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="ctrl-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-task-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.6;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="ctrl-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-task-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.7;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="ctrl-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-task-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.45;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="ctrl-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-task-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;strokeColor=#8A9BB0;exitX=0.55;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="master" target="ctrl-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- 评价反馈回环（评价进化组 → 主控） -->
+        <mxCell id="edge-feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;dashed=1;strokeColor=#3ECF8E;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="eval-card" target="master">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
