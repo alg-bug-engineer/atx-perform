@@ -48,7 +48,7 @@ function applyDockPanel(state) {
   const hideSupplyChain = panel.kind === 'arterial' || panel.kind === 'signal' || panel.kind === 'overflow';
   const rest = dockStack.value.filter((p) => {
     if (p.kind === 'trace' || p.kind === panel.kind) return false;
-    if (hideSupplyChain && (p.kind === 'supply' || p.kind === 'downstream')) return false;
+    if (hideSupplyChain && p.kind === 'supply') return false;
     return true;
   });
   dockStack.value = [...rest, panel];
@@ -112,13 +112,6 @@ onUnmounted(() => {
             <span>车道能力上限</span>
             <strong>{{ item.demand }} pcu/h</strong>
           </div>
-          <div class="dock-ok">{{ item.conclusion }}</div>
-        </template>
-
-        <template v-else-if="item.kind === 'downstream'">
-          <div class="dock-hero">{{ formatMetric(item.ratio, 2) }}%</div>
-          <div class="dock-lab">主要关联去向 · 下游关联占比</div>
-          <p class="dock-copy">{{ item.destination }}</p>
           <div class="dock-ok">{{ item.conclusion }}</div>
         </template>
 

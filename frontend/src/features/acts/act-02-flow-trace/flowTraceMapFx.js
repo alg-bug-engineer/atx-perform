@@ -11,7 +11,6 @@
  * HUD 状态经 setFlowTraceHud 桥接给幕 2 舞台组件（Act2FlowStage）渲染。
  */
 import { createInflowTraceLayer } from '../../../layers/inflowTraceLayer.js';
-import { createDownstreamFlowTraceLayer } from '../../../layers/downstreamFlowTraceLayer.js';
 import { createJingshiEwFlowLayer } from '../../../layers/jingshiEwFlowLayer.js';
 import { createRoadNameLabelLayer } from '../../../layers/roadNameLabels.js';
 import { createScene2MapAnnot } from '../../../layers/scene2MapAnnot.js';
@@ -142,24 +141,6 @@ function beatMs(beats, key, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function frameDownstreamLook(points) {
-  if (!points?.length) return null;
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
-  const span = Math.max(maxX - minX, maxY - minY, 72);
-  return {
-    x: cx,
-    y: Math.max(210, Math.min(290, span * 2.15)),
-    z: -cy,
-  };
-}
-
 function followTraceLook(progress, source, via, target) {
   const s = source?.pos;
   const v = via?.pos || s;
@@ -253,7 +234,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
   );
 
   let layer = null;
-  let downstreamLayer = null;
   let ewLayer = null;
   let nameLayer = null;
   let annot = null;
@@ -308,13 +288,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
     ewLayer = null;
   }
 
-  function clearDownstreamLayer() {
-    if (!downstreamLayer) return;
-    runtime.scene.remove(downstreamLayer);
-    downstreamLayer.dispose?.();
-    downstreamLayer = null;
-  }
-
   function clearNameLayer() {
     if (!nameLayer) return;
     runtime.scene.remove(nameLayer);
@@ -331,7 +304,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
 
   function clearLayer() {
     clearInflowLayer();
-    clearDownstreamLayer();
     clearEwLayer();
     clearNameLayer();
     clearAnnot();
@@ -381,16 +353,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
     });
   }
 
-  function frameDownstream() {
-    const look = frameDownstreamLook(downstreamLayer?.lookPath);
-    if (!look) return;
-    runtime.animateCamera({
-      posTarget: { x: look.x, y: look.y, z: look.z },
-      lookTarget: { x: look.x, y: 0, z: look.z },
-      lerp: 0.06,
-    });
-  }
-
   function play() {
     if (disposed) return;
     playing = true;
@@ -422,7 +384,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
     );
     const dc = flowTrace.downstream_constraint || {};
     const beats = flowTrace.map_beats || {};
-    const downstreamTraces = causeAnalysis?.downstream_traces?.by_turn?.through || [];
     const upstreamShareDisplay = flowTrace.upstream_share_display || {};
     const fallbackMetrics = causeAnalysis?.jingshi_ew_fallback_metrics || {};
     const eastMetric = fallbackMetrics.east_entrance_E2W || {};
@@ -541,48 +502,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
         annot?.setBeat('supply_out');
         after(beatMs(beats, 'supply_clear', beats.supply?.clear_ms ?? 500), () => {
           annot?.setBeat('hidden');
-          downstreamLayer = createDownstreamFlowTraceLayer({
-            roads,
-            intersections,
-            topology,
-            originId: target.props.inter_id,
-            traces: downstreamTraces,
-            resolution: getResolution?.(),
-          });
-          runtime.scene.add(downstreamLayer);
-          downstreamLayer.play(performance.now() / 1000);
-          frameDownstream();
-          playPhase = 'downstream';
-          const primaryTrace = downstreamLayer.primaryTrace;
-          emitHud({
-            phase: 'downstream',
-            caption: captionFor(
-              beats,
-              'downstream',
-              '北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向',
-            ),
-            text: captionFor(
-              beats,
-              'downstream',
-              '北向南直行车流继续向奥体西路南段汇出，主要关联奥体西路与龙奥北路方向',
-            ),
-            headline: headlineFor(beats, 'downstream', '下游通道具备承接余量'),
-            panel: {
-              kind: 'downstream',
-              title: '下游关联去向',
-              destination: primaryTrace?.cor_inter_name || '奥体西路与龙奥北路路口',
-              ratio: primaryTrace?.flow_share_ratio ?? 85.33,
-              metric: '下游关联占比',
-              conclusion: beats.downstream?.conclusion || '下游主通道具备承接余量',
-            },
-          });
-
-          const downstreamMs = Math.max(
-            beatMs(beats, 'downstream', 3200),
-            Math.round((downstreamLayer.durationSec || 0) * 1000),
-          );
-          afterMapAndVoice(downstreamMs, () => {
-          clearDownstreamLayer();
           emitHud({
             phase: 'ew_clear',
             caption: '',
@@ -664,7 +583,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
               });
             });
           });
-          });
         });
       });
       });
@@ -675,7 +593,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
     playing = false;
     clearTimers();
     layer?.stop?.();
-    downstreamLayer?.stop?.();
     ewLayer?.stop?.();
   }
 
@@ -686,7 +603,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
 
   function update(time) {
     layer?.update?.(time);
-    downstreamLayer?.update?.(time);
     ewLayer?.update?.(time);
     if (playPhase === 'trace' && layer && followCtx) {
       const elapsed = layer.getElapsed?.(time) ?? 0;
@@ -705,7 +621,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
 
   function setResolution(w, h) {
     layer?.setResolution?.(w, h);
-    downstreamLayer?.setResolution?.(w, h);
     ewLayer?.setResolution?.(w, h);
   }
 
