@@ -4,10 +4,12 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import CorridorStage from './CorridorStage.vue'
-import { buildCorridorDemo, findBriefingBeats, sampleVariant } from '../scene3-optimization/corridorDemo.js'
+import { buildCorridorDemo, sampleVariant } from '../scene3-optimization/corridorDemo.js'
 
 const props = defineProps({
   optimization: { type: Object, default: null },
+  beforeQueueM: { type: Number, default: 270 },
+  afterQueueM: { type: Number, default: 230 },
 })
 
 const demo = computed(() => {
@@ -23,63 +25,97 @@ const before = computed(() => demo.value?.variants.find((v) => v.key === 'before
 const after = computed(() => demo.value?.variants.find((v) => v.key === 'after') || null)
 
 const PLAY_START_S = 30
-const clock = ref(PLAY_START_S)
+const PLAY_DURATION_S = 10
+const reduceMotion = typeof window !== 'undefined'
+  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const paused = ref(false)
-const guided = ref(true)
-const holdRemain = ref(0.4)
-const BEAT_SPEED = 8
-const LOOP_SPEED = 6
-const speed = ref(BEAT_SPEED)
-const BEAT_IDLE = { tag: '预评估', text: '对照现状与优化后排队消散', tone: 'plain' }
-const beatCaption = ref({ ...BEAT_IDLE })
+const frozen = ref(false)
+const elapsedS = ref(0)
 
-const beats = computed(() => findBriefingBeats(before.value, after.value))
-const fired = new Set()
-
-function skipBeatsBefore(t) {
-  for (const b of beats.value) {
-    if (b.t <= t) fired.add(b.id)
+/** 找到目标排队长度最接近的完整仿真步，让车流、停车状态和队尾线来自同一帧。 */
+function nearestQueueTime(variant, targetQueueM) {
+  const result = variant?.result
+  if (!result?.queueM?.length) return PLAY_START_S
+  let bestStep = 0
+  let bestDelta = Number.POSITIVE_INFINITY
+  for (let step = 0; step < result.queueM.length; step += 1) {
+    const delta = Math.abs(result.queueM[step] - targetQueueM)
+    if (delta < bestDelta) {
+      bestStep = step
+      bestDelta = delta
+    }
   }
+  return bestStep * result.dt
 }
 
-function wrapFromStart(t, cycle) {
-  const start = PLAY_START_S
-  const span = Math.max(1, cycle - start)
-  if (t < cycle) return Math.max(start, t)
-  return start + ((t - start) % span)
+const progress = computed(() => Math.min(1, elapsedS.value / PLAY_DURATION_S))
+const easedProgress = computed(() => {
+  const t = progress.value
+  return t * t * (3 - 2 * t)
+})
+const beforeEndS = computed(() => nearestQueueTime(before.value, props.beforeQueueM))
+const afterEndS = computed(() => nearestQueueTime(after.value, props.afterQueueM))
+
+/**
+ * 仿真以 7 m 车头间距离散，目标值通常落在两个完整车位之间。
+ * 对最近整帧的连续排队车辆做不足一个车位的渐进压缩/伸展：停止线侧不动，
+ * 越靠近队尾修正越完整，使车流实体与专家口径的队尾线精确重合。
+ */
+function alignQueueToTarget(sample, targetQueueM) {
+  const deltaM = sample.queueM - targetQueueM
+  if (Math.abs(deltaM) < 0.01) return sample
+
+  const stopped = sample.cars
+    .filter((car) => !car.moving && car.turn === sample.worstGroup)
+    .sort((a, b) => b.x - a.x)
+  if (stopped.length < 3) return { ...sample, queueM: targetQueueM }
+
+  const chain = [stopped[0]]
+  let tailX = stopped[0].x
+  const maxQueueGapM = 21
+  for (let i = 1; i < stopped.length; i += 1) {
+    if (tailX - stopped[i].x > maxQueueGapM) break
+    chain.push(stopped[i])
+    tailX = stopped[i].x
+  }
+
+  const headX = chain[0].x
+  const spanM = Math.max(0.01, headX - tailX)
+  const chainIds = new Set(chain.map((car) => car.id))
+  const cars = sample.cars.map((car) => {
+    if (!chainIds.has(car.id)) return car
+    const tailWeight = (headX - car.x) / spanM
+    return { ...car, x: car.x + deltaM * tailWeight }
+  })
+  return { ...sample, cars, queueM: targetQueueM }
 }
 
-const beforeSample = computed(() => (before.value ? sampleVariant(before.value, clock.value) : null))
-const afterSample = computed(() => (after.value ? sampleVariant(after.value, clock.value) : null))
+function sampleTowardQueue(variant, endS, targetQueueM) {
+  if (!variant) return null
+  const t = PLAY_START_S + (endS - PLAY_START_S) * easedProgress.value
+  const sample = sampleVariant(variant, t)
+  if (!sample || !frozen.value) return sample
+  return alignQueueToTarget(sample, targetQueueM)
+}
+
+const beforeSample = computed(() => (
+  sampleTowardQueue(before.value, beforeEndS.value, props.beforeQueueM)
+))
+const afterSample = computed(() => (
+  sampleTowardQueue(after.value, afterEndS.value, props.afterQueueM)
+))
 
 let rafId = 0
 let lastTs = 0
 function tick(ts) {
-  if (lastTs && demo.value && !paused.value) {
+  if (lastTs && demo.value && !paused.value && !frozen.value) {
     const dt = (ts - lastTs) / 1000
-    const cycle = demo.value.cycleLen || 220
-    if (holdRemain.value > 0) {
-      holdRemain.value -= dt
-    } else {
-      const next = clock.value + dt * speed.value
-      if (guided.value) {
-        const hit = beats.value.find((b) => clock.value < b.t && next >= b.t && !fired.has(b.id))
-        if (hit) {
-          clock.value = hit.t
-          holdRemain.value = hit.hold
-          beatCaption.value = { tag: hit.tag, text: hit.text, tone: hit.tone }
-          fired.add(hit.id)
-        } else if (next >= cycle) {
-          // 讲解节拍走完后从 30 s 继续循环，避免回到周期初空车位
-          clock.value = PLAY_START_S
-          guided.value = false
-          speed.value = LOOP_SPEED
-        } else {
-          clock.value = next
-        }
-      } else {
-        clock.value = wrapFromStart(next, cycle)
-      }
+    elapsedS.value += dt
+    if (elapsedS.value >= PLAY_DURATION_S) {
+      elapsedS.value = PLAY_DURATION_S
+      frozen.value = true
+      lastTs = 0
+      return
     }
   }
   lastTs = ts
@@ -87,18 +123,20 @@ function tick(ts) {
 }
 
 function playOnce() {
-  fired.clear()
-  clock.value = PLAY_START_S
-  skipBeatsBefore(PLAY_START_S)
-  holdRemain.value = 0.4
+  cancelAnimationFrame(rafId)
+  elapsedS.value = 0
+  frozen.value = false
   paused.value = false
-  guided.value = true
-  speed.value = BEAT_SPEED
-  beatCaption.value = { tag: '预评估', text: '先观察现状拥堵形成，再对比优化后通行', tone: 'plain' }
+  if (reduceMotion) {
+    elapsedS.value = PLAY_DURATION_S
+    frozen.value = true
+    return
+  }
+  lastTs = 0
+  rafId = requestAnimationFrame(tick)
 }
 
 onMounted(() => {
-  rafId = requestAnimationFrame(tick)
   playOnce()
 })
 onUnmounted(() => {
@@ -106,10 +144,11 @@ onUnmounted(() => {
 })
 
 function togglePause() {
+  if (frozen.value) return
   paused.value = !paused.value
 }
 
-defineExpose({ playOnce, togglePause, paused })
+defineExpose({ playOnce, togglePause, paused, frozen })
 </script>
 
 <template>
@@ -119,11 +158,13 @@ defineExpose({ playOnce, togglePause, paused })
         :model="demo"
         :variant="before"
         :sample="beforeSample"
+        :frozen="frozen"
       />
       <CorridorStage
         :model="demo"
         :variant="after"
         :sample="afterSample"
+        :frozen="frozen"
       />
     </div>
     <p v-else class="empty">走廊仿真数据未就绪</p>

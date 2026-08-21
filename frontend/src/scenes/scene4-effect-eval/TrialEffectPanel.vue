@@ -21,6 +21,10 @@ const headline = computed(() => {
   const last = cycles[cycles.length - 1]
   return last ? `排队长度由 ${first} m 降至 ${last.queue_length_m} m` : '试运行观察中…'
 })
+const finalQueueM = computed(() => {
+  const cycles = series.value.cycles
+  return cycles[cycles.length - 1]?.queue_length_m ?? 230
+})
 </script>
 
 <template>
@@ -30,14 +34,24 @@ const headline = computed(() => {
       <h2 class="lead-headline">{{ headline }}</h2>
       <div class="play-acts">
         <button type="button" class="play-btn" @click="trial?.playOnce()">播放演示</button>
-        <button type="button" class="play-btn ghost" @click="trial?.togglePause()">
-          {{ trial?.paused ? '继续' : '暂停' }}
+        <button
+          type="button"
+          class="play-btn ghost"
+          :disabled="trial?.frozen"
+          @click="trial?.togglePause()"
+        >
+          {{ trial?.frozen ? '已定格' : trial?.paused ? '继续' : '暂停' }}
         </button>
       </div>
     </header>
 
     <div class="stage">
-      <CorridorTrialStage ref="trial" :optimization="optimization" />
+      <CorridorTrialStage
+        ref="trial"
+        :optimization="optimization"
+        :before-queue-m="series.baseline.queue_length_m"
+        :after-queue-m="finalQueueM"
+      />
     </div>
 
     <footer class="foot">
@@ -111,6 +125,11 @@ const headline = computed(() => {
 }
 .play-btn:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.45); }
 .play-btn.ghost { color: var(--text-muted); }
+.play-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+  box-shadow: none;
+}
 
 .stage {
   display: grid;
