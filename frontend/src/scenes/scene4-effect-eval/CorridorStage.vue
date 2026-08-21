@@ -247,15 +247,26 @@ const CAR_W_RATIO = 0.62
 const CAR_LANE_FILL = 0.72
 const VEH_L = computed(() => CAR_LEN_M * pxPerM.value)
 const carW = (laneH) => Math.min(VEH_L.value * CAR_W_RATIO, laneH * CAR_LANE_FILL)
-/**
- * 车辆与仿真使用同一把尺：车长 5.4 m、车头间距 7 m。
- * 车身不额外放大，车辆、排队状态和队尾线共用同一套仿真坐标。
- */
-const CAR_ISO = 1
+
+/* ── 车辆绘制尺寸（仅影响画得多大，不改车辆位置/排队间距/队尾线）──
+ * 场景做了非等比缩放（沿路 FIT_NS 压短、断面 FIT_EW 拉宽），故先在屏幕空间
+ * 定尺寸再换回本地坐标，避免车被拉扫：
+ *   车长：按 CAR_LEN_ISO 放大，但封顶到「车头间距 − 最小间隙」——车头钉在仿真位置，
+ *          车身向车尾生长，故满排队（车头间距 7 m）也不交叠，队列头部仍贴停止线；
+ *   车宽：按各车道净宽自适应（车道越宽车越宽），并限制 ≤ 车长，避免宽车道把车拉成横条。 */
+const CAR_HEAD_M = 7 // 与仿真 vehicle.space_m 一致：满排队时车头间距
+const CAR_LEN_ISO = 1.7 // 车长放大系数（实际受车头间距封顶，不会导致交叠）
+const CAR_GAP_S = 0.6 // 满排队时相邻车最小可视间隙（屏幕px）
+const CAR_LANE_W_FILL = 0.5 // 车宽占车道净宽比例（屏幕），随车道宽自适应
+const CAR_MAX_WL = 2.2 // 车宽/车长上限：>1 允许车宽大于车长以填满车道（车长受车头间距锁死，仅车宽可放大）
 function carBox(c) {
-  const len = VEH_L.value * CAR_ISO
-  const rawW = c.h * CAR_ISO * (FIT_NS / FIT_EW)
-  const w = c.laneH ? Math.min(rawW, c.laneH * 0.86) : rawW
+  const carS = VEH_L.value * FIT_NS // 实车长（屏幕）
+  const headS = CAR_HEAD_M * pxPerM.value * FIT_NS // 车头间距（屏幕）
+  const lenS = Math.min(carS * CAR_LEN_ISO, headS - CAR_GAP_S) // 车长封顶到车头间距 → 不交叠
+  const laneS = (c.laneH || VEH_L.value) * FIT_EW // 车道净宽（屏幕）
+  const widS = Math.min(laneS * CAR_LANE_W_FILL, lenS * CAR_MAX_WL) // 随车道宽自适应，上限防止填满整条车道
+  const len = lenS / FIT_NS
+  const w = widS / FIT_EW
   const front = c.x + VEH_L.value
   return { len, w, cx: front - len / 2, cy: c.y + c.h / 2 }
 }
@@ -320,7 +331,7 @@ const cars = computed(() => {
 const blockedCars = computed(() => {
   const n = Math.min(5, Math.round((props.sample?.spillQueueM ?? 0) / 16))
   const len = VEH_L.value
-  const pitch = len * CAR_ISO + 8
+  const pitch = CAR_HEAD_M * pxPerM.value + 8
   return Array.from({ length: n }, (_, i) => {
     const lane = Math.floor(i / 3) % 3
     const laneH = upLaneH(lane)
