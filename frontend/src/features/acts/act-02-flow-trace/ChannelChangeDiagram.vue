@@ -1,7 +1,9 @@
 <script setup>
 /**
  * 渠化变化示意动画（成因幕弹窗配图）：
- * SVG 重绘「奥体西路（横贯）× 解放东路（左/北）× 经十路（右/南）」双路口示意，
+ * SVG 重绘「奥体西路（纵贯）× 解放东路（上/北）× 经十路（下/南）」双路口示意，
+ * 上北下南正常方位：道路图形用横版本地坐标绘制后整体顺时针旋转 90°（北从左转到上），
+ * 文字/徽标等标注不随旋转，在竖版新坐标系单独排版保持正向；
  * 两处交叉口按路口形态绘制（斑马线 + 四向进口停止线）；
  * 断面按真实渠化：路段北向南 3 车道（每道 30px）+ 中央绿化带（24px）+ 南向北 3 车道；
  * 进口段压缩绿化带至 4px，北向南拓宽为 5 车道（每道 22px，车道收窄），
@@ -76,24 +78,29 @@ const queueCarGroups = [
   { cars: [704, 664, 624, 584], y: 428, delay: 2.0, step: 0.5, turn: false }, // 外侧直行道排队蔓延（进口右转道畅通不排）
 ];
 
-/** 斑马线条纹（路口形态）：横跨纵向路的横排（竖条纹）与横跨横向路的竖排（横条纹） */
-const zebraNS = Array.from({ length: 13 }, (_, i) => 132 + i * 5.7); // 左路口北/南
-const zebraNS2 = Array.from({ length: 13 }, (_, i) => 1002 + i * 5.7); // 右路口北/南
-const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右路口西/东
+/** 斑马线条纹（路口形态；坐标为旋转前本地坐标，本地左/右路口即旋转后上/下路口）：
+ *  横跨纵向路的横排（竖条纹）与横跨横向路的竖排（横条纹） */
+const zebraNS = Array.from({ length: 13 }, (_, i) => 132 + i * 5.7); // 上(本地左)路口北/南
+const zebraNS2 = Array.from({ length: 13 }, (_, i) => 1002 + i * 5.7); // 下(本地右)路口北/南
+const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下路口西/东
 </script>
 
 <template>
   <svg
     class="channel-diagram"
-    viewBox="0 0 1200 620"
+    viewBox="0 0 620 1200"
     preserveAspectRatio="xMidYMid meet"
     role="img"
     aria-label="奥体西路北向南渠化拓宽示意图：距经十路口100米处由3车道拓宽为5车道，两路口周期200秒与220秒不协调"
   >
-    <!-- ── 底图路网 ───────────────────────────────────────────── -->
-    <!-- 奥体西路（横向主干）：南向北 4 车道（上）+ 中央绿化带 + 北向南 3→5 车道（下） -->
+    <!-- 道路图形整体顺时针旋转 90°（上北下南）：本地 (x,y) → 屏幕 (620-y, x)；
+         动画（拓宽生长/排队驶入/红框脉冲）均在本地坐标运转，旋转后方向自动正确 -->
+    <g transform="translate(620 0) rotate(90)">
+    <!-- ── 底图路网（本地横版坐标）────────────────────────────── -->
+    <!-- 奥体西路（本地横向）：南向北 4 车道（上）+ 中央绿化带 + 北向南 3→5 车道（下）；
+         旋转后南向北在东半幅、北向南在西半幅（右侧通行，车流自上而下） -->
     <rect class="pave" x="0" y="218" width="1200" height="228" />
-    <!-- 解放东路（左，北端）/ 经十路（右，南端） -->
+    <!-- 解放东路（本地左，旋转后上/北端）/ 经十路（本地右，旋转后下/南端） -->
     <rect class="pave" x="130" y="0" width="76" height="620" />
     <rect class="pave" x="1000" y="0" width="76" height="620" />
 
@@ -173,7 +180,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
     <line class="stopline" x1="1002" y1="212" x2="1032" y2="212" />
     <line class="stopline" x1="1044" y1="452" x2="1074" y2="452" />
 
-    <!-- 导向箭头：北向南 3 车道段（每车道）；南向北 3 车道（朝左） -->
+    <!-- 导向箭头（本地坐标）：北向南 3 车道段（朝右，旋转后朝下）；南向北 3 车道（朝左，旋转后朝上） -->
     <g class="arrow">
       <path d="M350 371 h34 m-10 -8 l10 8 l-10 8" />
       <path d="M350 401 h34 m-10 -8 l10 8 l-10 8" />
@@ -186,7 +193,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
       <path d="M620 313 h-34 m10 -8 l-10 8 l10 8" />
     </g>
 
-    <!-- ── 拓宽动画（widen 阶段，渐变段 x735→885，距经十路口约100m/路段1/3处）── -->
+    <!-- ── 拓宽动画（widen 阶段，渐变段 x735→885 即旋转后 y735→885，距经十路口约100m/路段1/3处）── -->
     <!-- 绿化带压缩 + 5 车道（每道 22px）网格从渐变段向路口生长 -->
     <g class="widen-lines" :class="{ on: has('widen') }">
       <!-- 压缩后绿化带（渐变段平滑收窄至 4px 窄带） -->
@@ -207,12 +214,12 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
       <line class="lane-solid" x1="885" y1="380" x2="994" y2="380" />
       <line class="lane-solid" x1="885" y1="402" x2="994" y2="402" />
       <line class="lane-solid" x1="885" y1="424" x2="994" y2="424" />
-      <!-- 经十路口停止线向上延长（覆盖新车道） -->
+      <!-- 经十路口停止线延长（覆盖新车道） -->
       <line class="stopline" x1="996" y1="336" x2="996" y2="356" />
-      <!-- 新增左转车道箭头（贴绿化带侧，向右行驶 → 转向上/东） -->
+      <!-- 新增左转车道箭头（贴绿化带侧；旋转后向下行驶 → 转向右/东） -->
       <path d="M905 347 h16 v-10 m0 0 l-6 7 m6 -7 l6 7" class="turn-arrow" />
       <path d="M905 369 h16 v-10 m0 0 l-6 7 m6 -7 l6 7" class="turn-arrow" />
-      <!-- 最右车道：右转箭头（向右行驶 → 转向下/西） -->
+      <!-- 最右车道：右转箭头（旋转后向下行驶 → 转向左/西） -->
       <path d="M905 430 h16 v10 m0 0 l-6 -7 m6 7 l6 -7" class="turn-arrow" />
       <!-- 进口段直行箭头（5 车道网格对齐，直行 2 条） -->
       <path d="M905 391 h34 m-10 -8 l10 8 l-10 8" class="arrow-turn" />
@@ -224,52 +231,14 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
       <rect x="723" y="318" width="174" height="136" rx="8" />
     </g>
 
-    <!-- 100m 距离标注（渠化渐变起点 → 经十路口） -->
+    <!-- 100m 距离标注（渠化渐变起点 → 经十路口；线与双向箭头随图旋转成纵向） -->
     <g class="dist-100" :class="{ on: has('redbox') }">
       <line x1="737" y1="540" x2="992" y2="540" />
       <path d="M745 536 l-8 4 l8 4" />
       <path d="M984 536 l8 4 l-8 4" />
-      <text x="864" y="566" text-anchor="middle">距经十路口 100m</text>
     </g>
 
-    <!-- ── 徽标：车道数 / 通行能力 ─────────────────────────────── -->
-    <g class="badge-lanes" :class="{ on: has('widen') }">
-      <rect x="723" y="176" width="196" height="40" rx="6" />
-      <text x="821" y="203" text-anchor="middle">3 → 5 车道</text>
-    </g>
-    <g class="badge-capacity" :class="{ on: has('capacity') }">
-      <rect x="723" y="126" width="196" height="38" rx="6" />
-      <text x="821" y="151" text-anchor="middle">通行能力变化</text>
-    </g>
-
-    <!-- ── 周期标签 + 信号灯 ──────────────────────────────────── -->
-    <g class="cyc-tag cyc-left" :class="{ on: has('cycleLeft') }">
-      <rect x="60" y="56" width="188" height="42" rx="6" />
-      <text x="154" y="83" text-anchor="middle">解放东路 · 周期 200s</text>
-    </g>
-    <g class="cyc-tag cyc-right" :class="{ on: has('cycleRight') }">
-      <rect x="952" y="56" width="188" height="42" rx="6" />
-      <text x="1046" y="83" text-anchor="middle">经十路 · 周期 220s</text>
-    </g>
-
-    <g class="lamps" :class="{ mismatch: has('mismatch') }">
-      <!-- 左：解放东路 -->
-      <g class="lamp lamp-left">
-        <rect x="88" y="118" width="18" height="50" rx="4" />
-        <circle class="l-red" cx="97" cy="130" r="5.5" />
-        <circle class="l-yellow" cx="97" cy="143" r="5.5" />
-        <circle class="l-green" cx="97" cy="156" r="5.5" />
-      </g>
-      <!-- 右：经十路（放右侧空白，避让拓宽徽标） -->
-      <g class="lamp lamp-right">
-        <rect x="1150" y="118" width="18" height="50" rx="4" />
-        <circle class="l-red" cx="1159" cy="130" r="5.5" />
-        <circle class="l-yellow" cx="1159" cy="143" r="5.5" />
-        <circle class="l-green" cx="1159" cy="156" r="5.5" />
-      </g>
-    </g>
-
-    <!-- ── 排队溢出（queue 阶段）：车辆从上游一辆辆驶入、依次减速停到位 ── -->
+    <!-- ── 排队溢出（queue 阶段）：车辆从上游（本地左侧，旋转后上方）一辆辆驶入、依次减速停到位 ── -->
     <g class="queue-cars">
       <template v-for="(grp, gi) in queueCarGroups" :key="gi">
         <g
@@ -291,17 +260,61 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 左/右�
         </g>
       </template>
     </g>
+    </g><!-- /顺时针旋转 90° 的道路图形组 -->
 
-    <!-- 排队影响说明（queue 阶段淡入） -->
+    <!-- ── 以下标注不随图形旋转，在上北下南竖版坐标系单独排版保持正向 ── -->
+    <!-- 100m 距离标注文字（纵线顶端上方，道路左侧） -->
+    <g class="dist-100" :class="{ on: has('redbox') }">
+      <text x="87" y="716" text-anchor="middle">距经十路口 100m</text>
+    </g>
+
+    <!-- ── 徽标：车道数 / 通行能力（道路右侧，对齐拓宽段高度）── -->
+    <g class="badge-capacity" :class="{ on: has('capacity') }">
+      <rect x="414" y="742" width="196" height="38" rx="6" />
+      <text x="512" y="768" text-anchor="middle">通行能力变化</text>
+    </g>
+    <g class="badge-lanes" :class="{ on: has('widen') }">
+      <rect x="414" y="794" width="196" height="40" rx="6" />
+      <text x="512" y="822" text-anchor="middle">3 → 5 车道</text>
+    </g>
+
+    <!-- ── 周期标签 + 信号灯 ──────────────────────────────────── -->
+    <g class="cyc-tag cyc-left" :class="{ on: has('cycleLeft') }">
+      <rect x="216" y="16" width="188" height="42" rx="6" />
+      <text x="310" y="43" text-anchor="middle">解放东路 · 周期 200s</text>
+    </g>
+    <g class="cyc-tag cyc-right" :class="{ on: has('cycleRight') }">
+      <rect x="216" y="1120" width="188" height="42" rx="6" />
+      <text x="310" y="1147" text-anchor="middle">经十路 · 周期 220s</text>
+    </g>
+
+    <g class="lamps" :class="{ mismatch: has('mismatch') }">
+      <!-- 上：解放东路（路口东北侧路外） -->
+      <g class="lamp lamp-left">
+        <rect x="470" y="58" width="18" height="50" rx="4" />
+        <circle class="l-red" cx="479" cy="70" r="5.5" />
+        <circle class="l-yellow" cx="479" cy="83" r="5.5" />
+        <circle class="l-green" cx="479" cy="96" r="5.5" />
+      </g>
+      <!-- 下：经十路（路口东南侧路外） -->
+      <g class="lamp lamp-right">
+        <rect x="470" y="1096" width="18" height="50" rx="4" />
+        <circle class="l-red" cx="479" cy="1108" r="5.5" />
+        <circle class="l-yellow" cx="479" cy="1121" r="5.5" />
+        <circle class="l-green" cx="479" cy="1134" r="5.5" />
+      </g>
+    </g>
+
+    <!-- 排队影响说明（queue 阶段淡入，图底部居中） -->
     <g class="queue-note" :class="{ on: has('queue') }">
-      <text x="770" y="478" text-anchor="middle">左转排队溢出占用直行车道，直行通行效率下降</text>
+      <text x="310" y="1186" text-anchor="middle">左转排队溢出占用直行车道，直行通行效率下降</text>
     </g>
 
     <!-- ── 静态标注 ───────────────────────────────────────────── -->
-    <text class="road-name" x="600" y="205" text-anchor="middle">奥体西路</text>
-    <text class="road-name road-sub" x="64" y="490" text-anchor="middle">解放东路</text>
-    <text class="road-name road-sub" x="1110" y="490" text-anchor="middle">经十路</text>
-    <text class="flow-hint" x="330" y="478" text-anchor="middle">北向南 →</text>
+    <text class="road-name" x="500" y="300" text-anchor="middle">奥体西路</text>
+    <text class="road-name road-sub" x="70" y="118" text-anchor="middle">解放东路</text>
+    <text class="road-name road-sub" x="70" y="1096" text-anchor="middle">经十路</text>
+    <text class="flow-hint" x="87" y="330" text-anchor="middle">北向南 ↓</text>
   </svg>
 </template>
 

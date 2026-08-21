@@ -314,7 +314,8 @@ onUnmounted(() => {
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.22);
 }
 
-/* 渠化变化弹窗：视觉对齐优化方案相位相序图 lightbox（PlanComparePanel） */
+/* 渠化变化弹窗：视觉对齐优化方案相位相序图 lightbox（PlanComparePanel）；
+   配图为上北下南竖版（620×1200），弹窗适配为窄高版 */
 .channel-lightbox {
   position: fixed;
   inset: 0;
@@ -331,8 +332,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(1120px, 94vw);
-  height: min(680px, 86vh);
+  width: min(880px, 94vw);
+  height: min(950px, 90vh);
   padding: 12px 14px 14px;
   border: 1px solid var(--cyan-border-strong);
   border-radius: 4px;
