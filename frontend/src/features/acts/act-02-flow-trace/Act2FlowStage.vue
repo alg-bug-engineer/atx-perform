@@ -4,11 +4,12 @@
  *
  * 地图演绎由 TrafficOriginScene 中的 flowTraceFx（本幕模块注册的地图特效
  * 工厂）直接播放，HUD 状态经 flowTraceHud 桥接到这里渲染；
- * 演绎完成（overflow）后自动交棒退出，彻底去掉切回首页的跳转与重载。
+ * 演绎完成（渠化变化弹窗口播）后自动交棒退出，彻底去掉切回首页的跳转与重载。
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { whenBroadcastIdle } from '../../../shared/broadcast-bus.js';
 import { flowTracePhase } from '../../../shared/narrative-state.js';
+import channelizationChangeImg from '../../../assets/channelization-change.png';
 import {
   enterFlowTrace,
   exitFlowTrace,
@@ -45,7 +46,7 @@ function applyDockPanel(state) {
     return;
   }
   if (!panel?.kind) return;
-  const hideSupplyChain = panel.kind === 'arterial' || panel.kind === 'signal' || panel.kind === 'overflow';
+  const hideSupplyChain = panel.kind === 'arterial' || panel.kind === 'signal';
   const rest = dockStack.value.filter((p) => {
     if (p.kind === 'trace' || p.kind === panel.kind) return false;
     if (hideSupplyChain && p.kind === 'supply') return false;
@@ -58,17 +59,14 @@ watch(flowTraceHud, (state) => applyDockPanel(state), { deep: true, immediate: t
 
 const isDone = computed(() => flowTracePhase.value === 'done');
 
+// 渠化变化弹窗：signal 之后插入，口播完成后随交棒自动消失
+const channelChangeOpen = computed(() => flowTraceHud.value.phase === 'channel_change');
+
 const headline = computed(() => {
   const phase = flowTraceHud.value.phase;
   if (!phase || phase === 'error' || phase === 'boot') return '';
   return flowTraceHud.value.headline || '';
 });
-
-function formatMetric(v, digits = 1) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return '—';
-  return n.toFixed(digits);
-}
 
 function onReplay() {
   dockStack.value = [];
@@ -123,18 +121,33 @@ onUnmounted(() => {
           <div class="dock-hero">{{ item.value }}</div>
           <p v-if="item.copy" class="dock-copy">{{ item.copy }}</p>
         </template>
-
-        <template v-else-if="item.kind === 'overflow'">
-          <div class="dock-hero warn">{{ item.queue_m }} m</div>
-          <div class="dock-lab">排队长度 · 排队比 {{ formatMetric(item.queue_ratio, 1) }}</div>
-          <p v-if="item.copy" class="dock-copy">{{ item.copy }}</p>
-        </template>
       </div>
     </aside>
 
     <transition name="headline-fade" mode="out-in">
       <p v-if="headline" :key="headline" class="beat-headline">{{ headline }}</p>
     </transition>
+
+    <!-- 渠化变化弹窗：溢流揭示（排队比 0.8）前展示，口播完成后自动关 -->
+    <Teleport to="body">
+      <transition name="lightbox-fade">
+        <div
+          v-if="channelChangeOpen"
+          class="channel-lightbox"
+          data-testid="channel-change-lightbox"
+        >
+          <div class="channel-sheet">
+            <header>
+              <h3>渠化变化 · 奥体西路—经十路</h3>
+            </header>
+            <div class="channel-body">
+              <img :src="channelizationChangeImg" alt="奥体西路经十路口渠化示意图（北向南 3 车道 → 5 车道）" />
+            </div>
+            <p class="channel-caption">北向南进口渠化由 3 车道变为 5 车道，通行能力发生变化</p>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
 
     <!-- 操作：重播溯源 -->
     <div class="trace-actions">
@@ -222,20 +235,10 @@ onUnmounted(() => {
   color: rgba(220, 230, 240, 0.92);
 }
 
-.dock-lab {
-  font-size: 10px;
-  color: rgba(160, 180, 200, 0.75);
-  margin-top: 2px;
-}
-
 .dock-hero {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--text);
-}
-
-.dock-hero.warn {
   color: var(--text);
 }
 
@@ -295,6 +298,78 @@ onUnmounted(() => {
 .action-btn:hover {
   background: rgba(0, 229, 255, 0.14);
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.22);
+}
+
+/* 渠化变化弹窗：视觉对齐优化方案相位相序图 lightbox（PlanComparePanel） */
+.channel-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: rgba(2, 8, 18, 0.78);
+  pointer-events: none;
+}
+
+.channel-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: min(800px, 88vh);
+  padding: 12px 14px 14px;
+  border: 1px solid var(--cyan-border-strong);
+  border-radius: 4px;
+  background: var(--bg-drawer);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+.channel-sheet header {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.channel-sheet header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+
+.channel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.channel-body img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.channel-caption {
+  margin: 0;
+  flex: none;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  text-align: center;
+}
+
+.lightbox-fade-enter-active,
+.lightbox-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.lightbox-fade-enter-from,
+.lightbox-fade-leave-to {
+  opacity: 0;
 }
 
 </style>

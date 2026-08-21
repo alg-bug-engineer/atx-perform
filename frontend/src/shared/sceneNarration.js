@@ -17,6 +17,7 @@ import s2Trace from '@data/tts/scene2/s2-trace.wav?url'
 import s2Supply from '@data/tts/scene2/s2-supply.wav?url'
 import s2Arterial from '@data/tts/scene2/s2-arterial.wav?url'
 import s2Signal from '@data/tts/scene2/s2-signal.wav?url'
+import s2ChannelChange from '@data/tts/scene2/s2-channel-change.wav?url'
 import s2Done from '@data/tts/scene2/s2-done.wav?url'
 import s3Main from '@data/tts/scene3/s3-main.wav?url'
 import s3bMain from '@data/tts/scene3b/s3b-main.wav?url'
@@ -37,6 +38,7 @@ const AUDIO_BY_FILE = {
   'scene2/s2-supply.wav': s2Supply,
   'scene2/s2-arterial.wav': s2Arterial,
   'scene2/s2-signal.wav': s2Signal,
+  'scene2/s2-channel-change.wav': s2ChannelChange,
   'scene2/s2-done.wav': s2Done,
   'scene3/s3-main.wav': s3Main,
   'scene3b/s3b-main.wav': s3bMain,

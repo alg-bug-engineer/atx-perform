@@ -6,7 +6,8 @@
  *
  * 演绎时序：坤顺/解放东北东西进口 → 经十路–奥体西北进口 流量溯源，
  * 视觉对齐 baseline 拥堵蔓延的反向（远端先亮，收束到汇点）；
- * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 示意相位环 → 270m 排队溢流。
+ * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 示意相位环 → 渠化变化弹窗（口播含
+ * 周期不协调与溢流成立结论，播完直接交棒，不再揭示排队比）。
  *
  * HUD 状态经 setFlowTraceHud 桥接给幕 2 舞台组件（Act2FlowStage）渲染。
  */
@@ -202,6 +203,11 @@ function boundsFromCoords(coords, pad = 14) {
 
 /** 经十×奥体十字为焦点，不要按整段走廊拉远 */
 const JINGSHI_EW_CAM_H = 122;
+
+/** 渠化变化弹窗最小停留：静默（无口播）模式下避免截图一闪而过 */
+const CHANNEL_CHANGE_HOLD_MS = 4000;
+/** 弹窗淡出后到交棒的收束间隙 */
+const CHANNEL_CHANGE_EXIT_MS = 700;
 
 function heightForJingshiEw() {
   return JINGSHI_EW_CAM_H;
@@ -441,8 +447,6 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
       via,
       target,
       problemRoad,
-      queueM: beats.overflow?.queue_m || 270,
-      queueRatio: beats.overflow?.queue_ratio ?? 0.8,
       supplyMetrics: {
         flow: flowTrace.demand_supply?.supply_pcu_h ?? flowTrace.demand_supply?.supply_vph,
         capacity: flowTrace.demand_supply?.demand_pcu_h ?? flowTrace.demand_supply?.demand_vph,
@@ -555,27 +559,22 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                 });
 
                 afterMapAndVoice(beatMs(beats, 'signal', dc.signal_ms ?? 2800), () => {
-                  playPhase = 'overflow';
-                  ewLayer?.setOverflowHint?.(true);
-                  annot?.setBeat('overflow');
-                  frameProblemLink(via, target);
+                  // 渠化变化弹窗：北向南 3→5 车道，口播完成后再揭示溢流（排队比 0.8）
+                  playPhase = 'channel_change';
                   emitHud({
-                    phase: 'overflow',
-                    caption: captionFor(beats, 'overflow', '北向南车流短时难以消散，溢流风险成立'),
-                    text: captionFor(beats, 'overflow', '北向南车流短时难以消散，溢流风险成立'),
-                    headline: headlineFor(beats, 'overflow', '北向南溢流风险成立'),
-                    panel: {
-                      kind: 'overflow',
-                      title: '溢流风险',
-                      queue_m: beats.overflow?.queue_m || 270,
-                      queue_ratio: beats.overflow?.queue_ratio ?? 0.8,
-                      gaps: beats.overflow?.gaps || [],
-                      copy: copyText(dc, 'overflow', '经十路东西向压力与奥体西路北进口排队叠加，北向南车流短时难以消散。'),
-                    },
+                    phase: 'channel_change',
+                    caption: captionFor(beats, 'channel_change', '奥体西路经十路北向南路段渠化发生变化'),
+                    text: captionFor(beats, 'channel_change', '奥体西路经十路北向南路段渠化发生变化'),
+                    headline: '',
                   });
-                  afterMapAndVoice(beatMs(beats, 'overflow', dc.overflow_ms ?? 3600), () => {
-                    frameJingshiEw(target, problemRoad);
-                    after(dc.frame_ms ?? 900, () => {
+                  Promise.all([
+                    new Promise((resolveVoice) => waitVoiceThen(resolveVoice)),
+                    new Promise((resolveHold) => after(CHANNEL_CHANGE_HOLD_MS, resolveHold)),
+                  ]).then(() => {
+                    // 口播（含周期不协调与溢流成立结论）完成：弹窗淡出后直接交棒，
+                    // 不再揭示排队比 0.8
+                    playPhase = 'handoff';
+                    after(CHANNEL_CHANGE_EXIT_MS, () => {
                       hooks.onComplete?.();
                     });
                   });

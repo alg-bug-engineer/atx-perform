@@ -40,7 +40,7 @@
     },
     "2": {
       "title": "分析成因",
-      "total_duration_sec": 33.54,
+      "total_duration_sec": 39.79,
       "segments": [
         {
           "id": "a2f.trace",
@@ -53,10 +53,10 @@
         {
           "id": "a2f.supply",
           "file": "scene2/s2-supply.wav",
-          "approx_sec": 7,
-          "text": "当前通行需求未超过绿灯供给，继续向下游排查。",
-          "duration_sec": 5.08,
-          "chars": 22
+          "approx_sec": 5,
+          "text": "当前通行需求未超过绿灯供给。",
+          "duration_sec": 3.09,
+          "chars": 14
         },
         {
           "id": "a2f.arterial",
@@ -70,9 +70,17 @@
           "id": "a2f.signal",
           "file": "scene2/s2-signal.wav",
           "approx_sec": 7,
-          "text": "当前周期内难以增加北向南直行绿灯时间，所以北向南车流短时难以消散，有溢流风险",
-          "duration_sec": 8.36,
-          "chars": 38
+          "text": "当前周期内难以增加北向南直行绿灯时间，所以北向南车流短时难以消散。",
+          "duration_sec": 7.08,
+          "chars": 33
+        },
+        {
+          "id": "a2f.channel_change",
+          "file": "scene2/s2-channel-change.wav",
+          "approx_sec": 18,
+          "text": "奥体西路经十路北向南路段，100米处道路渠化由3车道拓宽为5车道，通行能力发生变化。解放东路路口红绿灯周期200秒，经十路路口220秒，两个路口红绿灯周期不协调，容易导致排队溢出。",
+          "duration_sec": 18.52,
+          "chars": 90
         },
         {
           "id": "a2f.done",
@@ -141,7 +149,7 @@
       ]
     }
   },
-  "generated_at": "2026-08-20T22:01:24+0800",
+  "generated_at": "2026-08-21T12:00:17+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000
