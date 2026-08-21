@@ -9,7 +9,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { whenBroadcastIdle } from '../../../shared/broadcast-bus.js';
 import { flowTracePhase } from '../../../shared/narrative-state.js';
-import channelizationChangeImg from '../../../assets/channelization-change.png';
+import { getConductorSegments } from '../../../shared/sceneNarration.js';
+import ChannelChangeDiagram from './ChannelChangeDiagram.vue';
 import {
   enterFlowTrace,
   exitFlowTrace,
@@ -59,17 +60,21 @@ watch(flowTraceHud, (state) => applyDockPanel(state), { deep: true, immediate: t
 
 const isDone = computed(() => flowTracePhase.value === 'done');
 
-// 渠化变化弹窗：signal 之后插入；口播前半红框渠化点，后半红框两路口
+// 渠化变化弹窗：signal 之后插入；动画分镜内部与口播逐句对齐，
+// cycle_mismatch 拍（分段时序）时弹窗持续显示，动画自行演出周期不协调段
 const channelChangeOpen = computed(() => {
   const phase = flowTraceHud.value.phase;
   return phase === 'channel_change' || phase === 'cycle_mismatch';
 });
-const highlightChannelPoint = computed(() => flowTraceHud.value.phase === 'channel_change');
-const highlightIntersections = computed(() => flowTraceHud.value.phase === 'cycle_mismatch');
 const channelCaption = computed(() => flowTraceHud.value.caption
-  || (highlightIntersections.value
+  || (flowTraceHud.value.phase === 'cycle_mismatch'
     ? '两路口周期200秒/220秒相位不协调，上游车辆向下消散难，导致溢出风险'
     : '路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'));
+// 分镜动画跟口播时长逐句对齐（预合成 WAV 实际时长，未合成时回退预算）
+const channelChangeDur = computed(() => {
+  const seg = getConductorSegments('2').find((s) => s.id === 'a2f.channel_change');
+  return seg?.durationSec || seg?.approxSec || 0;
+});
 
 const headline = computed(() => {
   const phase = flowTraceHud.value.phase;
@@ -137,7 +142,7 @@ onUnmounted(() => {
       <p v-if="headline" :key="headline" class="beat-headline">{{ headline }}</p>
     </transition>
 
-    <!-- 渠化变化弹窗：口播前半红框闪烁渠化点，后半红框两路口 -->
+    <!-- 渠化变化弹窗：SVG 分镜动画（口播逐句对齐），cycle_mismatch 拍持续显示 -->
     <Teleport to="body">
       <transition name="lightbox-fade">
         <div
@@ -150,26 +155,7 @@ onUnmounted(() => {
               <h3>渠化变化 · 奥体西路—经十路</h3>
             </header>
             <div class="channel-body">
-              <div class="channel-figure">
-                <img :src="channelizationChangeImg" alt="奥体西路经十路口渠化示意图（北向南 3 车道 → 5 车道）" />
-                <div class="emphasis-layer" aria-hidden="true">
-                  <div
-                    v-if="highlightChannelPoint"
-                    class="emphasis-box channel-point"
-                    data-testid="emphasis-channel-point"
-                  />
-                  <div
-                    v-if="highlightIntersections"
-                    class="emphasis-box inter-north"
-                    data-testid="emphasis-inter-north"
-                  />
-                  <div
-                    v-if="highlightIntersections"
-                    class="emphasis-box inter-south"
-                    data-testid="emphasis-inter-south"
-                  />
-                </div>
-              </div>
+              <ChannelChangeDiagram :duration-sec="channelChangeDur" />
             </div>
             <p class="channel-caption">{{ channelCaption }}</p>
           </div>
@@ -345,7 +331,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  height: min(800px, 88vh);
+  width: min(1120px, 94vw);
+  height: min(680px, 86vh);
   padding: 12px 14px 14px;
   border: 1px solid var(--cyan-border-strong);
   border-radius: 4px;
@@ -373,64 +360,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.channel-figure {
-  position: relative;
-  height: 100%;
-  width: max-content;
-  max-width: 100%;
-  line-height: 0;
-}
-
-.channel-figure img {
-  display: block;
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-}
-
-.emphasis-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.emphasis-box {
-  position: absolute;
-  box-sizing: border-box;
-  border: 3px solid #ff2a2a;
-  box-shadow:
-    0 0 14px rgba(255, 32, 0, 0.9),
-    inset 0 0 10px rgba(255, 40, 0, 0.28);
-  animation: channel-emphasis-blink 0.7s ease-in-out infinite;
-}
-
-.emphasis-box.channel-point {
-  left: 34.5%;
-  top: 49.5%;
-  width: 27.2%;
-  height: 10%;
-}
-
-.emphasis-box.inter-north {
-  left: 27%;
-  top: 9.5%;
-  width: 46%;
-  height: 16.5%;
-}
-
-.emphasis-box.inter-south {
-  left: 27%;
-  top: 72%;
-  width: 46%;
-  height: 17%;
-}
-
-@keyframes channel-emphasis-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.18; }
 }
 
 .channel-caption {

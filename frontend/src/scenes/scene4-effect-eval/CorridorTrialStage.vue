@@ -22,7 +22,8 @@ const demo = computed(() => {
 const before = computed(() => demo.value?.variants.find((v) => v.key === 'before') || null)
 const after = computed(() => demo.value?.variants.find((v) => v.key === 'after') || null)
 
-const clock = ref(0)
+const PLAY_START_S = 30
+const clock = ref(PLAY_START_S)
 const paused = ref(false)
 const guided = ref(true)
 const holdRemain = ref(0.4)
@@ -34,6 +35,19 @@ const beatCaption = ref({ ...BEAT_IDLE })
 
 const beats = computed(() => findBriefingBeats(before.value, after.value))
 const fired = new Set()
+
+function skipBeatsBefore(t) {
+  for (const b of beats.value) {
+    if (b.t <= t) fired.add(b.id)
+  }
+}
+
+function wrapFromStart(t, cycle) {
+  const start = PLAY_START_S
+  const span = Math.max(1, cycle - start)
+  if (t < cycle) return Math.max(start, t)
+  return start + ((t - start) % span)
+}
 
 const beforeSample = computed(() => (before.value ? sampleVariant(before.value, clock.value) : null))
 const afterSample = computed(() => (after.value ? sampleVariant(after.value, clock.value) : null))
@@ -58,9 +72,8 @@ function tick(ts) {
           beatCaption.value = { tag: hit.tag, text: hit.text, tone: hit.tone }
           fired.add(hit.id)
         } else if (next >= cycle) {
-          // 讲解节拍走完后继续循环整个周期：停在周期末会正好卡在左转绿灯刚放完、
-          // 左转道空掉的那一帧，看不出排队集结与消散的全过程
-          clock.value = 0
+          // 讲解节拍走完后从 30 s 继续循环，避免回到周期初空车位
+          clock.value = PLAY_START_S
           guided.value = false
           speed.value = LOOP_SPEED
           beatCaption.value = { tag: '循环对照', text: '现状持续积压，优化后每周期清空', tone: 'plain' }
@@ -68,7 +81,7 @@ function tick(ts) {
           clock.value = next
         }
       } else {
-        clock.value = next % cycle
+        clock.value = wrapFromStart(next, cycle)
       }
     }
   }
@@ -78,7 +91,8 @@ function tick(ts) {
 
 function playOnce() {
   fired.clear()
-  clock.value = 0
+  clock.value = PLAY_START_S
+  skipBeatsBefore(PLAY_START_S)
   holdRemain.value = 0.4
   paused.value = false
   guided.value = true
