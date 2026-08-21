@@ -69,7 +69,7 @@ const channelChangeOpen = computed(() => {
 const channelCaption = computed(() => flowTraceHud.value.caption
   || (flowTraceHud.value.phase === 'cycle_mismatch'
     ? '两路口周期200秒/220秒相位不协调，上游车辆向下消散难，导致溢出风险'
-    : '路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'));
+    : '路段90米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'));
 // 分镜动画跟口播时长逐句对齐（预合成 WAV 实际时长，未合成时回退预算）
 const channelChangeDur = computed(() => {
   const seg = getConductorSegments('2').find((s) => s.id === 'a2f.channel_change');

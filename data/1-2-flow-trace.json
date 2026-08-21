@@ -163,7 +163,7 @@
     "channel_change": {
       "split_ms": 9400,
       "silent_split_ms": 1600,
-      "caption": "路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加",
+      "caption": "路段90米处3车道变为5车道，排队超过拓宽范围后长度急剧增加",
       "headline": ""
     },
     "cycle_mismatch": {

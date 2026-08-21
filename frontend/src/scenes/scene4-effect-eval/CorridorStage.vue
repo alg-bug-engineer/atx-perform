@@ -5,8 +5,6 @@ const props = defineProps({
   model: { type: Object, required: true },
   variant: { type: Object, required: true },
   sample: { type: Object, default: null },
-  /** 对照方案此刻的排队长度：>0 时在本幅画出参考队尾与差值，供左右两幅对读 */
-  ghostQueueM: { type: Number, default: 0 },
 })
 
 /**
@@ -15,7 +13,7 @@ const props = defineProps({
  *
  * 断面车道边界（viewBox y，东→西即上→下）。现场渠化的对应关系：
  *   - 东侧第二条左转道（dn1）是上游左转集结道（up0）的连贯延伸，位置完全不动；
- *   - 东侧第一条左转道（dn0）在距经十路 100 m 处向东拓宽新增；
+ *   - 东侧第一条左转道（dn0）在距经十路 90 m 处向东拓宽新增；
  *   - 上游直行道（up1）略向西弯，一条拆成两条直行道（dn2 / dn3）；
  *   - 公交专用道 / 右转借道（up2）被中间直行道向西挤压变窄（dn4），西侧路缘不动。
  */
@@ -188,16 +186,6 @@ const warning = computed(() => !spill.value && queueM.value >= props.model.warni
 const queueTone = computed(() => (spill.value ? 'danger' : warning.value ? 'warn' : 'calm'))
 const tailX = computed(() => mx(Math.max(0, lengthM.value - queueM.value)))
 
-/** 对照方案的队尾（现状），画在本幅上直接量出缩短了多少 */
-const ghost = computed(() => {
-  const g = props.ghostQueueM
-  if (!g || g <= queueM.value + 1) return null
-  return {
-    x: mx(Math.max(0, lengthM.value - g)),
-    queueM: g,
-    deltaM: Math.round(g - queueM.value),
-  }
-})
 const warnX = computed(() => mx(Math.max(0, lengthM.value - props.model.warningM)))
 
 /**
@@ -207,7 +195,7 @@ const warnX = computed(() => mx(Math.max(0, lengthM.value - props.model.warningM
  */
 const ANNOT_ROWS = [GEO.downTop + 14, GEO.downTop - 3]
 const UP_LANES_LABEL = '上游 3 车道'
-const WIDEN_LABEL = '展宽起点 · 距经十路 100 m'
+const WIDEN_LABEL = '展宽起点 · 距经十路 90 m'
 const CJK = /[\u3000-\u9fff·]/
 
 /** 等宽字体下够用的宽度估算：中日韩字符占一个字号，其余约 0.62 */
@@ -218,9 +206,6 @@ function textW(s, size) {
 }
 
 const tailText = computed(() => `${worstLabel.value}队尾 ${Math.round(queueM.value)} m`)
-const ghostText = computed(() =>
-  ghost.value ? `现状队尾 ${Math.round(ghost.value.queueM)} m · 缩短 ${ghost.value.deltaM} m` : '',
-)
 
 const annots = computed(() => {
   // 定点标注先占位，免得它们随排队跳行：展宽起点画在上一行；
@@ -245,13 +230,7 @@ const annots = computed(() => {
   const tw = textW(tailText.value, 12)
   // 竖屏后文字沿东西向排：start 落在路右侧，end 会扫到路左侧。动态标签一律靠右。
   const tail = place(tailX.value + 8, 'start', tw, true)
-
-  let ghostAnnot = null
-  if (ghost.value) {
-    const gw = textW(ghostText.value, 10)
-    ghostAnnot = place(ghost.value.x + 6, 'start', gw, false)
-  }
-  return { tail, ghost: ghostAnnot }
+  return { tail }
 })
 
 const jingshiSig = computed(
@@ -452,7 +431,7 @@ const inflowArrows = computed(() => {
         <line class="widen-tick" :x1="taperEndX" :y1="GEO.downTop + 2" :x2="taperEndX" :y2="GEO.roadBottom + 6" />
         <text class="widen-label" :x="taperEndX + 6" :y="ANNOT_ROWS[1]" :transform="upright(taperEndX + 6, ANNOT_ROWS[1])">
           <tspan class="lbl">展宽起点 · 距经十路 </tspan>
-          <tspan class="val">100 m</tspan>
+          <tspan class="val">90 m</tspan>
         </text>
         <text class="widen-label dim" :x="GEO.jiefangR + 8" :y="GEO.upTop - 8" :transform="upright(GEO.jiefangR + 8, GEO.upTop - 8)">{{ UP_LANES_LABEL }}</text>
 
@@ -551,18 +530,6 @@ const inflowArrows = computed(() => {
             <tspan class="lbl">{{ worstLabel }}队尾 </tspan>
             <tspan class="val">{{ Math.round(queueM) }} m</tspan>
           </text>
-        </g>
-
-        <!-- 与上一幅对读：现状队尾位置 + 缩短量 -->
-        <g v-if="ghost" class="ghost">
-          <line :x1="ghost.x" :y1="GEO.downTop" :x2="ghost.x" :y2="GEO.roadBottom + 8" />
-          <text v-if="annots.ghost" :x="annots.ghost.x" :y="annots.ghost.y" :text-anchor="annots.ghost.anchor" :transform="upright(annots.ghost.x, annots.ghost.y)">
-            <tspan class="lbl">现状队尾 </tspan>
-            <tspan class="val">{{ Math.round(ghost.queueM) }} m</tspan>
-            <tspan class="lbl"> · 缩短 </tspan>
-            <tspan class="val">{{ ghost.deltaM }} m</tspan>
-          </text>
-          <line class="span" :x1="ghost.x" :y1="GEO.downTop + 18" :x2="tailX" :y2="GEO.downTop + 18" />
         </g>
 
         <!-- 标尺 -->
@@ -713,23 +680,6 @@ const inflowArrows = computed(() => {
 .widen-label { font-size: 16px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 0.4px; }
 .widen-label .val { fill: var(--text); }
 .widen-label.dim { fill: rgba(220, 245, 255, 0.92); }
-
-.ghost line {
-  stroke: rgba(255, 68, 68, 0.55);
-  stroke-width: 1.2;
-  stroke-dasharray: 4 4;
-}
-.ghost .span {
-  stroke: rgba(51, 204, 136, 0.85);
-  stroke-dasharray: none;
-  stroke-width: 1.4;
-}
-.ghost text {
-  font-size: 13px;
-  fill: rgba(220, 245, 255, 0.92);
-  font-family: var(--font-mono);
-}
-.ghost text .val { fill: var(--text); }
 
 .ref { stroke-dasharray: 5 4; }
 .ref.warn { stroke: rgba(255, 204, 0, 0.4); stroke-width: 1.2; }

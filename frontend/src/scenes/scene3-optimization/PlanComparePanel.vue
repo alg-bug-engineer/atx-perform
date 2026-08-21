@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import TimeSpaceDiagram from '../scene3b-signal-plan/TimeSpaceDiagram.vue'
 import { buildPhaseBoard, buildSignalPlanModel } from '../scene3b-signal-plan/signalPlanModel.js'
 import PhaseSequenceBoard from './PhaseSequenceBoard.vue'
@@ -16,6 +16,22 @@ const tsModel = computed(() => (props.signalPlan ? buildSignalPlanModel(props.si
 
 const mode = ref('optimized')
 const direction = ref('both')
+
+const reduceMotion = typeof window !== 'undefined'
+  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const introComplete = ref(reduceMotion || !board.value || !tsModel.value)
+let introTimer = 0
+
+onMounted(() => {
+  if (introComplete.value) return
+  introTimer = window.setTimeout(() => {
+    introComplete.value = true
+  }, 3000)
+})
+
+onUnmounted(() => {
+  if (introTimer) window.clearTimeout(introTimer)
+})
 
 function fmt(v) {
   if (v == null) return '—'
@@ -37,10 +53,14 @@ const bandCaption = computed(() => {
 </script>
 
 <template>
-  <section class="plan-compare" data-testid="plan-compare">
+  <section
+    class="plan-compare"
+    :class="{ 'intro-complete': introComplete }"
+    data-testid="plan-compare"
+  >
     <header class="head">
-      <h2 v-if="board" class="lead-headline">周期绿信比优化</h2>
-      <h2 v-if="tsModel" class="lead-headline">相位差优化</h2>
+      <h2 v-if="board" class="lead-headline phase-title">周期绿信比优化</h2>
+      <h2 v-if="tsModel" class="lead-headline wave-title">相位差优化</h2>
     </header>
 
     <div class="diagrams">
@@ -96,6 +116,33 @@ const bandCaption = computed(() => {
   margin: 0;
   min-width: 0;
   text-align: center;
+}
+.phase-title,
+.diagram-card.phase {
+  transform: translateX(calc(50% + 4px));
+  transition: transform 0.7s cubic-bezier(0.22, 0.78, 0.24, 1);
+  will-change: transform;
+}
+.wave-title,
+.diagram-card.wave {
+  opacity: 0;
+  transform: translateX(32px);
+  pointer-events: none;
+  transition:
+    opacity 0.42s ease 0s,
+    transform 0.52s cubic-bezier(0.22, 0.78, 0.24, 1) 0s;
+  will-change: opacity, transform;
+}
+.intro-complete .phase-title,
+.intro-complete .diagram-card.phase {
+  transform: translateX(0);
+}
+.intro-complete .wave-title,
+.intro-complete .diagram-card.wave {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  transition-delay: 0.7s;
 }
 
 .diagrams {
@@ -183,5 +230,15 @@ const bandCaption = computed(() => {
 .wave-body :deep(.tsd) {
   width: 100%;
   height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phase-title,
+  .diagram-card.phase,
+  .wave-title,
+  .diagram-card.wave {
+    transition: none;
+    will-change: auto;
+  }
 }
 </style>

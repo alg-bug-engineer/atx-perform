@@ -124,7 +124,6 @@ defineExpose({ playOnce, togglePause, paused })
         :model="demo"
         :variant="after"
         :sample="afterSample"
-        :ghost-queue-m="beforeSample?.queueM || 0"
       />
     </div>
     <p v-else class="empty">走廊仿真数据未就绪</p>
