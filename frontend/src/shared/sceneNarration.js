@@ -15,7 +15,6 @@ import s1Sat from '@data/tts/scene1/s1-sat.wav?url'
 import s1Conclusion from '@data/tts/scene1/s1-conclusion.wav?url'
 import s2Trace from '@data/tts/scene2/s2-trace.wav?url'
 import s2Supply from '@data/tts/scene2/s2-supply.wav?url'
-import s2Downstream from '@data/tts/scene2/s2-downstream.wav?url'
 import s2Arterial from '@data/tts/scene2/s2-arterial.wav?url'
 import s2Signal from '@data/tts/scene2/s2-signal.wav?url'
 import s2Done from '@data/tts/scene2/s2-done.wav?url'
@@ -36,7 +35,6 @@ const AUDIO_BY_FILE = {
   'scene1/s1-conclusion.wav': s1Conclusion,
   'scene2/s2-trace.wav': s2Trace,
   'scene2/s2-supply.wav': s2Supply,
-  'scene2/s2-downstream.wav': s2Downstream,
   'scene2/s2-arterial.wav': s2Arterial,
   'scene2/s2-signal.wav': s2Signal,
   'scene2/s2-done.wav': s2Done,

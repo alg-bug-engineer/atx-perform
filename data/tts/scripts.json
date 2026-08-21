@@ -63,12 +63,6 @@
           "text": "当前通行需求未超过绿灯供给，继续向下游排查。"
         },
         {
-          "id": "a2f.downstream",
-          "file": "scene2/s2-downstream.wav",
-          "approx_sec": 14,
-          "text": "北向南直行车流向奥体西路南段和龙奥北路方向流出，途径经十路和奥体西路路口。"
-        },
-        {
           "id": "a2f.arterial",
           "file": "scene2/s2-arterial.wav",
           "approx_sec": 8,

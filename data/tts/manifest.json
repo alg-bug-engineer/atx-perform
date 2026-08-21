@@ -59,14 +59,6 @@
           "chars": 22
         },
         {
-          "id": "a2f.downstream",
-          "file": "scene2/s2-downstream.wav",
-          "approx_sec": 14,
-          "text": "北向南直行车流向奥体西路南段和龙奥北路方向流出，途径经十路和奥体西路路口。",
-          "duration_sec": 9.0,
-          "chars": 37
-        },
-        {
           "id": "a2f.arterial",
           "file": "scene2/s2-arterial.wav",
           "approx_sec": 8,
