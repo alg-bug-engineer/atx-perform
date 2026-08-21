@@ -10,7 +10,7 @@ import StageChannelization from '../scene3b-signal-plan/StageChannelization.vue'
 
 const props = defineProps({
   board: { type: Object, required: true },
-  /** 右侧缩小预览：只演示两张卡（阶段 1 / 阶段 2），完整相序看放大浮层 */
+  /** 缩小预览：只演示两张卡（阶段 1 / 阶段 2） */
   compact: { type: Boolean, default: false },
 })
 

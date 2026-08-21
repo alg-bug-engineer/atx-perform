@@ -1,11 +1,8 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import TimeSpaceDiagram from '../scene3b-signal-plan/TimeSpaceDiagram.vue'
 import { buildSignalPlanModel } from '../scene3b-signal-plan/signalPlanModel.js'
-import { getConductorSegments } from '../../shared/sceneNarration.js'
 import PhaseSequenceBoard from './PhaseSequenceBoard.vue'
-import OffsetAlignStrip from './OffsetAlignStrip.vue'
-import { buildPhasePlans, greenBands } from './corridorDemo.js'
 
 const props = defineProps({
   payload: { type: Object, required: true },
@@ -14,84 +11,9 @@ const props = defineProps({
 
 const board = computed(() => props.payload?.signal_plan_board || null)
 const tsModel = computed(() => (props.signalPlan ? buildSignalPlanModel(props.signalPlan) : null))
-const plans = computed(() => {
-  try {
-    return buildPhasePlans(props.payload)
-  } catch (err) {
-    console.warn('[scene3] phase plans failed', err)
-    return null
-  }
-})
-
-const before = computed(() => plans.value?.variants.find((v) => v.key === 'before') || null)
-const after = computed(() => plans.value?.variants.find((v) => v.key === 'after') || null)
 
 const mode = ref('optimized')
 const direction = ref('both')
-const enlarged = ref(null)
-
-const clock = ref(0)
-const paused = ref(false)
-const beatCaption = ref({ tag: '放行窗口', text: '解放东放行窗口对准经十路绿灯', tone: 'ok' })
-const speed = ref(7)
-
-let waitingAlignEnd = false
-
-let rafId = 0
-let lastTs = 0
-function tick(ts) {
-  if (lastTs && plans.value && !paused.value) {
-    const dt = (ts - lastTs) / 1000
-    const cycle = cycleLen.value
-    const next = clock.value + dt * speed.value
-    if (waitingAlignEnd && next >= cycle) {
-      clock.value = cycle - 0.01
-      paused.value = true
-      waitingAlignEnd = false
-      startLightboxTour()
-    } else {
-      clock.value = next % cycle
-    }
-  }
-  lastTs = ts
-  rafId = requestAnimationFrame(tick)
-}
-
-function onKey(e) {
-  if (e.key === 'Escape') closeLightbox()
-}
-
-onMounted(() => {
-  rafId = requestAnimationFrame(tick)
-  window.addEventListener('keydown', onKey)
-  playOnce()
-})
-onUnmounted(() => {
-  clearSeq()
-  cancelAnimationFrame(rafId)
-  window.removeEventListener('keydown', onKey)
-})
-
-const jingshiBefore = computed(() =>
-  before.value
-    ? greenBands(before.value.jingshiPlan, before.value.displayStartS, before.value.cycleLen, 0, 2)
-    : [],
-)
-const jiefangBefore = computed(() =>
-  before.value
-    ? greenBands(before.value.jiefangPlan, before.value.displayStartS, before.value.cycleLen, 0, 2)
-    : [],
-)
-const jingshiAfter = computed(() =>
-  after.value
-    ? greenBands(after.value.jingshiPlan, after.value.displayStartS, after.value.cycleLen, 0, 2)
-    : [],
-)
-const jiefangAfter = computed(() =>
-  after.value
-    ? greenBands(after.value.jiefangPlan, after.value.displayStartS, after.value.cycleLen, 0, 2)
-    : [],
-)
 
 function fmt(v) {
   if (v == null) return '—'
@@ -110,199 +32,60 @@ const bandCaption = computed(() => {
   const b = tsModel.value.corridor.bandwidth
   return `正向链式带宽 ${fmt(b.chained_forward_s)} s · 反向链式带宽 ${fmt(b.chained_reverse_s)} s`
 })
-
-const enlargeTitle = computed(() => {
-  if (enlarged.value === 'phase') return '相位相序图'
-  if (enlarged.value === 'wave') return '绿波时距图'
-  return ''
-})
-const enlargeLead = computed(() => {
-  if (enlarged.value === 'phase') return 'phase'
-  if (enlarged.value === 'wave') return 'wave'
-  return ''
-})
-const cycleLen = computed(() => plans.value?.cycleLen || 220)
-const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value} s`)
-
-const ALIGN_PLAY_S = 6
-const ALIGN_LOOP_S = 12
-const SCENE3_TTS_S = getConductorSegments('3').reduce(
-  (sum, seg) => sum + (Number(seg.durationSec) || Number(seg.approxSec) || 0),
-  0,
-) || 19.56
-// 口播约 19.6s：对时条 6s 后放大相序，余下口播时间对半分给相序；绿波弹窗不再自动关掉，留到切幕
-const PHASE_LIGHTBOX_S = Math.max(6, (SCENE3_TTS_S - ALIGN_PLAY_S) / 2)
-let seqTimers = []
-
-function clearSeq() {
-  seqTimers.forEach((id) => clearTimeout(id))
-  seqTimers = []
-  waitingAlignEnd = false
-}
-
-function later(ms, fn) {
-  const id = setTimeout(fn, ms)
-  seqTimers.push(id)
-}
-
-function closeLightbox() {
-  if (!enlarged.value) return
-  enlarged.value = null
-  paused.value = false
-  speed.value = cycleLen.value / ALIGN_LOOP_S
-  beatCaption.value = { tag: '方案对比', text: '解放东放行窗口对准经十路绿灯', tone: 'ok' }
-}
-
-function startLightboxTour() {
-  enlarged.value = 'phase'
-  beatCaption.value = { tag: '方案细节', text: '相位相序图', tone: 'ok' }
-  later(Math.round(PHASE_LIGHTBOX_S * 1000), () => {
-    enlarged.value = 'wave'
-    beatCaption.value = { tag: '方案细节', text: '绿波时距图', tone: 'ok' }
-  })
-}
-
-function playOnce() {
-  clearSeq()
-  clock.value = 0
-  paused.value = false
-  speed.value = cycleLen.value / ALIGN_PLAY_S
-  enlarged.value = null
-  waitingAlignEnd = true
-  beatCaption.value = { tag: '放行窗口', text: '对比现状与优化后经十路 / 解放东绿窗', tone: 'plain' }
-}
 </script>
 
 <template>
   <section class="plan-compare" data-testid="plan-compare">
     <header class="head">
-      <h2 class="lead-headline">路口的优化方案为<span>相位协调</span></h2>
-      <div class="tech">
-        <span>方案细节</span>
-        <button v-if="board" type="button" class="diagram-btn" @click="enlarged = 'phase'">
-          相位相序图
-        </button>
-        <button v-if="tsModel" type="button" class="diagram-btn" @click="enlarged = 'wave'">
-          绿波时距图
-        </button>
-      </div>
+      <h2 v-if="board" class="lead-headline">周期绿信比优化</h2>
+      <h2 v-if="tsModel" class="lead-headline">相位差优化</h2>
     </header>
 
-    <div class="compare">
-      <div class="compare-bar">
-        <span class="compare-title">方案对比</span>
-        <p class="beat-line">
-          <span class="clock"><i>周期</i> {{ clockLabel }}</span>
-          <span class="beat">
-            <b :class="beatCaption.tone">{{ beatCaption.tag }}</b>
-            <span>{{ beatCaption.text }}</span>
-          </span>
-        </p>
-        <div class="compare-acts">
-          <button type="button" class="play-btn" @click="playOnce">播放演示</button>
-          <button type="button" class="play-btn ghost" @click="paused = !paused">
-            {{ paused ? '继续' : '暂停' }}
-          </button>
-        </div>
+    <div class="diagrams">
+      <div v-if="board" class="diagram-card phase">
+        <PhaseSequenceBoard :board="board" />
       </div>
-      <div v-if="plans" class="intro">
-        <div class="align-stack">
-          <OffsetAlignStrip
-            compact
-            title="现状"
-            hint="经十路 / 解放东北直绿窗"
-            key-word="错开"
-            tone="danger"
-            :cycle-len="cycleLen"
-            :t="clock"
-            :jingshi="jingshiBefore"
-            :jiefang="jiefangBefore"
-          />
-          <OffsetAlignStrip
-            compact
-            title="优化后"
-            hint="经十路 / 解放东北直绿窗"
-            key-word="对准"
-            tone="ok"
-            :cycle-len="cycleLen"
-            :t="clock"
-            :jingshi="jingshiAfter"
-            :jiefang="jiefangAfter"
-          />
-        </div>
-        <div class="preview-grid">
-          <div v-if="board" class="preview-card">
-            <PhaseSequenceBoard compact :board="board" />
+      <figure v-if="tsModel" class="diagram-card wave">
+        <header class="wave-head">
+            <h3>绿波时距图</h3>
+          <div class="toggles">
+            <button
+              v-for="m in [
+                { k: 'baseline', t: '现状' },
+                { k: 'optimized', t: '优化后' },
+              ]"
+              :key="m.k"
+              type="button"
+              class="tg"
+              :class="{ on: mode === m.k }"
+              @click="mode = m.k"
+            >
+              {{ m.t }}
+            </button>
+            <span class="sep" />
+            <button
+              v-for="d in [
+                { k: 'both', t: '双向' },
+                { k: 'forward', t: '北向南' },
+                { k: 'reverse', t: '南向北' },
+              ]"
+              :key="d.k"
+              type="button"
+              class="tg"
+              :class="{ on: direction === d.k }"
+              @click="direction = d.k"
+            >
+              {{ d.t }}
+            </button>
           </div>
-          <figure v-if="tsModel" class="preview-card">
-            <figcaption>绿波时距图</figcaption>
-            <div class="preview-body">
-              <TimeSpaceDiagram :model="tsModel" :mode="mode" :direction="direction" />
-            </div>
-          </figure>
+        </header>
+        <p class="hint">{{ diagramHint }}</p>
+        <div class="wave-body">
+          <TimeSpaceDiagram :model="tsModel" :mode="mode" :direction="direction" />
         </div>
-      </div>
+        <p class="caption">{{ bandCaption }}</p>
+      </figure>
     </div>
-
-    <Teleport to="body">
-      <div
-        v-if="enlarged"
-        class="lightbox"
-        data-testid="scene3-enlarge"
-        @click.self="closeLightbox"
-      >
-        <div class="sheet" :class="enlarged">
-          <header>
-            <h3>{{ enlargeTitle }}</h3>
-            <div v-if="enlarged === 'wave'" class="toggles">
-              <button
-                v-for="m in [
-                  { k: 'baseline', t: '现状' },
-                  { k: 'optimized', t: '优化后' },
-                ]"
-                :key="m.k"
-                type="button"
-                class="tg"
-                :class="{ on: mode === m.k }"
-                @click="mode = m.k"
-              >
-                {{ m.t }}
-              </button>
-              <span class="sep" />
-              <button
-                v-for="d in [
-                  { k: 'both', t: '双向' },
-                  { k: 'forward', t: '北向南' },
-                  { k: 'reverse', t: '南向北' },
-                ]"
-                :key="d.k"
-                type="button"
-                class="tg"
-                :class="{ on: direction === d.k }"
-                @click="direction = d.k"
-              >
-                {{ d.t }}
-              </button>
-            </div>
-            <button type="button" class="close" @click="closeLightbox">关闭</button>
-          </header>
-          <p v-if="enlargeLead === 'phase'" class="lead-copy">
-            解放东整体后移 <b class="ok">56 s</b>，北进口直行绿时 <b class="warn">21 → 15 s</b>，经十路配时维持不变。
-          </p>
-          <p v-if="enlarged === 'wave'" class="hint">{{ diagramHint }}</p>
-          <div class="sheet-body">
-            <PhaseSequenceBoard v-if="enlarged === 'phase' && board" :board="board" />
-            <TimeSpaceDiagram
-              v-else-if="enlarged === 'wave' && tsModel"
-              :model="tsModel"
-              :mode="mode"
-              :direction="direction"
-            />
-          </div>
-          <p v-if="enlarged === 'wave'" class="caption">{{ bandCaption }}</p>
-        </div>
-      </div>
-    </Teleport>
   </section>
 </template>
 
@@ -317,144 +100,26 @@ function playOnce() {
 }
 
 .head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: baseline;
 }
 .lead-headline {
   margin: 0;
   min-width: 0;
-  flex: 1;
-}
-.lead-headline span { color: var(--text); }
-
-.tech {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: none;
-}
-.tech > span {
-  font-size: 12px;
-  letter-spacing: 1px;
-  color: var(--text-muted);
+  text-align: center;
 }
 
-.compare {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 0;
-  padding: 6px 8px 8px;
-  border: 1px solid var(--cyan-border);
-  background: rgba(0, 16, 28, 0.35);
-}
-.compare-bar {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex: none;
-  min-width: 0;
-}
-.compare-title {
-  flex: none;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  color: var(--text);
-}
-.compare-acts {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-  flex: none;
-}
-.play-btn,
-.diagram-btn {
-  padding: 6px 14px;
-  font-size: 12px;
-  letter-spacing: 1px;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--cyan-border);
-  cursor: pointer;
-}
-.play-btn {
-  color: #041020;
-  background: var(--cyan);
-  border-color: var(--text);
-}
-.play-btn.ghost,
-.diagram-btn {
-  color: var(--text);
-  background: transparent;
-  border-color: var(--cyan-border);
-}
-.play-btn:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.45); }
-.diagram-btn:hover {
-  color: var(--text);
-  border-color: var(--cyan-border-strong);
-}
-
-.beat-line {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin: 0;
-  min-width: 0;
-  flex: 1;
-}
-.beat-line .clock {
-  flex: none;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  color: var(--text);
-}
-.beat-line .clock i {
-  margin-right: 6px;
-  font-style: normal;
-  color: var(--text);
-}
-.beat {
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--text);
-}
-.beat b { flex: none; font-weight: 600; }
-.beat b.danger { color: var(--danger); }
-.beat b.ok { color: var(--ok); }
-.beat b.plain { color: var(--text); }
-.beat span { font-weight: 400; color: var(--text); }
-
-.intro {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 0;
-}
-.align-stack {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  flex: none;
-  min-width: 0;
-}
-.preview-grid {
+.diagrams {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  flex: 1 1 0;
   min-width: 0;
   min-height: 0;
 }
-.preview-card {
+
+.diagram-card {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -464,40 +129,32 @@ function playOnce() {
   border: 1px solid var(--cyan-border);
   background: rgba(0, 16, 28, 0.55);
 }
-.preview-card figcaption {
-  flex: none;
-  padding: 6px 8px 0;
-  font-size: 12px;
-  letter-spacing: 1px;
-  color: var(--text);
-}
-.preview-body {
-  flex: 1 1 0;
-  min-height: 0;
-}
-.preview-card :deep(.phase-board) {
+.diagram-card.phase :deep(.phase-board) {
   height: 100%;
   border: none;
   background: transparent;
 }
-.preview-card :deep(.phase-board.compact) {
-  height: 100%;
-  flex: 1 1 0;
-  min-height: 0;
+
+.wave-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 8px 10px 0;
 }
-.preview-card :deep(.phase-board.compact .cards) {
-  flex: 1 1 0;
-  min-height: 0;
-}
-.sheet header h3 {
+.wave-head h3 {
   margin: 0;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 1px;
   color: var(--text);
 }
-
-.close,
+.toggles {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: auto;
+}
 .tg {
   padding: 2px 10px;
   font-size: 11px;
@@ -507,77 +164,32 @@ function playOnce() {
   border: 1px solid var(--cyan-border);
   cursor: pointer;
 }
-.close:hover {
-  color: var(--text);
-  border-color: var(--cyan-border-strong);
-}
 .tg.on {
   color: #041020;
   background: var(--cyan);
   border-color: var(--text);
-}
-
-.lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 28px;
-  background: rgba(2, 8, 18, 0.78);
-}
-.sheet {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: min(1180px, 94vw);
-  height: min(820px, 90vh);
-  padding: 12px 14px 14px;
-  border: 1px solid var(--cyan-border-strong);
-  border-radius: 4px;
-  background: var(--bg-drawer);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-}
-.sheet.phase {
-  width: min(1080px, 94vw);
-}
-.sheet header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: none;
-}
-.sheet header .toggles {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  margin-left: 8px;
-}
-.sheet header .close {
-  margin-left: auto;
 }
 .sep {
   width: 1px;
   height: 12px;
   background: var(--cyan-border);
 }
+
 .hint,
-.caption,
-.lead-copy {
+.caption {
   margin: 0;
   flex: none;
+  padding: 4px 10px 0;
   font-size: 12px;
   color: var(--text);
 }
-.lead-copy b.ok { color: var(--ok); font-weight: 600; }
-.lead-copy b.warn { color: var(--warn); font-weight: 600; }
-.sheet-body {
-  flex: 1;
+.caption { padding-bottom: 8px; }
+
+.wave-body {
+  flex: 1 1 0;
   min-height: 0;
 }
-.sheet-body :deep(.phase-board),
-.sheet-body :deep(.tsd) {
+.wave-body :deep(.tsd) {
   width: 100%;
   height: 100%;
 }
