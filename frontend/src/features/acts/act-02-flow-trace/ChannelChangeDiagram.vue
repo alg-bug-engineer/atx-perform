@@ -88,33 +88,33 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 <template>
   <svg
     class="channel-diagram"
-    viewBox="0 0 620 1200"
+    viewBox="0 0 780 1200"
     preserveAspectRatio="xMidYMid meet"
     role="img"
     aria-label="奥体西路北向南渠化拓宽示意图：距经十路口100米处由3车道拓宽为5车道，两路口周期200秒与220秒不协调"
   >
-    <!-- 道路图形整体顺时针旋转 90°（上北下南）：本地 (x,y) → 屏幕 (620-y, x)；
+    <!-- 道路图形整体顺时针旋转 90°（上北下南）：本地 (x,y) → 屏幕 (722-y, x)；
          动画（拓宽生长/排队驶入/红框脉冲）均在本地坐标运转，旋转后方向自动正确 -->
-    <g transform="translate(620 0) rotate(90)">
+    <g transform="translate(722 0) rotate(90)">
     <!-- ── 底图路网（本地横版坐标）────────────────────────────── -->
     <!-- 奥体西路（本地横向）：南向北 4 车道（上）+ 中央绿化带 + 北向南 3→5 车道（下）；
          旋转后南向北在东半幅、北向南在西半幅（右侧通行，车流自上而下） -->
-    <rect class="pave" x="0" y="218" width="1200" height="228" />
+    <rect class="pave" x="40" y="218" width="1120" height="228" />
     <!-- 解放东路（本地左，旋转后上/北端）/ 经十路（本地右，旋转后下/南端） -->
-    <rect class="pave" x="130" y="0" width="76" height="620" />
-    <rect class="pave" x="1000" y="0" width="76" height="620" />
+    <rect class="pave" x="130" y="-58" width="76" height="780" />
+    <rect class="pave" x="1000" y="-58" width="76" height="780" />
 
     <!-- 道路外缘（北向南外缘 y=446 全程固定，拓宽不吃对向） -->
-    <line class="edge" x1="0" y1="218" x2="1200" y2="218" />
-    <line class="edge" x1="0" y1="446" x2="994" y2="446" />
-    <line class="edge" x1="130" y1="0" x2="130" y2="218" />
-    <line class="edge" x1="206" y1="0" x2="206" y2="218" />
-    <line class="edge" x1="130" y1="446" x2="130" y2="620" />
-    <line class="edge" x1="206" y1="446" x2="206" y2="620" />
-    <line class="edge" x1="1000" y1="0" x2="1000" y2="218" />
-    <line class="edge" x1="1076" y1="0" x2="1076" y2="218" />
-    <line class="edge" x1="1000" y1="446" x2="1000" y2="620" />
-    <line class="edge" x1="1076" y1="446" x2="1076" y2="620" />
+    <line class="edge" x1="40" y1="218" x2="1160" y2="218" />
+    <line class="edge" x1="40" y1="446" x2="994" y2="446" />
+    <line class="edge" x1="130" y1="-58" x2="130" y2="218" />
+    <line class="edge" x1="206" y1="-58" x2="206" y2="218" />
+    <line class="edge" x1="130" y1="446" x2="130" y2="722" />
+    <line class="edge" x1="206" y1="446" x2="206" y2="722" />
+    <line class="edge" x1="1000" y1="-58" x2="1000" y2="218" />
+    <line class="edge" x1="1076" y1="-58" x2="1076" y2="218" />
+    <line class="edge" x1="1000" y1="446" x2="1000" y2="722" />
+    <line class="edge" x1="1076" y1="446" x2="1076" y2="722" />
 
     <!-- 中央绿化带（路段 24px；渐变段起压缩至 4px，widen 动画） -->
     <rect class="greenbelt" x="206" y="332" width="529" height="24" />
@@ -126,14 +126,14 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
     <line class="greenbelt-curb" x1="206" y1="356" x2="735" y2="356" />
 
     <!-- 纵向路中线 -->
-    <line class="median" x1="164" y1="0" x2="164" y2="218" />
-    <line class="median" x1="172" y1="0" x2="172" y2="218" />
-    <line class="median" x1="164" y1="446" x2="164" y2="620" />
-    <line class="median" x1="172" y1="446" x2="172" y2="620" />
-    <line class="median" x1="1034" y1="0" x2="1034" y2="218" />
-    <line class="median" x1="1042" y1="0" x2="1042" y2="218" />
-    <line class="median" x1="1034" y1="446" x2="1034" y2="620" />
-    <line class="median" x1="1042" y1="446" x2="1042" y2="620" />
+    <line class="median" x1="164" y1="-58" x2="164" y2="218" />
+    <line class="median" x1="172" y1="-58" x2="172" y2="218" />
+    <line class="median" x1="164" y1="446" x2="164" y2="722" />
+    <line class="median" x1="172" y1="446" x2="172" y2="722" />
+    <line class="median" x1="1034" y1="-58" x2="1034" y2="218" />
+    <line class="median" x1="1042" y1="-58" x2="1042" y2="218" />
+    <line class="median" x1="1034" y1="446" x2="1034" y2="722" />
+    <line class="median" x1="1042" y1="446" x2="1042" y2="722" />
 
     <!-- 车道虚线：南向北 3 车道（全程不压缩，不受拓宽挤压） -->
     <line class="lane-dash" x1="206" y1="256" x2="1000" y2="256" />
@@ -146,14 +146,14 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
       <line class="lane-dash" x1="735" y1="416" x2="994" y2="416" />
     </g>
     <!-- 纵向路半幅车道线（避开中线） -->
-    <line class="lane-dash" x1="130" y1="112" x2="162" y2="112" />
-    <line class="lane-dash" x1="174" y1="112" x2="206" y2="112" />
-    <line class="lane-dash" x1="130" y1="560" x2="162" y2="560" />
-    <line class="lane-dash" x1="174" y1="560" x2="206" y2="560" />
-    <line class="lane-dash" x1="1000" y1="112" x2="1032" y2="112" />
-    <line class="lane-dash" x1="1044" y1="112" x2="1076" y2="112" />
-    <line class="lane-dash" x1="1000" y1="560" x2="1032" y2="560" />
-    <line class="lane-dash" x1="1044" y1="560" x2="1076" y2="560" />
+    <line class="lane-dash" x1="130" y1="80" x2="162" y2="80" />
+    <line class="lane-dash" x1="174" y1="80" x2="206" y2="80" />
+    <line class="lane-dash" x1="130" y1="584" x2="162" y2="584" />
+    <line class="lane-dash" x1="174" y1="584" x2="206" y2="584" />
+    <line class="lane-dash" x1="1000" y1="80" x2="1032" y2="80" />
+    <line class="lane-dash" x1="1044" y1="80" x2="1076" y2="80" />
+    <line class="lane-dash" x1="1000" y1="584" x2="1032" y2="584" />
+    <line class="lane-dash" x1="1044" y1="584" x2="1076" y2="584" />
 
     <!-- ── 路口形态：斑马线 + 四向进口停止线 ──────────────────── -->
     <!-- 左路口（解放东路 × 奥体西路） -->
@@ -265,56 +265,56 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
     <!-- ── 以下标注不随图形旋转，在上北下南竖版坐标系单独排版保持正向 ── -->
     <!-- 100m 距离标注文字（纵线顶端上方，道路左侧） -->
     <g class="dist-100" :class="{ on: has('redbox') }">
-      <text x="87" y="716" text-anchor="middle">距经十路口 100m</text>
+      <text x="177" y="716" text-anchor="middle">距经十路口 100m</text>
     </g>
 
     <!-- ── 徽标：车道数 / 通行能力（道路右侧，对齐拓宽段高度）── -->
     <g class="badge-capacity" :class="{ on: has('capacity') }">
-      <rect x="414" y="742" width="196" height="38" rx="6" />
-      <text x="512" y="768" text-anchor="middle">通行能力变化</text>
+      <rect x="516" y="742" width="200" height="38" rx="6" />
+      <text x="616" y="768" text-anchor="middle">通行能力变化</text>
     </g>
     <g class="badge-lanes" :class="{ on: has('widen') }">
-      <rect x="414" y="794" width="196" height="40" rx="6" />
-      <text x="512" y="822" text-anchor="middle">3 → 5 车道</text>
+      <rect x="516" y="794" width="200" height="40" rx="6" />
+      <text x="616" y="822" text-anchor="middle">3 → 5 车道</text>
     </g>
 
     <!-- ── 周期标签 + 信号灯 ──────────────────────────────────── -->
     <g class="cyc-tag cyc-left" :class="{ on: has('cycleLeft') }">
-      <rect x="216" y="16" width="188" height="42" rx="6" />
-      <text x="310" y="43" text-anchor="middle">解放东路 · 周期 200s</text>
+      <rect x="277" y="16" width="226" height="42" rx="6" />
+      <text x="390" y="43" text-anchor="middle">解放东路 · 周期 200s</text>
     </g>
     <g class="cyc-tag cyc-right" :class="{ on: has('cycleRight') }">
-      <rect x="216" y="1120" width="188" height="42" rx="6" />
-      <text x="310" y="1147" text-anchor="middle">经十路 · 周期 220s</text>
+      <rect x="277" y="1120" width="226" height="42" rx="6" />
+      <text x="390" y="1147" text-anchor="middle">经十路 · 周期 220s</text>
     </g>
 
     <g class="lamps" :class="{ mismatch: has('mismatch') }">
       <!-- 上：解放东路（路口东北侧路外） -->
       <g class="lamp lamp-left">
-        <rect x="470" y="58" width="18" height="50" rx="4" />
-        <circle class="l-red" cx="479" cy="70" r="5.5" />
-        <circle class="l-yellow" cx="479" cy="83" r="5.5" />
-        <circle class="l-green" cx="479" cy="96" r="5.5" />
+        <rect x="572" y="58" width="18" height="50" rx="4" />
+        <circle class="l-red" cx="581" cy="70" r="5.5" />
+        <circle class="l-yellow" cx="581" cy="83" r="5.5" />
+        <circle class="l-green" cx="581" cy="96" r="5.5" />
       </g>
       <!-- 下：经十路（路口东南侧路外） -->
       <g class="lamp lamp-right">
-        <rect x="470" y="1096" width="18" height="50" rx="4" />
-        <circle class="l-red" cx="479" cy="1108" r="5.5" />
-        <circle class="l-yellow" cx="479" cy="1121" r="5.5" />
-        <circle class="l-green" cx="479" cy="1134" r="5.5" />
+        <rect x="572" y="1096" width="18" height="50" rx="4" />
+        <circle class="l-red" cx="581" cy="1108" r="5.5" />
+        <circle class="l-yellow" cx="581" cy="1121" r="5.5" />
+        <circle class="l-green" cx="581" cy="1134" r="5.5" />
       </g>
     </g>
 
     <!-- 排队影响说明（queue 阶段淡入，图底部居中） -->
     <g class="queue-note" :class="{ on: has('queue') }">
-      <text x="310" y="1186" text-anchor="middle">左转排队溢出占用直行车道，直行通行效率下降</text>
+      <text x="390" y="1186" text-anchor="middle">左转排队溢出占用直行车道，直行通行效率下降</text>
     </g>
 
     <!-- ── 静态标注 ───────────────────────────────────────────── -->
-    <text class="road-name" x="500" y="300" text-anchor="middle">奥体西路</text>
+    <text class="road-name" x="602" y="300" text-anchor="middle">奥体西路</text>
     <text class="road-name road-sub" x="70" y="118" text-anchor="middle">解放东路</text>
     <text class="road-name road-sub" x="70" y="1096" text-anchor="middle">经十路</text>
-    <text class="flow-hint" x="87" y="330" text-anchor="middle">北向南 ↓</text>
+    <text class="flow-hint" x="189" y="330" text-anchor="middle">北向南 ↓</text>
   </svg>
 </template>
 
@@ -461,7 +461,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 }
 .dist-100 text {
   fill: #ffd666;
-  font-size: 15px;
+  font-size: 21px;
   letter-spacing: 1px;
 }
 
@@ -484,7 +484,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 }
 .badge-lanes text {
   fill: #ffd6d6;
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 2px;
 }
@@ -495,7 +495,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 }
 .badge-capacity text {
   fill: #b7f2d8;
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: 2px;
 }
@@ -509,7 +509,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 }
 .cyc-tag text {
   fill: rgba(220, 232, 244, 0.9);
-  font-size: 15px;
+  font-size: 21px;
   letter-spacing: 1px;
   transition: fill 0.4s ease;
 }
@@ -572,23 +572,23 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 }
 .queue-note text {
   fill: #ff9f43;
-  font-size: 14px;
+  font-size: 20px;
   letter-spacing: 1px;
 }
 
 /* 静态标注 */
 .road-name {
   fill: rgba(220, 232, 244, 0.92);
-  font-size: 18px;
+  font-size: 24px;
   letter-spacing: 4px;
 }
 .road-sub {
-  font-size: 15px;
+  font-size: 21px;
   letter-spacing: 2px;
 }
 .flow-hint {
   fill: rgba(160, 180, 200, 0.75);
-  font-size: 13px;
+  font-size: 19px;
   letter-spacing: 2px;
 }
 </style>
