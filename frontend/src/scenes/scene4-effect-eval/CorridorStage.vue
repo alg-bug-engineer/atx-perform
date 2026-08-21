@@ -262,63 +262,27 @@ const jiefangSig = computed(() => {
   return list.find((s) => s.green) || list.find((s) => s.key === 'north_through') || { green: false, countdown: 0 }
 })
 
-/**
- * 车身按实车尺寸换算，再按 CAR_ISO 画大。
- * 抽稀间距必须覆盖「放大后的车长 + 车距」，否则同车道会视觉重叠；
- * 落位后再按放大后的外框去重，去掉借道并线时叠到邻道上的车。
- */
+/** 车身按仿真中的实车尺寸换算，车长与队尾计算共用 5.4 m 口径。 */
 const CAR_LEN_M = 5.4
 const CAR_W_RATIO = 0.62
 const CAR_LANE_FILL = 0.72
 const VEH_L = computed(() => CAR_LEN_M * pxPerM.value)
 const carW = (laneH) => Math.min(VEH_L.value * CAR_W_RATIO, laneH * CAR_LANE_FILL)
-/** 画面上少画车、单车画大；车宽按路段压缩比收回，避免被东西向拉伸拉扁 */
-const CAR_ISO = 4.0
-const CAR_CLEAR_M = 6
-const CAR_SHOW_GAP_M = CAR_LEN_M * CAR_ISO + CAR_CLEAR_M
-const CAR_BOX_PAD = 2
+/**
+ * 车辆与仿真使用同一把尺：车长 5.4 m、车头间距 7 m。
+ * 车身不额外放大，车辆、排队状态和队尾线共用同一套仿真坐标。
+ */
+const CAR_ISO = 1
 function carBox(c) {
   const len = VEH_L.value * CAR_ISO
   const rawW = c.h * CAR_ISO * (FIT_NS / FIT_EW)
   const w = c.laneH ? Math.min(rawW, c.laneH * 0.86) : rawW
-  return { len, w, cx: c.x + VEH_L.value / 2, cy: c.y + c.h / 2 }
+  const front = c.x + VEH_L.value
+  return { len, w, cx: front - len / 2, cy: c.y + c.h / 2 }
 }
 function carXf(c) {
   const { len, w, cx, cy } = carBox(c)
   return `translate(${cx - len / 2} ${cy - w / 2}) scale(${len} ${w})`
-}
-
-function thinCars(list, gapM) {
-  const sorted = [...list].sort((a, b) => a.x - b.x)
-  const last = new Map()
-  const out = []
-  for (const c of sorted) {
-    const key = `${c.turn}-${c.downLane >= 0 ? c.downLane : c.upLane}`
-    const prev = last.get(key)
-    if (prev != null && c.x - prev < gapM) continue
-    last.set(key, c.x)
-    out.push(c)
-  }
-  return out
-}
-
-function dropOverlaps(list) {
-  const kept = []
-  const boxes = []
-  for (const c of [...list].sort((a, b) => a.x - b.x)) {
-    const box = carBox(c)
-    const hit = boxes.some(
-      (b) =>
-        box.cx - box.len / 2 < b.cx + b.len / 2 + CAR_BOX_PAD &&
-        box.cx + box.len / 2 + CAR_BOX_PAD > b.cx - b.len / 2 &&
-        box.cy - box.w / 2 < b.cy + b.w / 2 + CAR_BOX_PAD &&
-        box.cy + box.w / 2 + CAR_BOX_PAD > b.cy - b.w / 2,
-    )
-    if (hit) continue
-    kept.push(c)
-    boxes.push(box)
-  }
-  return kept
 }
 
 /**
@@ -335,33 +299,34 @@ const carTone = (c) => {
 }
 
 const cars = computed(() => {
-  const list = thinCars(props.sample?.cars || [], CAR_SHOW_GAP_M)
   const t0 = props.variant.result.taperStart
   const t1 = props.variant.result.taperEnd
+  const list = props.sample?.cars || []
   const merge0 = lengthM.value - 60
   const merge1 = lengthM.value - 24
   const len = VEH_L.value
-  const placed = list.map((c) => {
+  return list.map((c) => {
+    const px = c.x
     const down = c.downLane >= 0 ? c.downLane : DEFAULT_DOWN[c.upLane]
     const yUp = upCenter(c.upLane)
     const yDown = downCenter(down)
-    const u = c.x <= t0 ? 0 : c.x >= t1 ? 1 : (c.x - t0) / (t1 - t0)
+    const u = px <= t0 ? 0 : px >= t1 ? 1 : (px - t0) / (t1 - t0)
     const laneH = upLaneH(c.upLane) + (downLaneH(down) - upLaneH(c.upLane)) * u
     const h = carW(laneH)
     let yCenter = yUp + (yDown - yUp) * u
     if (c.borrowedThrough) {
       // 借道直行车在展宽后仍沿右转/公交道排队，距停止线约 60 m 才并回相邻直行道。
-      const busY = c.x <= t0
+      const busY = px <= t0
         ? yUp
-        : c.x >= t1
+        : px >= t1
           ? downCenter(4)
           : yUp + (downCenter(4) - yUp) * u
-      const mergeU = c.x <= merge0 ? 0 : c.x >= merge1 ? 1 : (c.x - merge0) / (merge1 - merge0)
+      const mergeU = px <= merge0 ? 0 : px >= merge1 ? 1 : (px - merge0) / (merge1 - merge0)
       yCenter = busY + (downCenter(3) - busY) * mergeU
     }
     return {
       id: c.id,
-      x: mx(c.x) - len,
+      x: mx(px) - len,
       y: yCenter - h / 2,
       h,
       laneH,
@@ -370,7 +335,6 @@ const cars = computed(() => {
       borrowedThrough: c.borrowedThrough,
     }
   })
-  return dropOverlaps(placed)
 })
 
 /** 进不去路段、堵在解放东路口里的车 */
@@ -515,7 +479,7 @@ const inflowArrows = computed(() => {
           />
         </g>
 
-        <!-- 车辆 -->
+        <!-- 车辆：车头钉在仿真位置，进场时车身完整穿过解放东路口开进来 -->
         <g class="fleet" :clip-path="`url(#stop-${variant.key})`">
           <use
             v-for="c in blockedCars"
@@ -627,6 +591,7 @@ const inflowArrows = computed(() => {
         </g>
         </g>
       </svg>
+      <p v-if="variant.key === 'after'" class="coord-note">下游先放行，上游再放</p>
       </div>
     </div>
     <div v-if="$slots.foot" class="foot">
@@ -673,6 +638,25 @@ const inflowArrows = computed(() => {
 .tone-danger .badge { color: var(--danger); border-color: var(--danger); }
 .tone-ok .badge { color: var(--ok); border-color: var(--ok); }
 .sub { font-size: 12px; color: var(--text); }
+.coord-note {
+  flex: none;
+  align-self: center;
+  margin: 0;
+  padding: 0 12px 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+  text-shadow:
+    0 0 10px rgba(0, 229, 255, 0.55),
+    1px 0 0 rgba(2, 16, 28, 0.92),
+    -1px 0 0 rgba(2, 16, 28, 0.92),
+    0 1px 0 rgba(2, 16, 28, 0.92),
+    0 -1px 0 rgba(2, 16, 28, 0.92);
+  pointer-events: none;
+}
 .alarm {
   font-size: 12px;
   font-weight: 600;
@@ -696,15 +680,18 @@ const inflowArrows = computed(() => {
 }
 .canvas-wrap {
   position: relative;
+  display: flex;
   min-height: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 .canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  width: auto;
   height: 100%;
   display: block;
 }
@@ -790,13 +777,11 @@ const inflowArrows = computed(() => {
 .tail line {
   stroke-width: 1.2;
   stroke-dasharray: 4 4;
-  transition: x1 0.32s linear, x2 0.32s linear;
 }
 .tail text {
   font-size: 13px;
   font-family: var(--font-mono);
   fill: rgba(220, 245, 255, 0.92);
-  transition: x 0.32s linear;
 }
 .tail .lbl { fill: rgba(220, 245, 255, 0.92); }
 .tail.calm line { stroke: var(--ok); }

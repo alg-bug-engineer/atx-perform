@@ -121,19 +121,31 @@ export function buildCorridorDemo(optimization) {
   }
 }
 
-/** 播放进度 t（0..周期长）→ 该帧的车辆位置、排队与信号状态 */
+/** 播放进度 t（0..周期长）→ 该帧的车辆位置、排队与信号状态。
+ * 仿真步长 0.5 s，播放每秒推进 6–8 s 仿真时间，直接取整步会让车每 4 帧才跳一格；
+ * 在相邻两步之间线性插值，车与队尾才能逐帧连续移动。
+ */
 export function sampleVariant(variant, t) {
   const r = variant.result
   if (!r) return null
-  const step = Math.min(r.steps - 1, Math.max(0, Math.round(t / r.dt)))
+  const exact = Math.min(r.steps - 1, Math.max(0, t / r.dt))
+  const step = Math.floor(exact)
+  const frac = exact - step
+  const lerp = (arr) =>
+    frac > 0 && step + 1 < r.steps ? arr[step] + (arr[step + 1] - arr[step]) * frac : arr[step]
   const absT = r.absStartS + step * r.dt
 
   const cars = []
   for (const tr of r.tracks) {
     if (step < tr.from || step > tr.to) continue
     const i = step - tr.from
-    const x = tr.xs[i]
-    if (Number.isNaN(x)) continue
+    const x0 = tr.xs[i]
+    if (Number.isNaN(x0)) continue
+    let x = x0
+    if (frac > 0 && step + 1 <= tr.to) {
+      const x1 = tr.xs[i + 1]
+      if (!Number.isNaN(x1)) x = x0 + (x1 - x0) * frac
+    }
     cars.push({
       id: tr.id,
       x,
@@ -151,10 +163,12 @@ export function sampleVariant(variant, t) {
     step,
     absT,
     cars,
+    // 队尾与 stops / worstGroup 必须取同一离散仿真步；跨步插值会把队尾线
+    // 画到两辆车之间，尤其最差流向切换时会与画面排队车辆明显错位。
     queueM: r.queueM[step],
-    occupiedM: r.occupiedM[step],
+    occupiedM: lerp(r.occupiedM),
     worstGroup: ['left', 'through', 'right'][r.worstGroup[step]],
-    spillQueueM: r.spillQueueM[step],
+    spillQueueM: lerp(r.spillQueueM),
     spill: r.spill[step] === 1,
     downstreamThrough: signalState(r.greens.through, absT),
     downstreamLeft: signalState(r.greens.left, absT),
