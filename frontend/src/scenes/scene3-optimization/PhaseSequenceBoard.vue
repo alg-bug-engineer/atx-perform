@@ -123,7 +123,7 @@ function deltaText(d) {
           </strong>
         </header>
         <div class="chan-slot">
-          <StageChannelization :movements="c.movements" />
+          <StageChannelization :movements="c.movements" :stage-no="c.stageNo" />
         </div>
         <p class="labels">{{ c.labels || '过渡 / 行人' }}</p>
         <p v-if="c.role" class="role">{{ c.role }}</p>
