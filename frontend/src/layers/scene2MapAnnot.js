@@ -154,7 +154,7 @@ function makeArterialSprite({ title, speed, saturation, flow, delay, accent = '#
   const delayN = Number(delay);
   const rows = [
     `饱和度 ${Number.isFinite(sat) ? sat.toFixed(2) : '—'}`,
-    `流量 ${Number.isFinite(flowN) ? `${flowN.toFixed(0)} vph` : '—'}`,
+    `流量 ${Number.isFinite(flowN) ? `${flowN.toFixed(0)} pcu/h` : '—'}`,
     Number.isFinite(delayN) ? `拥堵延时指数 ${delayN.toFixed(2)}` : '',
   ].filter(Boolean);
 
@@ -424,13 +424,13 @@ export function createScene2MapAnnot({
   const supplyGroup = new THREE.Group();
   const flowSpr = makeMetricSprite({
     title: '当前通行流量',
-    value: `${Number(supplyMetrics.flow || 0).toFixed(0)} vph`,
+    value: `${Number(supplyMetrics.flow || 0).toFixed(0)} pcu/h`,
     sub: '路段实际通行',
     accent: '#00e5ff',
   });
   const capacitySpr = makeMetricSprite({
     title: '车道能力上限',
-    value: `${Number(supplyMetrics.capacity || 0).toFixed(1)} vph`,
+    value: `${Number(supplyMetrics.capacity || 0).toFixed(1)} pcu/h`,
     sub: '当前仍有承接余量',
     accent: '#86efac',
   });

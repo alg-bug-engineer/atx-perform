@@ -440,8 +440,8 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
         panel: {
           kind: 'supply',
           title: ds.title || '上游需求流量分析',
-          supply: ds.supply_vph,
-          demand: ds.demand_vph,
+          supply: ds.supply_pcu_h ?? ds.supply_vph,
+          demand: ds.demand_pcu_h ?? ds.demand_vph,
           conclusion: ds.conclusion || '供给小于需求，当前路段有承接能力',
         },
       });

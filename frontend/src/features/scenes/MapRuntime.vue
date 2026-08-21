@@ -371,11 +371,11 @@ defineExpose({ replay: onReplay });
         <template v-else-if="item.kind === 'supply'">
           <div class="dock-row">
             <span>供给流量</span>
-            <strong>{{ item.supply }} vph</strong>
+            <strong>{{ item.supply }} pcu/h</strong>
           </div>
           <div class="dock-row">
             <span>需求流量</span>
-            <strong>{{ item.demand }} vph</strong>
+            <strong>{{ item.demand }} pcu/h</strong>
           </div>
           <div class="dock-ok">{{ item.conclusion }}</div>
         </template>
@@ -393,8 +393,8 @@ defineExpose({ replay: onReplay });
                 <div class="dock-lab">饱和度</div>
               </div>
               <div>
-                <div class="dock-num">{{ arm.flow_vph }}</div>
-                <div class="dock-lab">直行流量 vph</div>
+                <div class="dock-num">{{ arm.flow_pcu_h ?? arm.flow_vph }}</div>
+                <div class="dock-lab">直行流量 pcu/h</div>
               </div>
             </div>
           </div>

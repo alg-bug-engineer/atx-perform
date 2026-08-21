@@ -433,13 +433,13 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
         speed: eastMetric.avg_speed_kmh,
         delay: eastMetric.congestion_delay_index,
         saturation: ewDisplay.east_through_saturation ?? 0.76,
-        flow: ewDisplay.east_through_flow_vph ?? 1230,
+        flow: ewDisplay.east_through_flow_pcu_h ?? ewDisplay.east_through_flow_vph ?? 1230,
       },
       west: {
         speed: westMetric.avg_speed_kmh,
         delay: westMetric.congestion_delay_index,
         saturation: ewDisplay.west_through_saturation ?? 0.73,
-        flow: ewDisplay.west_through_flow_vph ?? 1180,
+        flow: ewDisplay.west_through_flow_pcu_h ?? ewDisplay.west_through_flow_vph ?? 1180,
       },
     };
     const res = getResolution?.();
@@ -483,8 +483,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
       queueM: beats.overflow?.queue_m || 270,
       queueRatio: beats.overflow?.queue_ratio ?? 0.8,
       supplyMetrics: {
-        flow: flowTrace.demand_supply?.supply_vph,
-        capacity: flowTrace.demand_supply?.demand_vph,
+        flow: flowTrace.demand_supply?.supply_pcu_h ?? flowTrace.demand_supply?.supply_vph,
+        capacity: flowTrace.demand_supply?.demand_pcu_h ?? flowTrace.demand_supply?.demand_vph,
       },
       arterialMetrics,
       hopTimes,
@@ -530,8 +530,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
         panel: {
           kind: 'supply',
           title: ds.title || '路段供需核验',
-          supply: ds.supply_vph,
-          demand: ds.demand_vph,
+          supply: ds.supply_pcu_h ?? ds.supply_vph,
+          demand: ds.demand_pcu_h ?? ds.demand_vph,
           conclusion: ds.conclusion || '当前通行量低于车道能力上限，本段仍有承接余量',
         },
       });

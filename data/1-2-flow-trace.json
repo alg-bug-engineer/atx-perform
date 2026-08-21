@@ -61,11 +61,11 @@
     "step_index": 208,
     "step_label": "17:20-17:25",
     "day_of_week": 1,
-    "inflow_vph": 429,
-    "outflow_vph": 824,
-    "supply_vph": 824,
+    "inflow_pcu_h": 429,
+    "outflow_pcu_h": 824,
+    "supply_pcu_h": 824,
     "supply_formula": "max(解放东汇入, 经十汇出)",
-    "demand_vph": 1285.6,
+    "demand_pcu_h": 1285.6,
     "demand_formula": "北进口车道通行能力求和（缺右转车道）",
     "demand_lanes": [
       { "lane_no": 1, "turn": "left", "cap": 286.4 },
@@ -78,8 +78,8 @@
     "title": "路段供需核验",
     "conclusion": "当前通行量低于车道能力上限，本段仍有承接余量，需继续向下游排查",
     "table_rows": [
-      { "label": "当前通行流量", "value": "824 vph" },
-      { "label": "车道能力上限", "value": "1285.6 vph" }
+      { "label": "当前通行流量", "value": "824 pcu/h" },
+      { "label": "车道能力上限", "value": "1285.6 pcu/h" }
     ]
   },
   "road_labels": [
@@ -97,12 +97,12 @@
     "overflow_ms": 3600,
     "keep_road_labels": ["经十路", "奥体西路"],
     "metrics": {
-      "east_through_flow_vph": 1230,
+      "east_through_flow_pcu_h": 1230,
       "east_through_saturation": 0.76,
-      "west_through_flow_vph": 1180,
+      "west_through_flow_pcu_h": 1180,
       "west_through_saturation": 0.73,
       "west_mock": true,
-      "north_through_flow_vph": 824,
+      "north_through_flow_pcu_h": 824,
       "north_through_saturation": 1.28,
       "intersection_saturation_max": 1.29,
       "intersection_los": "F"
@@ -112,13 +112,13 @@
         "role": "东进口",
         "name": "经十路",
         "saturation": 0.76,
-        "flow_vph": 1230
+        "flow_pcu_h": 1230
       },
       {
         "role": "西进口",
         "name": "经十路",
         "saturation": 0.73,
-        "flow_vph": 1180
+        "flow_pcu_h": 1180
       }
     ],
     "gaps": ["GAP-WEST-SAT"],

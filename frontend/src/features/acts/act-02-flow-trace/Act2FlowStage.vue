@@ -106,11 +106,11 @@ onUnmounted(() => {
         <template v-else-if="item.kind === 'supply'">
           <div class="dock-row">
             <span>当前通行流量</span>
-            <strong>{{ item.supply }} vph</strong>
+            <strong>{{ item.supply }} pcu/h</strong>
           </div>
           <div class="dock-row">
             <span>车道能力上限</span>
-            <strong>{{ item.demand }} vph</strong>
+            <strong>{{ item.demand }} pcu/h</strong>
           </div>
           <div class="dock-ok">{{ item.conclusion }}</div>
         </template>
