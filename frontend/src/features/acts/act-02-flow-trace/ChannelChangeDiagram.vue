@@ -86,6 +86,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 </script>
 
 <template>
+  <div class="channel-wrap">
   <svg
     class="channel-diagram"
     viewBox="0 0 780 1200"
@@ -311,14 +312,27 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
     </g>
 
     <!-- ── 静态标注 ───────────────────────────────────────────── -->
-    <text class="road-name" x="602" y="300" text-anchor="middle">奥体西路</text>
+    <text class="road-name" x="580" y="600" text-anchor="middle">奥体西路</text>
     <text class="road-name road-sub" x="70" y="118" text-anchor="middle">解放东路</text>
     <text class="road-name road-sub" x="70" y="1096" text-anchor="middle">经十路</text>
-    <text class="flow-hint" x="189" y="330" text-anchor="middle">北向南 ↓</text>
   </svg>
+  <!-- 指北针：HTML 绝对定位层，放在弹窗左上角空白区（不占 SVG 画布） -->
+  <div class="compass" aria-hidden="true">
+    <svg viewBox="0 0 90 100">
+      <circle cx="45" cy="40" r="26" />
+      <path d="M45 20 L36 50 L45 43 L54 50 Z" />
+      <text x="45" y="90" text-anchor="middle">北</text>
+    </svg>
+  </div>
+  </div>
 </template>
 
 <style scoped>
+.channel-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 .channel-diagram {
   display: block;
   width: 100%;
@@ -586,9 +600,29 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
   font-size: 21px;
   letter-spacing: 2px;
 }
-.flow-hint {
-  fill: rgba(160, 180, 200, 0.75);
-  font-size: 19px;
-  letter-spacing: 2px;
+
+/* 指北针（左上角绝对定位） */
+.compass {
+  position: absolute;
+  left: 3%;
+  top: 2%;
+  width: 90px;
+  pointer-events: none;
+}
+.compass svg {
+  display: block;
+  width: 100%;
+}
+.compass circle {
+  fill: rgba(6, 16, 28, 0.7);
+  stroke: rgba(0, 200, 230, 0.35);
+  stroke-width: 1.4;
+}
+.compass path {
+  fill: #ffd666;
+}
+.compass text {
+  fill: rgba(220, 232, 244, 0.9);
+  font-size: 18px;
 }
 </style>
