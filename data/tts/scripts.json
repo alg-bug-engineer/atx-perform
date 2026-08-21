@@ -29,7 +29,7 @@
           "id": "s1-metrics",
           "file": "scene1/s1-metrics.wav",
           "approx_sec": 6,
-          "text": "路段平均最大排队270米，通行速度7.2公里每小时。"
+          "text": "路段平均最大排队270米，且有排队溢出现象。"
         },
         {
           "id": "s1-sat",
@@ -59,7 +59,7 @@
           "id": "a2f.supply",
           "file": "scene2/s2-supply.wav",
           "approx_sec": 5,
-          "text": "路段的汇入需求未超过下游路口的通行能力。"
+          "text": "路段的汇入需求为超过下游路口的通行能力。"
         },
         {
           "id": "a2f.arterial",

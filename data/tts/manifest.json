@@ -2,7 +2,7 @@
   "scenes": {
     "1": {
       "title": "问题定位",
-      "total_duration_sec": 16.98,
+      "total_duration_sec": 16.42,
       "segments": [
         {
           "id": "s1-lock",
@@ -16,9 +16,9 @@
           "id": "s1-metrics",
           "file": "scene1/s1-metrics.wav",
           "approx_sec": 6,
-          "text": "路段平均最大排队270米，通行速度7.2公里每小时。",
-          "duration_sec": 5.24,
-          "chars": 26
+          "text": "路段平均最大排队270米，且有排队溢出现象。",
+          "duration_sec": 4.68,
+          "chars": 22
         },
         {
           "id": "s1-sat",
@@ -40,7 +40,7 @@
     },
     "2": {
       "title": "分析成因",
-      "total_duration_sec": 37.18,
+      "total_duration_sec": 37.26,
       "segments": [
         {
           "id": "a2f.trace",
@@ -54,8 +54,8 @@
           "id": "a2f.supply",
           "file": "scene2/s2-supply.wav",
           "approx_sec": 5,
-          "text": "路段的汇入需求未超过下游路口的通行能力。",
-          "duration_sec": 4.12,
+          "text": "路段的汇入需求为超过下游路口的通行能力。",
+          "duration_sec": 4.2,
           "chars": 20
         },
         {
@@ -127,7 +127,7 @@
       ]
     }
   },
-  "generated_at": "2026-08-21T19:07:21+0800",
+  "generated_at": "2026-08-21T19:22:52+0800",
   "voice": "longanlufeng",
   "model": "qwen-audio-3.0-tts-plus",
   "sample_rate": 24000
