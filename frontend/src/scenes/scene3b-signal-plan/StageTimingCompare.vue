@@ -107,7 +107,7 @@ const deltas = computed(() => {
         :key="s.stage_no"
         :class="{ coord: s.stage_no === node.coord_stage_no }"
       >
-        <StageChannelization class="chan" :movements="s.movements" />
+        <StageChannelization class="chan" :movements="s.movements" :stage-no="s.stage_no" />
         <div class="meta">
           <span class="no">阶段 {{ s.stage_no }}</span>
           <strong class="g">{{ s.green_s }}s</strong>

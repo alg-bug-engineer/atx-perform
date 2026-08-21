@@ -7,6 +7,7 @@ import { computed } from 'vue'
 
 const props = defineProps({
   movements: { type: Array, default: () => [] },
+  stageNo: { type: Number, default: null },
 })
 
 const S = 96
@@ -81,6 +82,30 @@ const VEC = {
   west: [-1, 0],
 }
 const SIDE = { south: -LANE, north: LANE, west: -LANE, east: LANE }
+const CIRCULAR_LEFT_STAGES = new Set([2, 4, 10])
+const LEFT_ARC_R = 38
+
+/**
+ * 对向左转分别放进路口中心的两个对角区，各画一段独立圆弧。
+ * 不只圆滑拐点，还要避开对向轨迹的进口直线与出口直线。
+ */
+function circularLeftPath(heading, start, end) {
+  const near = C - LANE
+  const far = C + LANE
+  const r = LEFT_ARC_R
+  const tangents = {
+    south: [[near, far - r], [near + r, far]],
+    west: [[near + r, near], [near, near + r]],
+    north: [[far, near + r], [far - r, near]],
+    east: [[far - r, far], [far, far - r]],
+  }
+  const [pre, post] = tangents[heading]
+  return (
+    `M ${start[0]} ${start[1]} L ${pre[0]} ${pre[1]}` +
+    ` A ${r} ${r} 0 0 0 ${post[0]} ${post[1]}` +
+    ` L ${end[0]} ${end[1]}`
+  )
+}
 
 /** 沿行进方向取画布边界上的进/出点 */
 function edgePoint(heading, lateral, atStart) {
@@ -109,6 +134,13 @@ const paths = computed(() =>
 
       if (outHeading === heading) {
         return { id: `${m.dir8}-${m.turn}`, d: `M ${start[0]} ${start[1]} L ${end[0]} ${end[1]}` }
+      }
+
+      if (m.turn === 1 && CIRCULAR_LEFT_STAGES.has(props.stageNo)) {
+        return {
+          id: `${m.dir8}-${m.turn}`,
+          d: circularLeftPath(heading, start, end),
+        }
       }
 
       // 转弯拐点：进口车道与出口车道的交点
