@@ -6,8 +6,8 @@
  *
  * 演绎时序：坤顺/解放东北东西进口 → 经十路–奥体西北进口 流量溯源，
  * 视觉对齐 baseline 拥堵蔓延的反向（远端先亮，收束到汇点）；
- * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 示意相位环 → 渠化变化弹窗（口播含
- * 周期不协调与溢流成立结论，播完直接交棒，不再揭示排队比）。
+ * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 示意相位环 → 渠化变化弹窗
+ * （先红框闪烁 3→5 变化点，再红框强调两路口；口播含周期不协调，播完直接交棒）。
  *
  * HUD 状态经 setFlowTraceHud 桥接给幕 2 舞台组件（Act2FlowStage）渲染。
  */
@@ -15,7 +15,7 @@ import { createInflowTraceLayer } from '../../../layers/inflowTraceLayer.js';
 import { createJingshiEwFlowLayer } from '../../../layers/jingshiEwFlowLayer.js';
 import { createRoadNameLabelLayer } from '../../../layers/roadNameLabels.js';
 import { createScene2MapAnnot } from '../../../layers/scene2MapAnnot.js';
-import { whenBroadcastIdle } from '../../../shared/broadcast-bus.js';
+import { broadcastSilent, whenBroadcastIdle } from '../../../shared/broadcast-bus.js';
 import { setFlowTraceHud } from './state.js';
 
 const APPROACH_ALIAS = {
@@ -142,6 +142,11 @@ function beatMs(beats, key, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function beatFieldMs(beats, key, field, fallback) {
+  const n = Number(beats?.[key]?.[field]);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function followTraceLook(progress, source, via, target) {
   const s = source?.pos;
   const v = via?.pos || s;
@@ -206,6 +211,10 @@ const JINGSHI_EW_CAM_H = 122;
 
 /** 渠化变化弹窗最小停留：静默（无口播）模式下避免截图一闪而过 */
 const CHANNEL_CHANGE_HOLD_MS = 4000;
+/** 口播第一句结束（silence_end ≈ 9.01s）：切到两路口红框 */
+const CHANNEL_CHANGE_SPLIT_MS = 9014;
+/** 静默模式提前切到两路口红框，保证 4s 停留内两拍都看得到 */
+const CHANNEL_CHANGE_SILENT_SPLIT_MS = 1600;
 /** 弹窗淡出后到交棒的收束间隙 */
 const CHANNEL_CHANGE_EXIT_MS = 700;
 
@@ -559,20 +568,31 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                 });
 
                 afterMapAndVoice(beatMs(beats, 'signal', dc.signal_ms ?? 2800), () => {
-                  // 渠化变化弹窗：北向南 3→5 车道，口播完成后再揭示溢流（排队比 0.8）
+                  // 渠化变化弹窗：先红框闪烁 3→5 变化点；口播切到周期不协调时改框两路口
                   playPhase = 'channel_change';
                   emitHud({
                     phase: 'channel_change',
-                    caption: captionFor(beats, 'channel_change', '奥体西路经十路北向南路段渠化发生变化'),
-                    text: captionFor(beats, 'channel_change', '奥体西路经十路北向南路段渠化发生变化'),
+                    caption: captionFor(beats, 'channel_change', '100米处道路渠化由3车道拓宽为5车道，通行能力发生变化'),
+                    text: captionFor(beats, 'channel_change', '100米处道路渠化由3车道拓宽为5车道，通行能力发生变化'),
                     headline: '',
+                  });
+                  const splitMs = broadcastSilent.value
+                    ? beatFieldMs(beats, 'channel_change', 'silent_split_ms', CHANNEL_CHANGE_SILENT_SPLIT_MS)
+                    : beatFieldMs(beats, 'channel_change', 'split_ms', CHANNEL_CHANGE_SPLIT_MS);
+                  after(splitMs, () => {
+                    playPhase = 'cycle_mismatch';
+                    emitHud({
+                      phase: 'cycle_mismatch',
+                      caption: captionFor(beats, 'cycle_mismatch', '两个路口红绿灯周期不协调，容易导致排队溢出'),
+                      text: captionFor(beats, 'cycle_mismatch', '两个路口红绿灯周期不协调，容易导致排队溢出'),
+                      headline: '',
+                    });
                   });
                   Promise.all([
                     new Promise((resolveVoice) => waitVoiceThen(resolveVoice)),
                     new Promise((resolveHold) => after(CHANNEL_CHANGE_HOLD_MS, resolveHold)),
                   ]).then(() => {
-                    // 口播（含周期不协调与溢流成立结论）完成：弹窗淡出后直接交棒，
-                    // 不再揭示排队比 0.8
+                    // 口播完成：弹窗淡出后直接交棒
                     playPhase = 'handoff';
                     after(CHANNEL_CHANGE_EXIT_MS, () => {
                       hooks.onComplete?.();

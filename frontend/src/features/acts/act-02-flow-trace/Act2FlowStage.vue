@@ -59,8 +59,17 @@ watch(flowTraceHud, (state) => applyDockPanel(state), { deep: true, immediate: t
 
 const isDone = computed(() => flowTracePhase.value === 'done');
 
-// 渠化变化弹窗：signal 之后插入，口播完成后随交棒自动消失
-const channelChangeOpen = computed(() => flowTraceHud.value.phase === 'channel_change');
+// 渠化变化弹窗：signal 之后插入；口播前半红框渠化点，后半红框两路口
+const channelChangeOpen = computed(() => {
+  const phase = flowTraceHud.value.phase;
+  return phase === 'channel_change' || phase === 'cycle_mismatch';
+});
+const highlightChannelPoint = computed(() => flowTraceHud.value.phase === 'channel_change');
+const highlightIntersections = computed(() => flowTraceHud.value.phase === 'cycle_mismatch');
+const channelCaption = computed(() => flowTraceHud.value.caption
+  || (highlightIntersections.value
+    ? '两个路口红绿灯周期不协调，容易导致排队溢出'
+    : '100米处道路渠化由3车道拓宽为5车道，通行能力发生变化'));
 
 const headline = computed(() => {
   const phase = flowTraceHud.value.phase;
@@ -128,7 +137,7 @@ onUnmounted(() => {
       <p v-if="headline" :key="headline" class="beat-headline">{{ headline }}</p>
     </transition>
 
-    <!-- 渠化变化弹窗：溢流揭示（排队比 0.8）前展示，口播完成后自动关 -->
+    <!-- 渠化变化弹窗：口播前半红框闪烁渠化点，后半红框两路口 -->
     <Teleport to="body">
       <transition name="lightbox-fade">
         <div
@@ -141,9 +150,28 @@ onUnmounted(() => {
               <h3>渠化变化 · 奥体西路—经十路</h3>
             </header>
             <div class="channel-body">
-              <img :src="channelizationChangeImg" alt="奥体西路经十路口渠化示意图（北向南 3 车道 → 5 车道）" />
+              <div class="channel-figure">
+                <img :src="channelizationChangeImg" alt="奥体西路经十路口渠化示意图（北向南 3 车道 → 5 车道）" />
+                <div class="emphasis-layer" aria-hidden="true">
+                  <div
+                    v-if="highlightChannelPoint"
+                    class="emphasis-box channel-point"
+                    data-testid="emphasis-channel-point"
+                  />
+                  <div
+                    v-if="highlightIntersections"
+                    class="emphasis-box inter-north"
+                    data-testid="emphasis-inter-north"
+                  />
+                  <div
+                    v-if="highlightIntersections"
+                    class="emphasis-box inter-south"
+                    data-testid="emphasis-inter-south"
+                  />
+                </div>
+              </div>
             </div>
-            <p class="channel-caption">北向南进口渠化由 3 车道变为 5 车道，通行能力发生变化</p>
+            <p class="channel-caption">{{ channelCaption }}</p>
           </div>
         </div>
       </transition>
@@ -347,11 +375,62 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.channel-body img {
-  display: block;
+.channel-figure {
+  position: relative;
+  height: 100%;
+  width: max-content;
   max-width: 100%;
-  max-height: 100%;
+  line-height: 0;
+}
+
+.channel-figure img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
+}
+
+.emphasis-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.emphasis-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid #ff2a2a;
+  box-shadow:
+    0 0 14px rgba(255, 32, 0, 0.9),
+    inset 0 0 10px rgba(255, 40, 0, 0.28);
+  animation: channel-emphasis-blink 0.7s ease-in-out infinite;
+}
+
+.emphasis-box.channel-point {
+  left: 34.5%;
+  top: 49.5%;
+  width: 27.2%;
+  height: 10%;
+}
+
+.emphasis-box.inter-north {
+  left: 27%;
+  top: 9.5%;
+  width: 46%;
+  height: 16.5%;
+}
+
+.emphasis-box.inter-south {
+  left: 27%;
+  top: 72%;
+  width: 46%;
+  height: 17%;
+}
+
+@keyframes channel-emphasis-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.18; }
 }
 
 .channel-caption {

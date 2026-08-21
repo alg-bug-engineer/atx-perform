@@ -159,6 +159,16 @@
       "schematic": true,
       "gap": "相位环非库内绿秒",
       "headline": "北向南难以增配有效绿灯"
+    },
+    "channel_change": {
+      "split_ms": 9014,
+      "silent_split_ms": 1600,
+      "caption": "100米处道路渠化由3车道拓宽为5车道，通行能力发生变化",
+      "headline": ""
+    },
+    "cycle_mismatch": {
+      "caption": "两个路口红绿灯周期不协调，容易导致排队溢出",
+      "headline": ""
     }
   }
 }

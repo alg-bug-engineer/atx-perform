@@ -4,12 +4,13 @@
  * 阶段：idle → tracing → done → handoff
  *
  * 地图节拍（flowTraceMapBeat，供地图运行时消费）：
- *   null | 'trace' | 'supply' | 'arterial' | 'signal' | 'channel_change' | 'clear'
+ *   null | 'trace' | 'supply' | 'arterial' | 'signal' | 'channel_change' | 'cycle_mismatch' | 'clear'
  *   - 'trace'     地图播放上游→汇点流量溯源动画
  *   - 'supply'    供需分析（上游需求流量）
  *   - 'arterial'  本口（经十路东西向进口流量）
  *   - 'signal'    绿灯约束
- *   - 'channel_change'  渠化变化弹窗（北向南 3→5 车道，口播完直接交棒）
+ *   - 'channel_change'  渠化变化弹窗：红框闪烁 3→5 变化点
+ *   - 'cycle_mismatch'  同弹窗：红框强调解放东 / 经十两路口（口播仍走 a2f.channel_change）
  */
 import { ref } from 'vue';
 import {
@@ -40,6 +41,7 @@ const TASK_LABEL_BY_PHASE = {
   arterial: '执行中：经十路主干道研判',
   signal: '执行中：绿灯约束研判',
   channel_change: '执行中：渠化变化核验',
+  cycle_mismatch: '执行中：周期协调性核验',
 };
 
 /**
