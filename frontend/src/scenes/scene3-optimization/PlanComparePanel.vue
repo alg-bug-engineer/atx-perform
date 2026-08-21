@@ -289,9 +289,6 @@ function playOnce() {
           <p v-if="enlargeLead === 'phase'" class="lead-copy">
             解放东整体后移 <b class="ok">56 s</b>，北进口直行绿时 <b class="warn">21 → 15 s</b>，经十路配时维持不变。
           </p>
-          <p v-else-if="enlargeLead === 'wave'" class="lead-copy">
-            解放东放行窗口对准经十路南北绿灯，正向绿波 <b class="ok">衔接</b>。
-          </p>
           <p v-if="enlarged === 'wave'" class="hint">{{ diagramHint }}</p>
           <div class="sheet-body">
             <PhaseSequenceBoard v-if="enlarged === 'phase' && board" :board="board" />
