@@ -9,12 +9,16 @@
  * 进口段压缩绿化带至 4px，北向南拓宽为 5 车道（每道 22px，车道收窄），
  * 对向（南向北）车道完全不压缩；新增左转车道贴绿化带侧。
  * 渠化渐变段距经十路口约 100m（路段约 1/3 处）；进口 5 车道为
- * 左转×2（贴绿化带）+ 直行×2 + 右转×1（最外侧）；排队阶段表现渠化影响：
- * 车辆从上游一辆辆驶入依次减速停下，拓宽区短，左转车排满后溢出
- * 占用最左直行道，直行通行效率下降（无循环车流）。
+ * 左转×2（贴绿化带）+ 直行×2 + 右转×1（最外侧）。
+ * 排队演绎分三拍表现渠化影响的因果链：
+ *   queue    车辆从上游 3 车道驶入，在渐变段分流填入进口 5 车道（左转道密集、直行道稀疏）；
+ *   overflow 左转道排满后车队越过渐变段，溢出占用上游内侧直行道（红色虚线框标出被占空间），
+ *            直行车队被迫向上游延伸排队；
+ *   stall    直行车队滞留闪烁 + 占用区脉冲，呈现通行效率下降。
+ * 车辆横向位置由 laneY() 按上游/进口车道中心线插值，渐变段内平滑分流（3→5）。
  * 分镜跟 a2f.channel_change 口播逐句对齐——
- *   红框强调渠化变化点 → 3 车道拓宽为 5 车道（绿化带压缩 + 车道线生长）→ 通行能力变化 →
- *   两路口周期 200s/220s 交替高亮 + 信号灯错位 → 排队溢出堆积。
+ *   红框强调渠化变化点 → 通行能力变化 → 排队驶入 → 超出拓宽范围后溢出 →
+ *   两路口周期 200s/220s 交替高亮 + 信号灯错位 → 向下消散难/滞留。
  * 节点时间按文案字数比例从口播时长推导；自动化/降动效环境直接落终态。
  */
 import { onMounted, onUnmounted, ref } from 'vue';
@@ -25,19 +29,21 @@ const props = defineProps({
   durationSec: { type: Number, default: 0 },
 });
 
+/** 口播原文（与 data/tts/scripts.json 的 a2f.channel_change 逐字一致，共 91 字） */
 const SCRIPT =
-  '奥体西路经十路北向南路段，100米处道路渠化由3车道拓宽为5车道，通行能力发生变化。'
-  + '解放东路路口红绿灯周期200秒，经十路路口220秒，两个路口红绿灯周期不协调，容易导致排队溢出。';
+  '渠化上，路段90米处3车道拓宽为5车道，当排队车辆超过渠化拓宽范围后，排队长度会急剧增加，'
+  + '同时上游解放东路口周期200秒，下游经十路口220秒，周期不相等，未协调，容易导致排队溢出。';
 
 /** 分镜节点：口播念到第 chars 字时触发（按字数比例换算成秒） */
 const NODES = [
-  { key: 'redbox', chars: 13 }, // 「…北向南路段，」后 → 红框 + 100m 标注
-  { key: 'widen', chars: 18 }, // 「100米处道路渠化」→ 拓宽线生长
-  { key: 'capacity', chars: 36 }, // 「通行能力…」→ 通行能力徽标
-  { key: 'cycleLeft', chars: 42 }, // 后半句开始 → 解放东路周期高亮
-  { key: 'cycleRight', chars: 58 }, // 「经十路…220秒」→ 经十路周期高亮
-  { key: 'mismatch', chars: 68 }, // 「不协调」→ 信号灯红绿错位
-  { key: 'queue', chars: 81 }, // 「容易导致排队溢出」→ 排队块堆积
+  { key: 'redbox', chars: 6 }, // 「渠化上，路段」→ 红框 + 100m 标注
+  { key: 'capacity', chars: 19 }, // 「3车道拓宽为5车道」→ 通行能力徽标
+  { key: 'queue', chars: 22 }, // 「当排队车辆…」→ 车流从上游 3 车道驶入、分流填满进口 5 车道
+  { key: 'overflow', chars: 34 }, // 「超过渠化拓宽范围后」→ 左转排满溢出占用上游直行道
+  { key: 'cycleLeft', chars: 60 }, // 「上游解放东路口周期200秒」→ 解放东路周期高亮
+  { key: 'cycleRight', chars: 71 }, // 「下游经十路口220秒」→ 经十路周期高亮
+  { key: 'mismatch', chars: 81 }, // 「周期不相等，未协调」→ 信号灯红绿错位 + 220>200 徽标
+  { key: 'stall', chars: 83 }, // 「容易导致排队溢出」→ 直行车队滞留、通行效率下降
 ];
 
 const stage = ref(0);
@@ -66,17 +72,63 @@ function has(key) {
   return i >= 0 && stage.value >= i + 1;
 }
 
-/** 排队车队（小汽车模型）：车辆从上游一辆辆驶入、依次减速停到位（靠停止线的先停） */
-const DRIVE_IN = 400; // 默认驶入距离（px）：从队列位后方开来
-const DRIVE_SPEED = 220; // 驶入速度（px/s），按距离换算行驶时长
+/* ── 排队车队（小汽车模型）：上游 3 车道 → 渐变段分流 → 进口 5 车道依次减速停到位 ── */
+const CAR_W = 26; // 车身长（行驶方向）
+const CAR_H = 13; // 车身宽（横向；用于车道中心线 → 矩形左上角换算）
+const TAPER_IN = 735; // 渠化渐变段起点（上游 3 车道侧）
+const TAPER_OUT = 885; // 渐变段终点（进口 5 车道段起点）
+const UP_LANES = [371, 401, 431]; // 上游 3 车道中心线（内侧→外侧）
+const DN_LANES = [347, 369, 391, 413, 435]; // 进口 5 车道中心线：左转×2 / 直行×2 / 右转
+const STOP_X = 962; // 首车停车位（车头 988 贴经十路口停止线 996）
+const DRIVE_IN = 170; // 驶入距离（px）：起点落在停车位上游，行驶途中跨过渐变段展示 3→5 分流
+const DRIVE_SPEED = 220; // 驶入速度（px/s）
+const DRIVE_DUR = (DRIVE_IN / DRIVE_SPEED).toFixed(2); // 驶入时长（s），等距离故各车一致
+
+/**
+ * 车辆横向位置：渐变段内按 smoothstep 从上游车道中心平滑过渡到进口车道中心，
+ * 与渐变段车道线（三次贝塞尔分叉）走势一致 —— 上游 3 车道在此分流为进口 5 车道。
+ */
+function laneY(x, dn, up) {
+  const a = UP_LANES[up];
+  const b = DN_LANES[dn];
+  if (x <= TAPER_IN) return a;
+  if (x >= TAPER_OUT) return b;
+  const t = (x - TAPER_IN) / (TAPER_OUT - TAPER_IN);
+  return a + (b - a) * t * t * (3 - 2 * t);
+}
+
+/**
+ * 排队车队配置（front 首车停车位、gap 车距、count 车辆数、dn/up 进口与上游车道号）：
+ * 左转道车距更小（34px，近乎车贴车）且队列更长 —— 左转需求远超 2 条左转道的存储能力，
+ * 排满渐变段后越过 TAPER_IN 溢出到上游内侧直行道（up=0），把直行的排队空间占掉；
+ * 直行道车距更大（40px）、到达更慢，且只能在剩余车道向上游延伸排队。
+ */
 const queueCarGroups = [
-  { cars: [944, 904, 864, 824], y: 340, delay: 0, step: 0.5, turn: true, from: 740 }, // 左转道1：从拓宽区入口驶入
-  { cars: [944, 904, 864, 824], y: 362, delay: 0.25, step: 0.5, turn: true, from: 740 }, // 左转道2：从拓宽区入口驶入
-  { cars: [944, 904, 864, 824, 784, 744], y: 384, delay: 0.9, step: 0.5, turn: true }, // 溢出占最左直行道（进口/渐变段）
-  { cars: [704, 664, 624, 584], y: 364, delay: 1.8, step: 0.5, turn: true }, // 溢出延伸出拓宽区，占用路段最内侧直行道
-  { cars: [944, 904, 864, 824, 784, 744, 704, 664, 624, 584], y: 406, delay: 1.2, step: 0.35, turn: false }, // 直行道2 被堵排队向路段蔓延
-  { cars: [704, 664, 624, 584], y: 428, delay: 2.0, step: 0.5, turn: false }, // 外侧直行道排队蔓延（进口右转道畅通不排）
+  // ① queue 拍：进口 5 车道内成队（左转密集先满，直行稀疏后到）
+  { beat: 'queue', kind: 'turn', dn: 0, up: 0, front: STOP_X, gap: 34, count: 4, delay: 0, step: 0.16 }, // 左转道1（贴绿化带）
+  { beat: 'queue', kind: 'turn', dn: 1, up: 0, front: STOP_X, gap: 34, count: 5, delay: 0.12, step: 0.16 }, // 左转道2：排至渐变段口
+  { beat: 'queue', kind: 'thru', dn: 2, up: 1, front: STOP_X, gap: 40, count: 4, delay: 0.4, step: 0.3 }, // 直行道1（新增车道）
+  { beat: 'queue', kind: 'thru', dn: 3, up: 1, front: STOP_X, gap: 40, count: 5, delay: 0.5, step: 0.3 }, // 直行道2
+  // ② overflow 拍：左转车队越过渐变段占用上游内侧直行道；直行车队被挤得只能继续向上游排
+  { beat: 'overflow', kind: 'turn', dn: 1, up: 0, front: 792, gap: 34, count: 11, delay: 0.1, step: 0.16 }, // 左转溢出车流（队尾延至 x452）
+  { beat: 'overflow', kind: 'thru', dn: 3, up: 1, front: 762, gap: 40, count: 6, delay: 0.8, step: 0.22 }, // 直行排队向上游延伸（队尾 x562，短于左转溢出队）
 ];
+
+/** 展开为逐车渲染配置：(x0,y0) 驶入起点 → (x1,y1) 停车位，delay 按组内序号递增 */
+const queueCars = queueCarGroups.flatMap((g, gi) => Array.from({ length: g.count }, (_, i) => {
+  const x1 = g.front - i * g.gap;
+  const x0 = x1 - DRIVE_IN;
+  return {
+    key: `${gi}-${i}`,
+    beat: g.beat,
+    kind: g.kind,
+    x0,
+    y0: laneY(x0, g.dn, g.up) - CAR_H / 2,
+    x1,
+    y1: laneY(x1, g.dn, g.up) - CAR_H / 2,
+    delay: (g.delay + i * g.step).toFixed(2),
+  };
+}));
 
 /** 斑马线条纹（路口形态；坐标为旋转前本地坐标，本地左/右路口即旋转后上/下路口）：
  *  横跨纵向路的横排（竖条纹）与横跨横向路的竖排（横条纹） */
@@ -117,12 +169,8 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
     <line class="edge" x1="1000" y1="446" x2="1000" y2="722" />
     <line class="edge" x1="1076" y1="446" x2="1076" y2="722" />
 
-    <!-- 中央绿化带（路段 24px；渐变段起压缩至 4px，widen 动画） -->
+    <!-- 中央绿化带（路段 24px；进口段已压缩至 4px，开场即渠化后终态） -->
     <rect class="greenbelt" x="206" y="332" width="529" height="24" />
-    <g class="green-out" :class="{ out: has('widen') }">
-      <rect class="greenbelt" x="735" y="332" width="259" height="24" />
-      <line class="greenbelt-curb" x1="735" y1="356" x2="994" y2="356" />
-    </g>
     <line class="greenbelt-curb" x1="206" y1="332" x2="994" y2="332" />
     <line class="greenbelt-curb" x1="206" y1="356" x2="735" y2="356" />
 
@@ -139,13 +187,9 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
     <!-- 车道虚线：南向北 3 车道（全程不压缩，不受拓宽挤压） -->
     <line class="lane-dash" x1="206" y1="256" x2="1000" y2="256" />
     <line class="lane-dash" x1="206" y1="294" x2="1000" y2="294" />
-    <!-- 北向南 3 车道边界（渐变段 x735 起被 5 车道网格替换） -->
+    <!-- 北向南 3 车道边界（渐变段 x735 起为 5 车道网格） -->
     <line class="lane-dash" x1="206" y1="386" x2="735" y2="386" />
     <line class="lane-dash" x1="206" y1="416" x2="735" y2="416" />
-    <g class="lane-out" :class="{ out: has('widen') }">
-      <line class="lane-dash" x1="735" y1="386" x2="994" y2="386" />
-      <line class="lane-dash" x1="735" y1="416" x2="994" y2="416" />
-    </g>
     <!-- 纵向路半幅车道线（避开中线） -->
     <line class="lane-dash" x1="130" y1="80" x2="162" y2="80" />
     <line class="lane-dash" x1="174" y1="80" x2="206" y2="80" />
@@ -194,9 +238,9 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
       <path d="M620 313 h-34 m10 -8 l-10 8 l10 8" />
     </g>
 
-    <!-- ── 拓宽动画（widen 阶段，渐变段 x735→885 即旋转后 y735→885，距经十路口约100m/路段1/3处）── -->
-    <!-- 绿化带压缩 + 5 车道（每道 22px）网格从渐变段向路口生长 -->
-    <g class="widen-lines" :class="{ on: has('widen') }">
+    <!-- ── 渠化后终态（开场直接显示，无拓宽动画）：渐变段 x735→885，距经十路口约100m/路段1/3处 ── -->
+    <!-- 绿化带压缩 + 5 车道（每道 22px）网格 -->
+    <g class="widen-lines">
       <!-- 压缩后绿化带（渐变段平滑收窄至 4px 窄带） -->
       <path class="greenbelt" d="M735 332 L994 332 L994 336 L885 336 C825 336 795 356 735 356 Z" />
       <path class="greenbelt-curve" d="M735 356 C795 356 825 336 885 336 L994 336" />
@@ -239,27 +283,28 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
       <path d="M984 536 l8 4 l-8 4" />
     </g>
 
-    <!-- ── 排队溢出（queue 阶段）：车辆从上游（本地左侧，旋转后上方）一辆辆驶入、依次减速停到位 ── -->
-    <g class="queue-cars">
-      <template v-for="(grp, gi) in queueCarGroups" :key="gi">
-        <g
-          v-for="(x, i) in grp.cars"
-          :key="`${gi}-${i}`"
-          class="queue-car"
-          :class="[grp.turn ? 'queue-turn' : 'queue-thru', { arrive: has('queue') }]"
-          :style="{
-            '--x0': `${grp.from ?? x - DRIVE_IN}px`,
-            '--x1': `${x}px`,
-            '--y': `${grp.y}px`,
-            transitionDelay: `${grp.delay + i * grp.step}s`,
-            transitionDuration: `${Math.max(0.7, (x - (grp.from ?? x - DRIVE_IN)) / DRIVE_SPEED).toFixed(2)}s`,
-          }"
-        >
-          <rect class="qc-body" width="26" height="13" rx="4" />
-          <rect class="qc-glass" x="5" y="2.5" width="3" height="8" rx="1" />
-          <rect class="qc-glass" x="18" y="2.5" width="3" height="8" rx="1" />
-        </g>
-      </template>
+    <!-- ── 排队溢出：车辆从上游 3 车道（本地左侧，旋转后上方）驶入，渐变段分流进 5 车道后依次减速停下 ── -->
+    <g class="queue-cars" :class="{ stalled: has('stall') }">
+      <!-- 被左转溢出占掉的直行排队空间（上游内侧直行道，overflow 拍淡入） -->
+      <rect class="overflow-zone" :class="{ on: has('overflow') }" x="444" y="356" width="298" height="30" />
+      <g
+        v-for="car in queueCars"
+        :key="car.key"
+        class="queue-car"
+        :class="[`queue-${car.kind}`, { arrive: has(car.beat) }]"
+        :style="{
+          '--x0': `${car.x0}px`,
+          '--y0': `${car.y0.toFixed(1)}px`,
+          '--x1': `${car.x1}px`,
+          '--y1': `${car.y1.toFixed(1)}px`,
+          transitionDelay: `${car.delay}s, ${car.delay}s`,
+          transitionDuration: `${DRIVE_DUR}s, 0.3s`,
+        }"
+      >
+        <rect class="qc-body" :width="CAR_W" :height="CAR_H" rx="4" />
+        <rect class="qc-glass" x="5" y="2.5" width="3" height="8" rx="1" />
+        <rect class="qc-glass" x="18" y="2.5" width="3" height="8" rx="1" />
+      </g>
     </g>
     </g><!-- /顺时针旋转 90° 的道路图形组 -->
 
@@ -274,19 +319,19 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
       <rect x="516" y="742" width="200" height="38" rx="6" />
       <text x="616" y="768" text-anchor="middle">通行能力变化</text>
     </g>
-    <g class="badge-lanes" :class="{ on: has('widen') }">
+    <g class="badge-lanes on">
       <rect x="516" y="794" width="200" height="40" rx="6" />
       <text x="616" y="822" text-anchor="middle">3 → 5 车道</text>
     </g>
 
-    <!-- ── 周期标签 + 信号灯 ──────────────────────────────────── -->
+    <!-- ── 周期标签（各自路口交叉区中心） + 信号灯 ─────────────── -->
     <g class="cyc-tag cyc-left" :class="{ on: has('cycleLeft') }">
-      <rect x="277" y="16" width="226" height="42" rx="6" />
-      <text x="390" y="43" text-anchor="middle">解放东路 · 周期 200s</text>
+      <rect x="270" y="138" width="240" height="60" rx="8" />
+      <text x="390" y="180" text-anchor="middle">周期 200s</text>
     </g>
     <g class="cyc-tag cyc-right" :class="{ on: has('cycleRight') }">
-      <rect x="277" y="1120" width="226" height="42" rx="6" />
-      <text x="390" y="1147" text-anchor="middle">经十路 · 周期 220s</text>
+      <rect x="270" y="1008" width="240" height="60" rx="8" />
+      <text x="390" y="1050" text-anchor="middle">周期 220s</text>
     </g>
 
     <g class="lamps" :class="{ mismatch: has('mismatch') }">
@@ -306,13 +351,13 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
       </g>
     </g>
 
-    <!-- 排队影响说明（queue 阶段淡入，图底部居中） -->
-    <g class="queue-note" :class="{ on: has('queue') }">
+    <!-- 排队影响说明（overflow 拍随溢出车队浮现，图底部居中） -->
+    <g class="queue-note" :class="{ on: has('overflow') }">
       <text x="390" y="1186" text-anchor="middle">左转排队溢出占用直行车道，直行通行效率下降</text>
     </g>
 
     <!-- ── 静态标注 ───────────────────────────────────────────── -->
-    <text class="road-name" x="580" y="600" text-anchor="middle">奥体西路</text>
+    <text class="road-name" x="580" y="430" text-anchor="middle">奥体西路</text>
     <text class="road-name road-sub" x="70" y="118" text-anchor="middle">解放东路</text>
     <text class="road-name road-sub" x="70" y="1096" text-anchor="middle">经十路</text>
   </svg>
@@ -323,6 +368,11 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
       <path d="M45 20 L36 50 L45 43 L54 50 Z" />
       <text x="45" y="90" text-anchor="middle">北</text>
     </svg>
+  </div>
+  <!-- 红绿灯不协调突出展示：mismatch 拍（语音讲到周期不协调时）淡入 -->
+  <div class="mismatch-callout" :class="{ on: has('mismatch') }" aria-hidden="true">
+    <div class="mc-num">220 &gt; 200</div>
+    <div class="mc-text">周期不相等，未协调</div>
   </div>
   </div>
 </template>
@@ -400,7 +450,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
   stroke-linejoin: round;
 }
 
-/* 小汽车造型：车身 + 前后挡风玻璃 */
+/* 小汽车造型：车身 + 前后挡风玻璃（左转/溢出车橙色，直行车红色） */
 .qc-body {
   fill: #ff5252;
 }
@@ -414,22 +464,9 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
   fill: rgba(16, 26, 36, 0.6);
 }
 
-/* 拓宽：路段绿化带/车道线让位（淡出），新元素从渐变段向路口生长 */
-.green-out,
-.lane-out {
-  transition: opacity 0.7s ease 0.2s;
-}
-.green-out.out,
-.lane-out.out {
-  opacity: 0;
-}
-
+/* 渠化后终态静态显示（无拓宽动画） */
 .widen-lines {
-  clip-path: inset(-30px 100% -30px 0);
-  transition: clip-path 2.6s linear 0.25s;
-}
-.widen-lines.on {
-  clip-path: inset(-30px 0% -30px 0);
+  /* 开场即完整显示 5 车道渠化段 */
 }
 
 .widen-glow {
@@ -514,7 +551,14 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
   letter-spacing: 2px;
 }
 
-/* 周期标签 */
+/* 周期标签：初始隐藏，口播介绍到对应路口周期时淡入并点亮 */
+.cyc-tag {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.cyc-tag.on {
+  opacity: 1;
+}
 .cyc-tag rect {
   fill: rgba(6, 16, 28, 0.7);
   stroke: rgba(0, 200, 230, 0.35);
@@ -523,7 +567,7 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
 }
 .cyc-tag text {
   fill: rgba(220, 232, 244, 0.9);
-  font-size: 21px;
+  font-size: 32px;
   letter-spacing: 1px;
   transition: fill 0.4s ease;
 }
@@ -558,28 +602,52 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
   50%, 100% { opacity: 1; }
 }
 
-/* 排队车队（小汽车模型）：从上游驶入、依次减速停到位（靠停止线的先停）
-   —— 起点在队列位后方（左转道从拓宽区入口驶入），到点后减速刹车 */
+/* 排队车队（小汽车模型）：从上游 3 车道驶入，渐变段内横向分流入进口车道，
+   到位后减速刹停（靠停止线的先停）；transform 同时插值 x/y 故转向自然；
+   opacity 与 transform 同 delay，避免车辆在发车位预先现形 */
 .queue-car {
-  transform: translate(var(--x0), var(--y));
+  transform: translate(var(--x0), var(--y0));
   opacity: 0;
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  transition-property: transform, opacity;
+  transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1), ease-out;
 }
 .queue-car.arrive {
-  transform: translate(var(--x1), var(--y));
+  transform: translate(var(--x1), var(--y1));
   opacity: 1;
-  animation: car-pop 0.25s ease;
 }
-@keyframes car-pop {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* stall 拍：直行车队滞留（向下消散难）—— 车身周期性暗下去表现停止不前 */
+.queue-cars.stalled .queue-thru .qc-body {
+  animation: car-stall 1.4s ease-in-out infinite;
+}
+@keyframes car-stall {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
-/* 排队影响说明 */
+/* 被左转溢出占掉的直行排队空间：红色虚线框标出上游内侧直行道被侵占段 */
+.overflow-zone {
+  fill: rgba(255, 82, 82, 0.16);
+  stroke: rgba(255, 82, 82, 0.8);
+  stroke-width: 1.6;
+  stroke-dasharray: 9 7;
+  opacity: 0;
+  transition: opacity 0.6s ease 0.5s;
+}
+.overflow-zone.on {
+  opacity: 1;
+}
+.queue-cars.stalled .overflow-zone.on {
+  animation: zone-pulse 1.8s ease-in-out infinite;
+}
+@keyframes zone-pulse {
+  0%, 100% { fill-opacity: 0.5; }
+  50% { fill-opacity: 1; }
+}
+
+/* 排队影响说明（随 overflow 拍的溢出车队成形后淡入） */
 .queue-note {
   opacity: 0;
-  transition: opacity 0.5s ease 4.6s;
+  transition: opacity 0.5s ease 3.2s;
 }
 .queue-note.on {
   opacity: 1;
@@ -608,6 +676,43 @@ const zebraEW = Array.from({ length: 21 }, (_, i) => 240 + i * 9.5); // 上/下�
   top: 2%;
   width: 90px;
   pointer-events: none;
+}
+
+/* 红绿灯不协调突出展示（弹窗左侧空白区，mismatch 拍淡入 + 脉冲） */
+.mismatch-callout {
+  position: absolute;
+  left: 4%;
+  top: 40%;
+  padding: 12px 20px;
+  border: 2px solid #ff5252;
+  border-radius: 10px;
+  background: rgba(255, 82, 82, 0.12);
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+.mismatch-callout.on {
+  opacity: 1;
+  transform: scale(1);
+  animation: mc-pulse 1.6s ease-in-out infinite;
+}
+.mc-num {
+  color: #ff5252;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+.mc-text {
+  color: #ffd6d6;
+  font-size: 18px;
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+@keyframes mc-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 82, 82, 0); }
+  50% { box-shadow: 0 0 18px rgba(255, 82, 82, 0.55); }
 }
 .compass svg {
   display: block;

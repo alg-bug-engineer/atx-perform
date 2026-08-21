@@ -539,9 +539,9 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
               annot?.setBeat('arterial');
               emitHud({
                 phase: 'arterial',
-                caption: captionFor(beats, 'arterial', '经十路东西向通行压力突出，信号优先保障主干道通行'),
-                text: captionFor(beats, 'arterial', '经十路东西向通行压力突出，信号优先保障主干道通行'),
-                headline: headlineFor(beats, 'arterial', '经十路东西向优先保障'),
+                caption: '',
+                text: '',
+                headline: '',
                 panel: {
                   kind: 'arterial',
                   title: '经十路主干道保护',
@@ -551,7 +551,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                 },
               });
 
-              afterMapAndVoice(beatMs(beats, 'arterial', dc.ew_flow_ms ?? 3200), () => {
+              // arterial 口播按最新语音文档移除：纯视觉停留后交棒 signal
+              after(dc.ew_flow_ms ?? 3200, () => {
                 playPhase = 'signal';
                 annot?.setBeat('signal');
                 emitHud({
@@ -572,8 +573,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                   playPhase = 'channel_change';
                   emitHud({
                     phase: 'channel_change',
-                    caption: captionFor(beats, 'channel_change', '路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'),
-                    text: captionFor(beats, 'channel_change', '路段100米处3车道变为5车道，排队超过拓宽范围后长度急剧增加'),
+                    caption: captionFor(beats, 'channel_change', '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加'),
+                    text: captionFor(beats, 'channel_change', '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加'),
                     headline: '',
                   });
                   const splitMs = broadcastSilent.value
@@ -583,8 +584,8 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
                     playPhase = 'cycle_mismatch';
                     emitHud({
                       phase: 'cycle_mismatch',
-                      caption: captionFor(beats, 'cycle_mismatch', '两路口周期200秒/220秒相位不协调，上游车辆向下消散难，导致溢出风险'),
-                      text: captionFor(beats, 'cycle_mismatch', '两路口周期200秒/220秒相位不协调，上游车辆向下消散难，导致溢出风险'),
+                      caption: captionFor(beats, 'cycle_mismatch', '两路口周期不相等、未协调，容易导致排队溢出'),
+                      text: captionFor(beats, 'cycle_mismatch', '两路口周期不相等、未协调，容易导致排队溢出'),
                       headline: '',
                     });
                   });
