@@ -5,7 +5,6 @@ const props = defineProps({
   model: { type: Object, required: true },
   variant: { type: Object, required: true },
   sample: { type: Object, default: null },
-  frozen: { type: Boolean, default: false },
 })
 
 /**
@@ -348,7 +347,7 @@ const inflowArrows = computed(() => {
 </script>
 
 <template>
-  <figure class="corridor" :class="[`tone-${variant.tone}`, { spilling: spill, frozen }]">
+  <figure class="corridor" :class="[`tone-${variant.tone}`, { spilling: spill }]">
     <figcaption class="hd">
       <span class="badge">{{ variant.key === 'before' ? '现状' : '优化后' }}</span>
       <span class="sub">{{ variant.subtitle }}</span>
@@ -715,10 +714,6 @@ const inflowArrows = computed(() => {
   stroke: var(--cyan);
   stroke-linecap: round;
   animation: inflow 0.9s linear infinite;
-}
-.corridor.frozen .inflow line,
-.corridor.frozen .car.blocked {
-  animation-play-state: paused;
 }
 @keyframes inflow {
   from { stroke-dashoffset: var(--inflow-cycle); opacity: 0.35; }
