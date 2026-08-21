@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import TimeSpaceDiagram from '../scene3b-signal-plan/TimeSpaceDiagram.vue'
-import { buildSignalPlanModel } from '../scene3b-signal-plan/signalPlanModel.js'
+import { buildPhaseBoard, buildSignalPlanModel } from '../scene3b-signal-plan/signalPlanModel.js'
 import PhaseSequenceBoard from './PhaseSequenceBoard.vue'
 
 const props = defineProps({
@@ -9,7 +9,9 @@ const props = defineProps({
   signalPlan: { type: Object, default: null },
 })
 
-const board = computed(() => props.payload?.signal_plan_board || null)
+const board = computed(() => (
+  props.signalPlan ? buildPhaseBoard(props.signalPlan) : (props.payload?.signal_plan_board || null)
+))
 const tsModel = computed(() => (props.signalPlan ? buildSignalPlanModel(props.signalPlan) : null))
 
 const mode = ref('optimized')
@@ -17,7 +19,7 @@ const direction = ref('both')
 
 function fmt(v) {
   if (v == null) return '—'
-  return Math.abs(v) >= 100 ? Math.round(v) : Math.round(v * 10) / 10
+  return Math.round(v * 10) / 10
 }
 
 const diagramHint = computed(() =>
@@ -62,26 +64,11 @@ const bandCaption = computed(() => {
             >
               {{ m.t }}
             </button>
-            <span class="sep" />
-            <button
-              v-for="d in [
-                { k: 'both', t: '双向' },
-                { k: 'forward', t: '北向南' },
-                { k: 'reverse', t: '南向北' },
-              ]"
-              :key="d.k"
-              type="button"
-              class="tg"
-              :class="{ on: direction === d.k }"
-              @click="direction = d.k"
-            >
-              {{ d.t }}
-            </button>
           </div>
         </header>
         <p class="hint">{{ diagramHint }}</p>
         <div class="wave-body">
-          <TimeSpaceDiagram :model="tsModel" :mode="mode" :direction="direction" />
+          <TimeSpaceDiagram :model="tsModel" :mode="mode" @direction-change="direction = $event" />
         </div>
         <p class="caption">{{ bandCaption }}</p>
       </figure>
@@ -126,13 +113,15 @@ const bandCaption = computed(() => {
   min-height: 0;
   margin: 0;
   overflow: hidden;
-  border: 1px solid var(--cyan-border);
-  background: rgba(0, 16, 28, 0.55);
+  border: 1px solid #dfe7f1;
+  border-radius: 12px;
+  background: #f8fafc;
 }
 .diagram-card.phase :deep(.phase-board) {
   height: 100%;
   border: none;
   background: transparent;
+  border-radius: 0;
 }
 
 .wave-head {
@@ -147,7 +136,7 @@ const bandCaption = computed(() => {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 1px;
-  color: var(--text);
+  color: #172033;
 }
 .toggles {
   display: flex;
@@ -159,20 +148,21 @@ const bandCaption = computed(() => {
   padding: 2px 10px;
   font-size: 11px;
   letter-spacing: 1px;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--cyan-border);
+  color: #64748b;
+  background: #fff;
+  border: 1px solid #d7e5db;
+  border-radius: 5px;
   cursor: pointer;
 }
 .tg.on {
-  color: #041020;
-  background: var(--cyan);
-  border-color: var(--text);
+  color: #fff;
+  background: #1683a1;
+  border-color: #1683a1;
 }
 .sep {
   width: 1px;
   height: 12px;
-  background: var(--cyan-border);
+  background: #dfe7f1;
 }
 
 .hint,
@@ -181,13 +171,14 @@ const bandCaption = computed(() => {
   flex: none;
   padding: 4px 10px 0;
   font-size: 12px;
-  color: var(--text);
+  color: #64748b;
 }
 .caption { padding-bottom: 8px; }
 
 .wave-body {
   flex: 1 1 0;
   min-height: 0;
+  padding: 4px 10px 0;
 }
 .wave-body :deep(.tsd) {
   width: 100%;

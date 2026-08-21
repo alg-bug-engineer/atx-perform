@@ -1,6 +1,6 @@
 # 实现参考映射（agent-loop → atx-perform）
 
-约定：逻辑/交互/时序对齐 `references/agent-loop-project` 的 **main**；视觉配色对齐 `references/baseline` / 本项目夜景科技风。
+约定：逻辑/交互/时序对齐 `references/agent-loop-project` 的 **main**；信控阶段卡与绿波时距图保持 deepagent 工作台原生白色视觉，其余页面沿用本项目夜景科技风。
 
 幕 0 / 1 / 2 保留 baseline 的 **three.js 3D 演绎**（`frontend/src/features/**`、`layers/**`、`mesh/**`、`geo/**`），
 由分幕壳按 `?scene=` 单独挂载；幕 3–5 为面板式大屏。`act1.html` 是旧独立入口，不参与构建。
@@ -30,23 +30,24 @@ references/agent-loop-project/.venv/bin/python scripts/synthesize_tts.py --force
 
 ## 信控方案数据来源（幕 3b）
 
-方案由信控专家智能体 `/Users/zhangqilai/shensi/code/traffic_signal_deepagent` 生成，取奥体西路晚高峰优化子区 `opt-3:晚高峰`（工业南路 → 经十路，7 个路口）。
+方案以信控工作台当前落盘结果为准，取奥体西路早高峰优化子区
+`opt-5:早高峰`（坤顺路 → 解放东路 → 经十路，3 个路口）。
 
 ```bash
 # 1. 起 deepagent API
-cd /Users/zhangqilai/shensi/code/traffic_signal_deepagent
+cd '/Users/zhangqilai/shensi/code/traffic_signal_deepagent 2'
 .venv/bin/python -m uvicorn traffic_signal_agent.api:app --host 127.0.0.1 --port 8010
 
-# 2. 拉原始 JSON（全程关闭大模型叙述；场景认知阶段读库较久，已按阶段缓存，可断点续跑）
-python3 scripts/pull_deepagent_plan.py
+# 2. 从工作台落盘结果同步早高峰方案、重跑同请求时距图并生成前端 JSON
+python3 scripts/sync_workbench_signal_plan.py
 
-# 3. 蒸馏成前端数据
-python3 scripts/extract_signal_plan.py
+# 差异诊断才使用直接 API 重跑；该结果不能覆盖前端 JSON
+python3 scripts/pull_deepagent_plan.py
 ```
 
-拉取会依次跑 scene-cognition / problem-diagnosis / congestion-cause / control-strategy /
-plan-generation / space-time，已完成阶段落盘缓存自动跳过（`--force` 强制重跑）。
-space-time 那步就是工作台「绿波时距图」面板的数据源。
+权威来源固定为工作台产物 `traffic_signal_deepagent 2/tmp/aoti_xilu/05_plan_generation.json`
+中的 `opt-5:早高峰`。同步器用该区间原始 request/coordination 重跑 space-time，
+并硬校验解放东路 5 阶段、周期/相位差、正反向带宽和时距图对象数；不一致即停止。
 
 - 原始响应：`data/deepagent-raw/`（已 gitignore，`scene-cognition.json` 约 436 MB）
 - 前端数据：`data/1-3-signal-plan.json`
@@ -55,15 +56,13 @@ space-time 那步就是工作台「绿波时距图」面板的数据源。
 
 | 量 | 来源 | 值 | 说明 |
 |----|------|----|------|
-| 全线共同带宽 | `coordination.bandwidth_{forward,reverse}_s` | 0 / 0 s | 贯穿 7 个路口的共同带，真·秒 |
-| 链式带宽 | space-time `evaluation.chained_bandwidth_*` | 24.8 / 410.4 | `Σ own[i][j]×(j−i)`，量纲「秒×段数」，**不是秒**，只作候选排序 |
-| 相邻绿窗重叠 | `links[].{baseline,optimized}` 本项目实算 | 南向北 6/6、北向南 1/6 | 相邻两口窗口交集，**不等于绿波带** |
+| 链式带宽 | space-time `evaluation.chained_bandwidth_*` | 97.7 / 131.7 s | 与工作台早高峰面板同一次评价 |
+| 时距图对象 | space-time `diagram` | 68 绿窗 / 257 轨迹 / 6 队尾 / 2 绿波带 | 4 周期同请求完整复用 |
 
-- 算重叠必须用**协调阶段绿 `coordinated_green_s`**（12/105/59/112/26/49/29）与**链路实测车速 `forward_speed_kmh 26.87` / `reverse_speed_kmh 26.0`**。
-  曾错用 `coordinated_green_{forward,reverse}_s`（方向所有放行阶段合计）+ `design_speed_kmh 15.772`，行程时间偏大 1.7 倍、绿窗偏大 2–6 倍，算出「南向北 6/6 贯通、平均 62.1 s」的虚高结论。`design_speed_kmh` 只用于延误/通行时间。
-- `coordination.chained_bandwidth_forward_s`(24.85) 与 `_reverse_s`(1457.92) **两者口径不一致**：正向按协调阶段绿算（可精确复现），反向按方向合计绿算。工作台不读这两个字段，读的是 space-time 的 `evaluation`，所以必须单独拉 `space-time.json`。
-- 引擎 `diagram.bandwidth_bands` 为空数组 → 本方案**没有形成任何绿波带**，页面不得宣称「贯通」。
-  北向南视图里车辆逐口停车的阶梯状轨迹，就是「未成波」的直接证据。
+- 算几何重叠必须用**协调阶段绿 `coordinated_green_s`**与各链路返回的正反向实测车速。
+  方向所有放行阶段合计 `coordinated_green_{forward,reverse}_s` 只用于方向信号窗，不能冒充协调阶段有效绿；`design_speed_kmh` 只用于方案评价中的设计速度口径。
+- 页面 KPI 必须读取 space-time 的 `evaluation`，不能用另一次方案生成或
+  `coordination.chained_bandwidth_*` 替代。
 
 ### 时距图（`TimeSpaceDiagram.vue`）
 
@@ -72,8 +71,8 @@ space-time 那步就是工作台「绿波时距图」面板的数据源。
 路口列先铺红灯底条再叠 `green_windows`（`role=coord` 绿、`*_feeder` 琥珀），
 车辆是服务端 Newell 轨迹（正向绿 / 反向青），`queue_tails` 橙色。
 引擎只对优化后方案跑轨迹，**现状侧只画绿窗**，不补仿真。
-- `expected_improvements` 里的 `bandwidth_s` / `chained_bandwidth_s`（512.33 → 1457.92，+946）已剔除：引擎自己的 notes 写明「现状带宽因缺少路段行程时间未能同模型核算，不作伪对比」。
-- 引擎在 7 个候选中选了「反向单向绿波」，交叉方向延误回归被标为 high，方案状态是**需人工确认**
+- 工作台候选池共评估 6 个方案，入选 `initial`；交叉方向延误回归为 high，
+  方案状态为 `not_recommended`，页面维持工作台的“建议维持现状”结论。
 
 ## 数据决策（已确认）
 

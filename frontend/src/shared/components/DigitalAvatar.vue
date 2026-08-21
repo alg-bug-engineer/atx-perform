@@ -8,6 +8,7 @@ import {
   broadcastInterruptSeq,
   broadcastMuted,
   broadcastQueue,
+  currentBroadcast,
 } from '../broadcast-bus.js'
 import { playAudio, speak } from '../tts.js'
 import { playSceneNarration, sceneHasNarration } from '../sceneNarration.js'
@@ -48,6 +49,7 @@ function hardStopSpeaking({ notifyEnd = true } = {}) {
   isProcessing.value = false
   displayText.value = ''
   typeText.value = ''
+  currentBroadcast.value = null
   if (notifyEnd) _notifyBroadcastEnd()
 }
 
@@ -65,6 +67,7 @@ async function processNext() {
   }
 
   displayText.value = item.text
+  currentBroadcast.value = item
   isSpeaking.value = true
   clearTimeout(endTimer)
   runTypewriter(item.text)
@@ -88,6 +91,7 @@ async function processNext() {
         if (gen !== speakGeneration || broadcastFrozen.value) return
         displayText.value = ''
         typeText.value = ''
+        currentBroadcast.value = null
         processNext()
       }, 900)
     }
@@ -107,6 +111,7 @@ async function processNext() {
       isProcessing.value = false
       displayText.value = ''
       typeText.value = ''
+      currentBroadcast.value = null
       _notifyBroadcastEnd()
       processNext()
     }, hold)

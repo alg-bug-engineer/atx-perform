@@ -5,8 +5,10 @@
  * 数据源两种口径：幕 4 专家建议板（key=jingshi/jiefang）与幕 4b 引擎方案板（3 路口）。
  * 默认选中「焦点路口」（无焦点标记时优先解放东，即幕 4 有改动的口）。
  */
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { broadcastSilent, currentBroadcast } from '../../shared/broadcast-bus.js'
 import StageChannelization from '../scene3b-signal-plan/StageChannelization.vue'
+import { stageCanvasKeys, stageFlowLabel } from '../scene3b-signal-plan/corridorStageCanvas.js'
 
 const props = defineProps({
   board: { type: Object, required: true },
@@ -15,6 +17,8 @@ const props = defineProps({
 })
 
 const selectedKey = ref(null)
+const revealedDeltaCount = ref(0)
+let revealTimers = []
 
 const nodes = computed(() => {
   const list = [...(props.board?.intersections || [])]
@@ -41,19 +45,21 @@ const cards = computed(() => {
   const mapped = (n.stages || [])
     .filter((s) => s.green_before_s > 0 || s.green_after_s > 0 || (s.movements || []).length)
     .map((s) => {
-      const delta = s.green_delta_s || 0
+      const delta = s.timing_delta_s ?? s.green_delta_s ?? 0
+      const canvasKeys = stageCanvasKeys(s)
       const tone = delta < 0 ? 'cut' : delta > 0 ? 'add' : 'flat'
       return {
         key: `${n.key}-${s.stage_seq_no}`,
         seq: s.stage_seq_no,
         stageNo: s.stage_no,
+        stageName: s.stage_name || '',
         role: s.role,
         note: s.note,
         focus: Boolean(s.feeds_problem_link),
         movements: s.movements || [],
-        labels: (s.movements || []).map((m) => m.label).join('、') || '过渡 / 行人',
-        before: s.green_before_s,
-        after: s.green_after_s,
+        labels: stageFlowLabel(canvasKeys),
+        before: s.timing_before_s ?? s.green_before_s,
+        after: s.timing_after_s ?? s.green_after_s,
         delta,
         tone,
         minG: s.min_green_sec,
@@ -69,6 +75,55 @@ function deltaText(d) {
   if (d === 0) return '±0s'
   return `${d > 0 ? '+' : ''}${d}s`
 }
+
+function clearRevealTimers() {
+  revealTimers.forEach((timer) => window.clearTimeout(timer))
+  revealTimers = []
+}
+
+function reduceMotion() {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+/** 阶段差值跟随本幕约 25 秒的 s3-main 口播逐项揭示。 */
+function revealDeltas(voice = null, quick = false) {
+  clearRevealTimers()
+  const total = cards.value.length
+  if (!total) return
+  if (reduceMotion() || props.compact) {
+    revealedDeltaCount.value = total
+    return
+  }
+  revealedDeltaCount.value = 0
+  const durationMs = Math.max(0, Number(voice?.durationSec) || 0) * 1000
+  const startMs = quick ? 180 : 1800
+  const intervalMs = quick
+    ? 360
+    : Math.max(900, Math.min(2500, (durationMs * 0.42) / Math.max(1, total - 1)))
+  for (let i = 0; i < total; i += 1) {
+    revealTimers.push(window.setTimeout(() => {
+      revealedDeltaCount.value = i + 1
+    }, startMs + i * intervalMs))
+  }
+}
+
+watch(currentBroadcast, (item) => {
+  if (item?.key === 's3-main') revealDeltas(item)
+})
+
+watch(() => node.value?.key, (next, prev) => {
+  if (prev && next !== prev) revealDeltas(null, true)
+})
+
+onMounted(() => {
+  if (currentBroadcast.value?.key === 's3-main') revealDeltas(currentBroadcast.value)
+  else if (broadcastSilent.value) revealDeltas(null, true)
+  else revealTimers.push(window.setTimeout(() => {
+    if (revealedDeltaCount.value === 0) revealDeltas(null, true)
+  }, 1200))
+})
+
+onBeforeUnmount(clearRevealTimers)
 </script>
 
 <template>
@@ -110,24 +165,28 @@ function deltaText(d) {
 
     <div class="cards">
       <article
-        v-for="c in cards"
+        v-for="(c, index) in cards"
         :key="c.key"
         class="card"
         :class="[c.tone, { focus: c.focus }]"
       >
         <header>
-          <span class="ph">阶段 {{ compact ? c.demoNo : c.stageNo }}</span>
-          <strong>
-            {{ c.before }}s → {{ c.after }}s
-            <b>{{ deltaText(c.delta) }}</b>
+          <span class="ph">阶段 {{ compact ? c.demoNo : c.seq }}</span>
+          <strong class="comparison">
+            <span class="before">{{ c.before }}s</span>
+            <span class="arrow">→</span>
+            <span class="after">{{ c.after }}s</span>
+            <span class="delta-slot" aria-live="polite">
+              <Transition name="delta-pop">
+                <b v-if="index < revealedDeltaCount">{{ deltaText(c.delta) }}</b>
+              </Transition>
+            </span>
           </strong>
         </header>
         <div class="chan-slot">
-          <StageChannelization :movements="c.movements" :stage-no="c.stageNo" />
+          <StageChannelization :movements="c.movements" :stage-name="c.stageName" />
         </div>
         <p class="labels">{{ c.labels || '过渡 / 行人' }}</p>
-        <p v-if="c.role" class="role">{{ c.role }}</p>
-        <p v-if="c.minG != null" class="bound">最小/最大绿 {{ c.minG }}s / {{ c.maxG ?? '—' }}</p>
       </article>
     </div>
   </section>
@@ -140,9 +199,10 @@ function deltaText(d) {
   min-width: 0;
   min-height: 0;
   height: 100%;
-  padding: 6px 8px 8px;
-  border: 1px solid var(--cyan-border);
-  background: rgba(0, 16, 28, 0.55);
+  padding: 14px 16px 16px;
+  border: 1px solid #dfe7f1;
+  border-radius: 12px;
+  background: #f8fafc;
 }
 
 .col-head {
@@ -156,7 +216,7 @@ h3 {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 1px;
-  color: var(--text);
+  color: #172033;
 }
 .picker {
   display: flex;
@@ -167,22 +227,23 @@ h3 {
   padding: 2px 10px;
   font-size: 11px;
   letter-spacing: 1px;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--cyan-border);
+  color: #64748b;
+  background: #fff;
+  border: 1px solid #d7e5db;
+  border-radius: 5px;
   cursor: pointer;
 }
 .tg.on {
-  color: #041020;
-  background: var(--cyan);
-  border-color: var(--cyan);
+  color: #fff;
+  background: #1683a1;
+  border-color: #1683a1;
 }
 
 .note {
   margin: 6px 0 4px;
   font-size: 11px;
   line-height: 1.45;
-  color: var(--text-muted);
+  color: #64748b;
 }
 
 .meta {
@@ -195,11 +256,11 @@ h3 {
 }
 .meta span {
   margin-right: 6px;
-  color: var(--text-muted);
+  color: #64748b;
 }
 .meta strong {
   font-weight: 500;
-  color: var(--text);
+  color: #334155;
 }
 .meta em {
   margin-left: 4px;
@@ -207,64 +268,99 @@ h3 {
 }
 .meta em.add,
 .card.add header b {
-  color: var(--ok);
+  color: #16a34a;
 }
 .meta em.cut,
 .card.cut header b {
-  color: var(--danger);
+  color: #dc2626;
 }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: max-content;
+  gap: 10px;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   flex: 1;
-  align-content: stretch;
-  align-items: stretch;
+  padding: 4px 2px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
 .card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
-  min-height: 0;
-  padding: 8px 8px 6px;
-  border: 1px solid var(--cyan-border);
-  background: rgba(4, 18, 32, 0.7);
+  padding: 10px;
+  border: 1px solid #d7e5db;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 40, 28, 0.04);
+  overflow: hidden;
 }
 .card.focus {
-  border-color: var(--cyan-border-strong);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.18);
+  border-color: #9fd7b6;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.12);
 }
 .card header {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 8px;
 }
 .ph {
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1px;
-  color: var(--text-muted);
+  color: #1f5b3d;
 }
 .card header strong {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
 }
 .card header b {
-  margin-left: 4px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
 }
 .card.flat header b {
-  color: var(--text-muted);
+  color: #94a3b8;
 }
 
+.comparison {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  min-height: 23px;
+  white-space: nowrap;
+}
+.comparison .before {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: #cbd5e1;
+}
+.comparison .arrow { font-size: 12px; }
+.comparison .after {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  color: #16a34a;
+}
+.delta-slot { display: inline-block; min-width: 31px; }
+.delta-pop-enter-active {
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(.2, .8, .2, 1);
+}
+.delta-pop-enter-from { opacity: 0; transform: translateY(7px) scale(.82); }
+
 .chan-slot {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 0;
+  width: min(150px, 100%);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
 }
 .chan-slot :deep(.chan) {
   width: 100%;
@@ -275,12 +371,14 @@ h3 {
 .role,
 .bound {
   margin: 0;
-  font-size: 10px;
-  line-height: 1.35;
-  color: var(--text-muted);
+  max-width: 152px;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+  color: #64748b;
 }
 .role {
-  color: rgba(190, 220, 236, 0.8);
+  color: #475569;
 }
 
 .phase-board.compact {
@@ -295,14 +393,14 @@ h3 {
 }
 .phase-board.compact .cards {
   width: 100%;
+  display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: minmax(0, 1fr);
-  align-content: stretch;
-  justify-items: stretch;
   overflow: hidden;
   min-height: 0;
 }
+
 .phase-board.compact .card {
+  width: auto;
   height: 100%;
   min-height: 0;
   padding: 10px;
@@ -322,5 +420,9 @@ h3 {
 .phase-board.compact .chan-slot {
   flex: 1 1 0;
   min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delta-pop-enter-active { transition: none; }
 }
 </style>

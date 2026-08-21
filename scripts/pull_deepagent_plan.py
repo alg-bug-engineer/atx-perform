@@ -6,7 +6,8 @@
     .venv/bin/python -m uvicorn traffic_signal_agent.api:app --host 127.0.0.1 --port 8010
 
 原始响应写入 data/deepagent-raw/（已在 .gitignore 中忽略），
-再由 scripts/extract_signal_plan.py 蒸馏成幕 3 使用的 data/1-3-signal-plan.json。
+该脚本的直接 API 重跑仅用于诊断差异，不能作为页面权威数据。
+页面 JSON 必须通过 scripts/sync_workbench_signal_plan.py 从工作台产物同步。
 
 场景认知阶段要遍历全线路口逐时段读库，单阶段可能跑十几分钟；
 已完成的阶段会落盘缓存，重跑时自动跳过，除非加 --force。
@@ -29,6 +30,7 @@ BASE = "http://127.0.0.1:8010/v1/skillpack"
 # road9.dim_line_info：奥体西路整条干线，seq 17/18 即解放东路、经十路
 LINE_ID = "wwe2bswwwe23pb01"
 LINE_NAME = "奥体西路（书堂街--龙奥南路）"
+SOURCE_PROJECT = "/Users/zhangqilai/shensi/code/traffic_signal_deepagent 2"
 # 幕 3 关注的问题路段：解放东路 → 经十路
 FOCUS_INTERS = ["011wwe28fmc00001", "011wwe28ctu00001"]
 # 晚高峰优化子区，与 extract_signal_plan.py 保持一致
@@ -232,12 +234,13 @@ def main() -> int:
         print(f"未找到区间 {SEGMENT_KEY}，跳过 space-time")
 
     meta = {
+        "source_kind": "direct_api_run_not_authoritative",
         "line_id": args.line_id,
         "line_name": task.get("scope", {}).get("name") or LINE_NAME,
         "focus_inter_ids": FOCUS_INTERS,
         "use_llm": use_llm,
         "pulled_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "source_project": "/Users/chenyuxiang/Desktop/Agent/traffic_signal_deepagent",
+        "source_project": SOURCE_PROJECT,
         "elapsed_s": round(time.time() - t0, 1),
         "plan_ok": plan.get("ok"),
         "plan_errors": plan.get("errors") or plan.get("validation_errors"),

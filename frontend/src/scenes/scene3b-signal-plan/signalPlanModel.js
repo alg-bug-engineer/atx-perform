@@ -205,13 +205,22 @@ export function buildPhaseBoard(payload) {
       const b = byNo[s.stage_no] ?? null
       const greenB = b ? b.green_s : null
       const delta = greenB == null || s.green_s == null ? null : Math.round((s.green_s - greenB) * 10) / 10
+      const timingBefore = b ? (b.total_s ?? b.green_s) : null
+      const timingAfter = s.total_s ?? s.green_s ?? null
+      const timingDelta = timingBefore == null || timingAfter == null
+        ? null
+        : Math.round((timingAfter - timingBefore) * 10) / 10
       const isCoord = String(s.stage_no) === String(n.coord_stage_no)
       return {
         stage_seq_no: i + 1,
         stage_no: s.stage_no,
+        stage_name: s.name || b?.name || `阶段${i + 1}`,
         green_before_s: greenB,
         green_after_s: s.green_s,
         green_delta_s: delta,
+        timing_before_s: timingBefore,
+        timing_after_s: timingAfter,
+        timing_delta_s: timingDelta,
         movements: (s.movements || []).map((m) => ({
           ...m,
           label: `${DIR8_CN[m.dir8] ?? m.dir8}${TURN_CN[m.turn] ?? m.turn}`,
@@ -241,8 +250,8 @@ export function buildPhaseBoard(payload) {
       offset_delta_s: offsetDelta,
       coord_stage_no: n.coord_stage_no,
       note: n.is_focus
-        ? `问题路段${n.short_name}端 · 晚高峰协调子区（opt-3）`
-        : `协调子区成员路口 · 晚高峰 17:00–19:00`,
+        ? `问题路段${n.short_name}端 · ${payload.meta?.period_label || '高峰'}协调子区`
+        : `协调子区成员路口 · ${payload.meta?.period_label || '高峰'} ${payload.meta?.period_window || ''}`.trim(),
       stages,
     }
   })

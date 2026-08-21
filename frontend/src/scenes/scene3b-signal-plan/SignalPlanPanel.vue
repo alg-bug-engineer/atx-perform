@@ -184,25 +184,10 @@ const bandCaption = computed(() => {
             >
               {{ m.t }}
             </button>
-            <span class="sep" />
-            <button
-              v-for="d in [
-                { k: 'both', t: '双向' },
-                { k: 'forward', t: '北向南' },
-                { k: 'reverse', t: '南向北' },
-              ]"
-              :key="d.k"
-              type="button"
-              class="tg"
-              :class="{ on: direction === d.k }"
-              @click="direction = d.k"
-            >
-              {{ d.t }}
-            </button>
           </div>
         </div>
         <div class="canvas">
-          <TimeSpaceDiagram :model="model" :mode="mode" :direction="direction" />
+          <TimeSpaceDiagram :model="model" :mode="mode" @direction-change="direction = $event" />
         </div>
         <p class="caption">{{ bandCaption }}</p>
       </div>
