@@ -2,7 +2,7 @@
 /**
  * 效果预评估大屏：走廊微观仿真作主图（复用幕 3 现状 / 优化后对照）。
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import CorridorTrialStage from './CorridorTrialStage.vue'
 import { buildTrialEffectSeries } from './trialEffectSeries.js'
 
@@ -12,6 +12,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['finish', 'home'])
+const trial = ref(null)
 
 const series = computed(() => buildTrialEffectSeries(props.payload))
 const headline = computed(() => {
@@ -25,14 +26,18 @@ const headline = computed(() => {
 <template>
   <section class="effect" data-testid="trial-effect-panel">
     <header class="banner">
-      <div class="banner-main">
-        <p class="lead-eyebrow">效果预评估 · 相位协调试运行</p>
-        <h2 class="lead-headline">{{ headline }}</h2>
+      <p class="lead-eyebrow">效果预评估 · 相位协调试运行</p>
+      <h2 class="lead-headline">{{ headline }}</h2>
+      <div class="play-acts">
+        <button type="button" class="play-btn" @click="trial?.playOnce()">播放演示</button>
+        <button type="button" class="play-btn ghost" @click="trial?.togglePause()">
+          {{ trial?.paused ? '继续' : '暂停' }}
+        </button>
       </div>
     </header>
 
     <div class="stage">
-      <CorridorTrialStage :optimization="optimization" />
+      <CorridorTrialStage ref="trial" :optimization="optimization" />
     </div>
 
     <footer class="foot">
@@ -62,7 +67,7 @@ const headline = computed(() => {
 .effect {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 6px;
   min-height: 0;
   height: 100%;
   overflow: hidden;
@@ -74,12 +79,38 @@ const headline = computed(() => {
   padding-right: 16px;
 }
 .banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 26px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
 }
-.banner-main { min-width: 0; }
+.banner .lead-eyebrow {
+  margin: 0;
+  justify-self: start;
+  min-width: 0;
+}
+.banner .lead-headline {
+  justify-self: center;
+  text-align: center;
+  white-space: nowrap;
+}
+.play-acts {
+  display: flex;
+  justify-self: end;
+  flex: none;
+  gap: 8px;
+}
+.play-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--cyan-border);
+  cursor: pointer;
+}
+.play-btn:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.45); }
+.play-btn.ghost { color: var(--text-muted); }
 
 .stage {
   display: grid;

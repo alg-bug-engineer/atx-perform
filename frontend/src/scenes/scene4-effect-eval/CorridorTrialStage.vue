@@ -51,8 +51,6 @@ function wrapFromStart(t, cycle) {
 
 const beforeSample = computed(() => (before.value ? sampleVariant(before.value, clock.value) : null))
 const afterSample = computed(() => (after.value ? sampleVariant(after.value, clock.value) : null))
-const cycleLen = computed(() => demo.value?.cycleLen || 220)
-const clockLabel = computed(() => `${Math.floor(clock.value)} / ${cycleLen.value} s`)
 
 let rafId = 0
 let lastTs = 0
@@ -76,7 +74,6 @@ function tick(ts) {
           clock.value = PLAY_START_S
           guided.value = false
           speed.value = LOOP_SPEED
-          beatCaption.value = { tag: '循环对照', text: '现状持续积压，优化后每周期清空', tone: 'plain' }
         } else {
           clock.value = next
         }
@@ -107,25 +104,16 @@ onMounted(() => {
 onUnmounted(() => {
   cancelAnimationFrame(rafId)
 })
+
+function togglePause() {
+  paused.value = !paused.value
+}
+
+defineExpose({ playOnce, togglePause, paused })
 </script>
 
 <template>
   <div class="trial-stage" data-testid="corridor-trial-stage">
-    <div class="bar">
-      <p class="beat-line">
-        <span class="clock"><i>周期</i> {{ clockLabel }}</span>
-        <span class="beat">
-          <b :class="beatCaption.tone">{{ beatCaption.tag }}</b>
-          <span>{{ beatCaption.text }}</span>
-        </span>
-      </p>
-      <div class="acts">
-        <button type="button" class="play-btn" @click="playOnce">播放演示</button>
-        <button type="button" class="play-btn ghost" @click="paused = !paused">
-          {{ paused ? '继续' : '暂停' }}
-        </button>
-      </div>
-    </div>
     <div v-if="demo && before && after" class="stage">
       <CorridorStage
         :model="demo"
@@ -145,65 +133,17 @@ onUnmounted(() => {
 
 <style scoped>
 .trial-stage {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   min-width: 0;
   min-height: 0;
   height: 100%;
 }
-.bar {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex: none;
-  min-width: 0;
-  padding: 0 4px;
-}
-.beat-line {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin: 0;
-  min-width: 0;
-  flex: 1;
-}
-.clock {
-  flex: none;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  color: var(--text);
-}
-.clock i {
-  margin-right: 6px;
-  font-style: normal;
-}
-.beat {
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--text);
-}
-.beat b { flex: none; font-weight: 600; }
-.beat b.danger { color: var(--danger); }
-.beat b.ok { color: var(--ok); }
-.beat b.plain { color: var(--text); }
-.acts { display: flex; gap: 8px; flex: none; }
-.play-btn {
-  padding: 6px 14px;
-  font-size: 12px;
-  letter-spacing: 1px;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--cyan-border);
-  cursor: pointer;
-}
-.play-btn:hover { box-shadow: 0 0 12px rgba(0, 229, 255, 0.45); }
-.play-btn.ghost { color: var(--text-muted); }
 .stage {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   flex: 1 1 0;
   min-width: 0;
@@ -211,6 +151,7 @@ onUnmounted(() => {
 }
 .stage :deep(.corridor) {
   flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
 }
 .empty {

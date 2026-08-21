@@ -5,13 +5,13 @@ const props = defineProps({
   model: { type: Object, required: true },
   variant: { type: Object, required: true },
   sample: { type: Object, default: null },
-  /** 对照方案此刻的排队长度：>0 时在本幅画出参考队尾与差值，供上下两幅对读 */
+  /** 对照方案此刻的排队长度：>0 时在本幅画出参考队尾与差值，供左右两幅对读 */
   ghostQueueM: { type: Number, default: 0 },
 })
 
 /**
- * 横向走廊：上游解放东路口在左、下游经十路口在右，北向南车流自左向右。
- * 行车方向朝右 → 屏幕上方是东、下方是西，因此左转往上、右转往下。
+ * 竖向走廊：上游解放东路口在上、下游经十路口在下，北向南车流自上而下。
+ * 画面按原横向几何顺时针转 90°：左侧是西、右侧是东，左转朝右、右转朝左。
  *
  * 断面车道边界（viewBox y，东→西即上→下）。现场渠化的对应关系：
  *   - 东侧第二条左转道（dn1）是上游左转集结道（up0）的连贯延伸，位置完全不动；
@@ -39,10 +39,60 @@ const GEO = {
   roadBottom: DOWN_EDGES[DOWN_EDGES.length - 1],
 }
 const CORRIDOR_PX = GEO.jingshiL - GEO.jiefangR
+/**
+ * 竖屏后路段南北向过长、断面过窄。先顺时针转 90°，再把东西向拉宽、南北向压短，
+ * 整幅仍用 meet 落入栏内：路更清楚。标注/灯态/车辆单独抵消非等比缩放，避免拉扁。
+ */
+const FIT_EW = 1.25
+const FIT_NS = 0.4
+const VIEW_W = GEO.h * FIT_EW
+const VIEW_H = GEO.w * FIT_NS
+const SCENE_TRANSFORM = `scale(${FIT_EW} ${FIT_NS}) translate(${GEO.h} 0) rotate(90)`
+const LABEL_ISO = 0.56
+function upright(x, y) {
+  return (
+    `rotate(-90 ${x} ${y})` +
+    ` translate(${x} ${y})` +
+    ` scale(${LABEL_ISO / FIT_EW} ${LABEL_ISO / FIT_NS})` +
+    ` translate(${-x} ${-y})`
+  )
+}
+function sigXf(x, y) {
+  return `translate(${x} ${y}) rotate(-90) scale(${LABEL_ISO / FIT_EW} ${LABEL_ISO / FIT_NS})`
+}
+function isoAt(x, y, k = LABEL_ISO) {
+  return `translate(${x} ${y}) scale(${k / FIT_NS} ${k / FIT_EW}) translate(${-x} ${-y})`
+}
 
-const LANE_LABELS = ['左转 + 掉头', '左转', '直行', '直行', '右转借道 · 公交']
+const INFLOW_DASH = 10 / FIT_NS
+const INFLOW_GAP = 12 / FIT_NS
+const INFLOW_CYCLE = INFLOW_DASH + INFLOW_GAP
+const INFLOW_STROKE = 2.4 / FIT_EW
+const MARKER_UNSTRETCH = `translate(9 5) scale(${1 / FIT_NS} ${1 / FIT_EW}) translate(-9 -5)`
+
+const LANE_LABELS = [
+  { lines: ['左转 + 掉头'] },
+  { lines: ['左转'] },
+  { lines: ['直行'] },
+  { lines: ['直行'] },
+  { lines: ['右转借道', '公交'] },
+]
 const LANE_TURN = ['left', 'left', 'through', 'through', 'right']
-const UP_LABELS = ['左转集结', '直行', '公交专用道']
+const UP_LABELS = [
+  { lines: ['左转集结'] },
+  { lines: ['直行'] },
+  { lines: ['公交', '专用道'] },
+]
+/** 贴在展宽段路面上、停止线稍北，按车道中心对齐 */
+const LANE_LABEL_X = GEO.jingshiL - 44
+/** 贴在上游路段上，按车道中心对齐 */
+const UP_LABEL_X = GEO.jiefangR + 40
+/** 灯态留在坐标尺一侧；路口名叠在左侧空白与坐标端点齐平 */
+const SIG_Y = GEO.roadBottom + 22
+function laneLabelDy(n, k) {
+  if (n < 2) return '0'
+  return k === 0 ? '-0.55em' : '1.2em'
+}
 
 const lengthM = computed(() => props.model.geometry?.length_m || 368)
 const pxPerM = computed(() => CORRIDOR_PX / lengthM.value)
@@ -100,9 +150,9 @@ const laneArrows = computed(() => {
   const x = GEO.jingshiL - 86
   return LANE_TURN.map((turn, i) => {
     const y = downCenter(i)
-    if (turn === 'left') return { id: i, d: `M ${x} ${y + 5} L ${x + 22} ${y + 5} L ${x + 22} ${y - 6}` }
-    if (turn === 'right') return { id: i, d: `M ${x} ${y - 5} L ${x + 22} ${y - 5} L ${x + 22} ${y + 6}` }
-    return { id: i, d: `M ${x} ${y} L ${x + 28} ${y}` }
+    if (turn === 'left') return { id: i, cx: x + 14, cy: y, d: `M ${x} ${y + 5} L ${x + 22} ${y + 5} L ${x + 22} ${y - 6}` }
+    if (turn === 'right') return { id: i, cx: x + 14, cy: y, d: `M ${x} ${y - 5} L ${x + 22} ${y - 5} L ${x + 22} ${y + 6}` }
+    return { id: i, cx: x + 14, cy: y, d: `M ${x} ${y} L ${x + 28} ${y}` }
   })
 })
 
@@ -193,19 +243,13 @@ const annots = computed(() => {
   }
 
   const tw = textW(tailText.value, 12)
-  // 排队顶到上游端时左侧只剩解放东路口，翻到队尾线右侧才不会压住路口名与灯态
-  const tail =
-    tailX.value - GEO.jiefangR < tw + 10
-      ? place(tailX.value + 8, 'start', tw, true)
-      : place(tailX.value - 8, 'end', tw, true)
+  // 竖屏后文字沿东西向排：start 落在路右侧，end 会扫到路左侧。动态标签一律靠右。
+  const tail = place(tailX.value + 8, 'start', tw, true)
 
   let ghostAnnot = null
   if (ghost.value) {
     const gw = textW(ghostText.value, 10)
-    ghostAnnot =
-      ghost.value.x - GEO.jiefangR < gw + 8
-        ? place(ghost.value.x + 6, 'start', gw, false)
-        : place(ghost.value.x - 6, 'end', gw, false)
+    ghostAnnot = place(ghost.value.x + 6, 'start', gw, false)
   }
   return { tail, ghost: ghostAnnot }
 })
@@ -219,16 +263,63 @@ const jiefangSig = computed(() => {
 })
 
 /**
- * 车身按实车尺寸换算：车长 4.9 m 折成像素后短于 7 m 的车头间距，
- * 排队时每辆车之间自然留出约 2 m 车距，不会连成一条色块。
- * 车宽不跟车道走：竖向比例被放大过，若按真实车宽折算会画得比车身还宽，
- * 所以取车长的 0.82，只在展宽段被挤窄的车道里再按车道宽收一档。
+ * 车身按实车尺寸换算，再按 CAR_ISO 画大。
+ * 抽稀间距必须覆盖「放大后的车长 + 车距」，否则同车道会视觉重叠；
+ * 落位后再按放大后的外框去重，去掉借道并线时叠到邻道上的车。
  */
 const CAR_LEN_M = 5.4
 const CAR_W_RATIO = 0.62
-const CAR_LANE_FILL = 0.6
+const CAR_LANE_FILL = 0.72
 const VEH_L = computed(() => CAR_LEN_M * pxPerM.value)
 const carW = (laneH) => Math.min(VEH_L.value * CAR_W_RATIO, laneH * CAR_LANE_FILL)
+/** 画面上少画车、单车画大；车宽按路段压缩比收回，避免被东西向拉伸拉扁 */
+const CAR_ISO = 4.0
+const CAR_CLEAR_M = 6
+const CAR_SHOW_GAP_M = CAR_LEN_M * CAR_ISO + CAR_CLEAR_M
+const CAR_BOX_PAD = 2
+function carBox(c) {
+  const len = VEH_L.value * CAR_ISO
+  const rawW = c.h * CAR_ISO * (FIT_NS / FIT_EW)
+  const w = c.laneH ? Math.min(rawW, c.laneH * 0.86) : rawW
+  return { len, w, cx: c.x + VEH_L.value / 2, cy: c.y + c.h / 2 }
+}
+function carXf(c) {
+  const { len, w, cx, cy } = carBox(c)
+  return `translate(${cx - len / 2} ${cy - w / 2}) scale(${len} ${w})`
+}
+
+function thinCars(list, gapM) {
+  const sorted = [...list].sort((a, b) => a.x - b.x)
+  const last = new Map()
+  const out = []
+  for (const c of sorted) {
+    const key = `${c.turn}-${c.downLane >= 0 ? c.downLane : c.upLane}`
+    const prev = last.get(key)
+    if (prev != null && c.x - prev < gapM) continue
+    last.set(key, c.x)
+    out.push(c)
+  }
+  return out
+}
+
+function dropOverlaps(list) {
+  const kept = []
+  const boxes = []
+  for (const c of [...list].sort((a, b) => a.x - b.x)) {
+    const box = carBox(c)
+    const hit = boxes.some(
+      (b) =>
+        box.cx - box.len / 2 < b.cx + b.len / 2 + CAR_BOX_PAD &&
+        box.cx + box.len / 2 + CAR_BOX_PAD > b.cx - b.len / 2 &&
+        box.cy - box.w / 2 < b.cy + b.w / 2 + CAR_BOX_PAD &&
+        box.cy + box.w / 2 + CAR_BOX_PAD > b.cy - b.w / 2,
+    )
+    if (hit) continue
+    kept.push(c)
+    boxes.push(box)
+  }
+  return kept
+}
 
 /**
  * 车色三段式：畅行绿 → 排队黄 → 溢出红。
@@ -244,18 +335,19 @@ const carTone = (c) => {
 }
 
 const cars = computed(() => {
-  const list = props.sample?.cars || []
+  const list = thinCars(props.sample?.cars || [], CAR_SHOW_GAP_M)
   const t0 = props.variant.result.taperStart
   const t1 = props.variant.result.taperEnd
   const merge0 = lengthM.value - 60
   const merge1 = lengthM.value - 24
   const len = VEH_L.value
-  return list.map((c) => {
+  const placed = list.map((c) => {
     const down = c.downLane >= 0 ? c.downLane : DEFAULT_DOWN[c.upLane]
     const yUp = upCenter(c.upLane)
     const yDown = downCenter(down)
     const u = c.x <= t0 ? 0 : c.x >= t1 ? 1 : (c.x - t0) / (t1 - t0)
-    const h = carW(upLaneH(c.upLane) + (downLaneH(down) - upLaneH(c.upLane)) * u)
+    const laneH = upLaneH(c.upLane) + (downLaneH(down) - upLaneH(c.upLane)) * u
+    const h = carW(laneH)
     let yCenter = yUp + (yDown - yUp) * u
     if (c.borrowedThrough) {
       // 借道直行车在展宽后仍沿右转/公交道排队，距停止线约 60 m 才并回相邻直行道。
@@ -272,26 +364,30 @@ const cars = computed(() => {
       x: mx(c.x) - len,
       y: yCenter - h / 2,
       h,
+      laneH,
       cls: carTone(c),
       turn: c.turn,
       borrowedThrough: c.borrowedThrough,
     }
   })
+  return dropOverlaps(placed)
 })
 
 /** 进不去路段、堵在解放东路口里的车 */
 const blockedCars = computed(() => {
-  const n = Math.min(12, Math.round((props.sample?.spillQueueM ?? 0) / 7))
+  const n = Math.min(5, Math.round((props.sample?.spillQueueM ?? 0) / 16))
   const len = VEH_L.value
-  const pitch = len + 5
+  const pitch = len * CAR_ISO + 8
   return Array.from({ length: n }, (_, i) => {
-    const lane = Math.floor(i / 4) % 3
-    const h = carW(upLaneH(lane))
+    const lane = Math.floor(i / 3) % 3
+    const laneH = upLaneH(lane)
+    const h = carW(laneH)
     return {
       id: i,
-      x: GEO.jiefangR - len - 4 - (i % 4) * pitch,
+      x: GEO.jiefangR - len - 4 - (i % 3) * pitch,
       y: upCenter(lane) - h / 2,
       h,
+      laneH,
     }
   })
 })
@@ -320,7 +416,10 @@ const inflowArrows = computed(() => {
 
     <div class="body">
       <div class="canvas-wrap">
-      <svg class="canvas" :viewBox="`0 0 ${GEO.w} ${GEO.h}`" preserveAspectRatio="xMidYMid meet">
+      <p class="road-name">奥体西路 · 北向南</p>
+      <p class="inter-float north">解放东路口</p>
+      <p class="inter-float south">经十路口</p>
+      <svg class="canvas" :viewBox="`0 0 ${VIEW_W} ${VIEW_H}`" preserveAspectRatio="xMidYMid meet">
         <defs>
           <marker
             :id="`flow-${variant.key}`"
@@ -330,8 +429,9 @@ const inflowArrows = computed(() => {
             markerWidth="5"
             markerHeight="5"
             orient="auto"
+            overflow="visible"
           >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(0,229,255,0.85)" />
+            <path :transform="MARKER_UNSTRETCH" d="M 0 0 L 10 5 L 0 10 z" fill="rgba(0,229,255,0.85)" />
           </marker>
           <marker
             :id="`arw-${variant.key}`"
@@ -341,6 +441,7 @@ const inflowArrows = computed(() => {
             markerWidth="4.5"
             markerHeight="4.5"
             orient="auto"
+            overflow="visible"
           >
             <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(200,232,248,0.62)" />
           </marker>
@@ -373,6 +474,7 @@ const inflowArrows = computed(() => {
           </g>
         </defs>
 
+        <g :transform="SCENE_TRANSFORM">
         <!-- 相交道路 -->
         <rect class="cross" :x="GEO.jiefangL" y="0" :width="GEO.jiefangR - GEO.jiefangL" :height="GEO.h" />
         <rect class="cross trunk" :x="GEO.jingshiL" y="0" :width="GEO.jingshiR - GEO.jingshiL" :height="GEO.h" />
@@ -384,11 +486,11 @@ const inflowArrows = computed(() => {
 
         <!-- 展宽标注 -->
         <line class="widen-tick" :x1="taperEndX" :y1="GEO.downTop + 2" :x2="taperEndX" :y2="GEO.roadBottom + 6" />
-        <text class="widen-label" :x="taperEndX + 6" :y="ANNOT_ROWS[1]">
+        <text class="widen-label" :x="taperEndX + 6" :y="ANNOT_ROWS[1]" :transform="upright(taperEndX + 6, ANNOT_ROWS[1])">
           <tspan class="lbl">展宽起点 · 距经十路 </tspan>
           <tspan class="val">100 m</tspan>
         </text>
-        <text class="widen-label dim" :x="GEO.jiefangR + 8" :y="GEO.upTop - 8">{{ UP_LANES_LABEL }}</text>
+        <text class="widen-label dim" :x="GEO.jiefangR + 8" :y="GEO.upTop - 8" :transform="upright(GEO.jiefangR + 8, GEO.upTop - 8)">{{ UP_LANES_LABEL }}</text>
 
         <!-- 蓄车边界 / 预警线 -->
         <line class="ref warn" :x1="warnX" :y1="GEO.upTop - 4" :x2="warnX" :y2="GEO.roadBottom + 4" />
@@ -403,7 +505,12 @@ const inflowArrows = computed(() => {
             :y1="a.y"
             :x2="GEO.jiefangR + 30"
             :y2="a.y"
-            :style="{ animationDelay: a.delay }"
+            :style="{
+              animationDelay: a.delay,
+              strokeDasharray: `${INFLOW_DASH} ${INFLOW_GAP}`,
+              strokeWidth: INFLOW_STROKE,
+              '--inflow-cycle': INFLOW_CYCLE,
+            }"
             :marker-end="`url(#flow-${variant.key})`"
           />
         </g>
@@ -415,14 +522,14 @@ const inflowArrows = computed(() => {
             :key="`bk${c.id}`"
             :class="['car', spill ? 'jam blocked' : 'queued']"
             :href="`#car-${variant.key}`"
-            :transform="`translate(${c.x} ${c.y}) scale(${VEH_L} ${c.h})`"
+            :transform="carXf(c)"
           />
           <use
             v-for="c in cars"
             :key="c.id"
             :class="['car', c.cls, c.turn, { 'borrowed-through': c.borrowedThrough }]"
             :href="`#car-${variant.key}`"
-            :transform="`translate(${c.x} ${c.y}) scale(${VEH_L} ${c.h})`"
+            :transform="carXf(c)"
           />
         </g>
 
@@ -436,25 +543,47 @@ const inflowArrows = computed(() => {
           :key="`ar${a.id}`"
           class="lane-arrow"
           :d="a.d"
+          :transform="isoAt(a.cx, a.cy)"
           :marker-end="`url(#arw-${variant.key})`"
         />
-        <text v-for="(l, i) in LANE_LABELS" :key="`ll${i}`" class="lane-label" :x="GEO.jingshiL - 8" :y="downCenter(i) + 3" text-anchor="end">
-          {{ l }}
+        <text
+          v-for="(l, i) in LANE_LABELS"
+          :key="`ll${i}`"
+          class="lane-label"
+          :x="LANE_LABEL_X"
+          :y="downCenter(i)"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          :transform="upright(LANE_LABEL_X, downCenter(i))"
+        >
+          <tspan
+            v-for="(line, k) in l.lines"
+            :key="k"
+            :x="LANE_LABEL_X"
+            :dy="laneLabelDy(l.lines.length, k)"
+          >{{ line }}</tspan>
         </text>
-        <g v-for="(l, i) in UP_LABELS" :key="`ul${i}`">
-          <rect
-            class="up-label-bg"
-            :x="GEO.jiefangR + 6"
-            :y="upCenter(i) - 7"
-            :width="l.length * 9.5 + 8"
-            :height="14"
-          />
-          <text class="up-label" :x="GEO.jiefangR + 10" :y="upCenter(i) + 3">{{ l }}</text>
-        </g>
+        <text
+          v-for="(l, i) in UP_LABELS"
+          :key="`ul${i}`"
+          class="lane-label"
+          :x="UP_LABEL_X"
+          :y="upCenter(i)"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          :transform="upright(UP_LABEL_X, upCenter(i))"
+        >
+          <tspan
+            v-for="(line, k) in l.lines"
+            :key="k"
+            :x="UP_LABEL_X"
+            :dy="laneLabelDy(l.lines.length, k)"
+          >{{ line }}</tspan>
+        </text>
 
         <g class="tail" :class="queueTone">
           <line :x1="tailX" :y1="GEO.downTop" :x2="tailX" :y2="GEO.roadBottom + 8" />
-          <text :x="annots.tail.x" :y="annots.tail.y" :text-anchor="annots.tail.anchor">
+          <text :x="annots.tail.x" :y="annots.tail.y" :text-anchor="annots.tail.anchor" :transform="upright(annots.tail.x, annots.tail.y)">
             <tspan class="lbl">{{ worstLabel }}队尾 </tspan>
             <tspan class="val">{{ Math.round(queueM) }} m</tspan>
           </text>
@@ -463,7 +592,7 @@ const inflowArrows = computed(() => {
         <!-- 与上一幅对读：现状队尾位置 + 缩短量 -->
         <g v-if="ghost" class="ghost">
           <line :x1="ghost.x" :y1="GEO.downTop" :x2="ghost.x" :y2="GEO.roadBottom + 8" />
-          <text v-if="annots.ghost" :x="annots.ghost.x" :y="annots.ghost.y" :text-anchor="annots.ghost.anchor">
+          <text v-if="annots.ghost" :x="annots.ghost.x" :y="annots.ghost.y" :text-anchor="annots.ghost.anchor" :transform="upright(annots.ghost.x, annots.ghost.y)">
             <tspan class="lbl">现状队尾 </tspan>
             <tspan class="val">{{ Math.round(ghost.queueM) }} m</tspan>
             <tspan class="lbl"> · 缩短 </tspan>
@@ -477,26 +606,25 @@ const inflowArrows = computed(() => {
           <line :x1="GEO.jiefangR" :y1="GEO.roadBottom + 16" :x2="GEO.jingshiL" :y2="GEO.roadBottom + 16" />
           <g v-for="r in ruler" :key="`rl${r.id}`">
             <line :x1="r.x" :y1="GEO.roadBottom + 13" :x2="r.x" :y2="GEO.roadBottom + 19" />
-            <text :x="r.x" :y="GEO.roadBottom + 30" text-anchor="middle">{{ r.label }}</text>
+            <text :x="r.x" :y="GEO.roadBottom + 30" text-anchor="middle" :transform="upright(r.x, GEO.roadBottom + 30)">{{ r.label }}</text>
           </g>
         </g>
 
-        <!-- 路口名 + 灯态 -->
-        <g class="sig" :transform="`translate(${(GEO.jiefangL + GEO.jiefangR) / 2}, 10)`">
+        <!-- 灯态留在路口坐标尺侧；路口名贴在奥体西路上 -->
+        <g class="sig" :transform="sigXf((GEO.jiefangL + GEO.jiefangR) / 2, SIG_Y)">
           <circle r="7" :class="['lamp', jiefangSig.green ? 'g' : 'r']" />
-          <text class="inter-name" y="22" text-anchor="middle">解放东路口</text>
-          <text class="cd" y="34" text-anchor="middle">
+          <text class="cd" y="16" text-anchor="middle">
             <tspan :class="jiefangSig.green ? 'g' : 'r'">{{ jiefangSig.green ? '绿灯' : '红灯' }}</tspan>
             <tspan class="w"> {{ jiefangSig.countdown || 0 }} s</tspan>
           </text>
         </g>
-        <g class="sig" :transform="`translate(${(GEO.jingshiL + GEO.jingshiR) / 2}, 10)`">
+        <g class="sig" :transform="sigXf((GEO.jingshiL + GEO.jingshiR) / 2, SIG_Y)">
           <circle r="7" :class="['lamp', jingshiSig.green ? 'g' : 'r']" />
-          <text class="inter-name trunk" y="22" text-anchor="middle">经十路口</text>
-          <text class="cd" y="34" text-anchor="middle">
+          <text class="cd" y="16" text-anchor="middle">
             <tspan :class="jingshiSig.green ? 'g' : 'r'">{{ jingshiSig.green ? '绿灯' : '红灯' }}</tspan>
             <tspan class="w"> {{ jingshiSig.countdown || 0 }} s</tspan>
           </text>
+        </g>
         </g>
       </svg>
       </div>
@@ -595,7 +723,7 @@ const inflowArrows = computed(() => {
 .mark.edge { stroke: rgba(214, 236, 250, 0.42); stroke-width: 1.4; }
 
 .widen-tick { stroke: rgba(0, 229, 255, 0.4); stroke-width: 1; stroke-dasharray: 3 3; }
-.widen-label { font-size: 10px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 0.4px; }
+.widen-label { font-size: 16px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 0.4px; }
 .widen-label .val { fill: var(--text); }
 .widen-label.dim { fill: rgba(220, 245, 255, 0.92); }
 
@@ -610,7 +738,7 @@ const inflowArrows = computed(() => {
   stroke-width: 1.4;
 }
 .ghost text {
-  font-size: 10px;
+  font-size: 13px;
   fill: rgba(220, 245, 255, 0.92);
   font-family: var(--font-mono);
 }
@@ -623,7 +751,14 @@ const inflowArrows = computed(() => {
 .stop-line { stroke: rgba(228, 246, 255, 0.85); stroke-width: 3; }
 .zebra { fill: rgba(214, 236, 250, 0.22); }
 .lane-arrow { fill: none; stroke: rgba(200, 232, 248, 0.5); stroke-width: 1.4; }
-.lane-label { font-size: 10px; fill: rgba(220, 245, 255, 0.88); }
+.lane-label {
+  font-size: 10px;
+  font-weight: 600;
+  fill: rgba(220, 245, 255, 0.92);
+  paint-order: stroke;
+  stroke: rgba(2, 16, 28, 0.72);
+  stroke-width: 2.4px;
+}
 .up-label { font-size: 9.5px; fill: rgba(220, 245, 255, 0.88); }
 .up-label-bg { fill: rgba(2, 16, 28, 0.82); }
 
@@ -640,13 +775,11 @@ const inflowArrows = computed(() => {
 
 .inflow line {
   stroke: var(--cyan);
-  stroke-width: 2.4;
   stroke-linecap: round;
-  stroke-dasharray: 10 12;
   animation: inflow 0.9s linear infinite;
 }
 @keyframes inflow {
-  from { stroke-dashoffset: 22; opacity: 0.35; }
+  from { stroke-dashoffset: var(--inflow-cycle); opacity: 0.35; }
   50% { opacity: 1; }
   to { stroke-dashoffset: 0; opacity: 0.35; }
 }
@@ -660,7 +793,7 @@ const inflowArrows = computed(() => {
   transition: x1 0.32s linear, x2 0.32s linear;
 }
 .tail text {
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
   fill: rgba(220, 245, 255, 0.92);
   transition: x 0.32s linear;
@@ -675,14 +808,43 @@ const inflowArrows = computed(() => {
 .tail line { fill: none; }
 
 .ruler line { stroke: rgba(0, 229, 255, 0.24); stroke-width: 1; }
-.ruler text { font-size: 9px; fill: rgba(220, 245, 255, 0.72); font-family: var(--font-mono); }
+.ruler text { font-size: 15px; fill: rgba(220, 245, 255, 0.72); font-family: var(--font-mono); }
 
-.inter-name { font-size: 12px; fill: rgba(220, 245, 255, 0.92); letter-spacing: 1px; }
-.inter-name.trunk { fill: rgba(220, 245, 255, 0.92); }
+.inter-name { font-size: 12px; font-weight: 700; fill: rgba(220, 245, 255, 0.96); letter-spacing: 1px; }
+.inter-name.trunk { fill: rgba(220, 245, 255, 0.96); }
+.road-name {
+  position: absolute;
+  left: 10%;
+  right: auto;
+  top: 50%;
+  z-index: 2;
+  margin: 0;
+  transform: translateY(-50%);
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(220, 245, 255, 0.96);
+  letter-spacing: 4px;
+  writing-mode: vertical-rl;
+  pointer-events: none;
+}
+.inter-float {
+  position: absolute;
+  left: 8%;
+  z-index: 2;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: rgba(220, 245, 255, 0.96);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.inter-float.north { top: 3%; }
+.inter-float.south { bottom: 6%; }
 .sig .lamp { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1; }
 .sig .lamp.g { fill: #33cc88; }
 .sig .lamp.r { fill: #ff4444; }
-.sig .cd { font-size: 9px; fill: rgba(220, 245, 255, 0.92); font-family: var(--font-mono); }
+.sig .cd { font-size: 13px; fill: rgba(220, 245, 255, 0.92); font-family: var(--font-mono); }
 .sig .cd .g { fill: var(--text); }
 .sig .cd .r { fill: var(--text); }
 .sig .cd .w { fill: rgba(220, 245, 255, 0.92); }
