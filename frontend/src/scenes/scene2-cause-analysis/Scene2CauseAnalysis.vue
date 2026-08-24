@@ -1,8 +1,8 @@
 <script setup>
 /**
  * 幕 2 · 分析成因（3D 原生幕）：TrafficOriginScene 走廊 + act-02 流量溯源舞台。
- * 地图演绎由 flowTraceMapFx 在走廊里直接播放（trace → supply → ew_clear →
- * arterial → signal → overflow），不再切回首页重载。
+ * 地图演绎由 flowTraceMapFx 在走廊里直接播放（trace → supply →
+ * channel_change），不再切回首页重载。经十路东西向进口钉与绿灯约束画面已撤。
  * 节拍文案与指标读本地 data/1-2-flow-trace.json。
  */
 import { onBeforeUnmount, ref } from 'vue'

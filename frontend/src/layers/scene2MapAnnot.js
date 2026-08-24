@@ -541,11 +541,11 @@ export function createScene2MapAnnot({
   function applyBeat(name) {
     fades.length = 0;
     const showLink = name === 'supply';
-    const showRing = name === 'signal';
+    const showRing = false;
     const showQueue = name === 'overflow';
     const showSupply = name === 'supply';
     const supplyLeaving = name === 'supply_out';
-    const showArterial = name === 'arterial' || name === 'signal' || name === 'overflow';
+    const showArterial = false;
     ringGroup.visible = showRing;
     supplyGroup.visible = showSupply || supplyLeaving;
     arterialGroup.visible = showArterial;
@@ -571,7 +571,7 @@ export function createScene2MapAnnot({
       for (const spr of hopShareLabels) fadeTo(spr, 0);
     }
     fadeTo(viaPulse, showQueue ? 0.9 : 0);
-    fadeTo(blockPulse, name === 'signal' ? 0.85 : 0);
+    fadeTo(blockPulse, 0);
     if (queueTube) fadeTo(queueTube, showQueue ? 0.85 : 0);
     fadeTo(ratioSpr, showQueue ? 1 : 0);
     const ringOn = showRing ? 0.95 : 0;
@@ -579,9 +579,10 @@ export function createScene2MapAnnot({
   }
 
   group.setBeat = (name, at = performance.now() / 1000) => {
-    beat = name;
+    const next = name === 'signal' || name === 'arterial' ? 'hidden' : name;
+    beat = next;
     beatAt = at;
-    applyBeat(name);
+    applyBeat(next);
   };
 
   group.setTraceElapsed = (elapsed) => {

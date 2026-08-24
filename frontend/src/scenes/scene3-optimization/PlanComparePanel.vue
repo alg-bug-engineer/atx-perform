@@ -9,6 +9,8 @@ const props = defineProps({
   signalPlan: { type: Object, default: null },
 })
 
+const emit = defineEmits(['intro-complete'])
+
 const board = computed(() => (
   props.signalPlan ? buildPhaseBoard(props.signalPlan) : (props.payload?.signal_plan_board || null)
 ))
@@ -19,14 +21,22 @@ const direction = ref('both')
 
 const reduceMotion = typeof window !== 'undefined'
   && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 const introComplete = ref(reduceMotion || !board.value || !tsModel.value)
 let introTimer = 0
+const INTRO_MS = 3000
+/** 时距图入场 delay 0.7s + transform 0.52s */
+const WAVE_REVEAL_MS = 1300
 
 onMounted(() => {
-  if (introComplete.value) return
+  if (introComplete.value) {
+    emit('intro-complete')
+    return
+  }
   introTimer = window.setTimeout(() => {
     introComplete.value = true
-  }, 3000)
+    introTimer = window.setTimeout(() => emit('intro-complete'), WAVE_REVEAL_MS)
+  }, INTRO_MS)
 })
 
 onUnmounted(() => {

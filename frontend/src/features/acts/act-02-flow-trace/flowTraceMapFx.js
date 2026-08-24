@@ -6,13 +6,12 @@
  *
  * 演绎时序：坤顺/解放东北东西进口 → 经十路–奥体西北进口 流量溯源，
  * 视觉对齐 baseline 拥堵蔓延的反向（远端先亮，收束到汇点）；
- * 溯源之后：路旁供需钉 → 经十东西向进口钉 → 示意相位环 → 渠化变化弹窗
+ * 溯源之后：路旁供需钉 → 渠化变化弹窗
  * （先红框闪烁 3→5 变化点，再红框强调两路口；口播含周期不协调，播完直接交棒）。
  *
  * HUD 状态经 setFlowTraceHud 桥接给幕 2 舞台组件（Act2FlowStage）渲染。
  */
 import { createInflowTraceLayer } from '../../../layers/inflowTraceLayer.js';
-import { createJingshiEwFlowLayer } from '../../../layers/jingshiEwFlowLayer.js';
 import { createRoadNameLabelLayer } from '../../../layers/roadNameLabels.js';
 import { createScene2MapAnnot } from '../../../layers/scene2MapAnnot.js';
 import { broadcastSilent, whenBroadcastIdle } from '../../../shared/broadcast-bus.js';
@@ -512,96 +511,34 @@ export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
 
       afterMapAndVoice(beatMs(beats, 'supply', dc.hold_ms ?? 2800), () => {
         clearInflowLayer();
-        annot?.setBeat('supply_out');
-        after(beatMs(beats, 'supply_clear', beats.supply?.clear_ms ?? 500), () => {
-          annot?.setBeat('hidden');
+        annot?.setBeat('hidden');
+        nameLayer?.setVisibleNames?.(dc.keep_road_labels || ['经十路', '奥体西路']);
+        playPhase = 'channel_change';
+        emitHud({
+          phase: 'channel_change',
+          caption: captionFor(beats, 'channel_change', '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加'),
+          text: captionFor(beats, 'channel_change', '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加'),
+          headline: '',
+        });
+        const splitMs = broadcastSilent.value
+          ? beatFieldMs(beats, 'channel_change', 'silent_split_ms', CHANNEL_CHANGE_SILENT_SPLIT_MS)
+          : beatFieldMs(beats, 'channel_change', 'split_ms', CHANNEL_CHANGE_SPLIT_MS);
+        after(splitMs, () => {
+          playPhase = 'cycle_mismatch';
           emitHud({
-            phase: 'ew_clear',
-            caption: '',
-            text: '',
+            phase: 'cycle_mismatch',
+            caption: captionFor(beats, 'cycle_mismatch', '两路口周期不相等、未协调，容易导致排队溢出'),
+            text: captionFor(beats, 'cycle_mismatch', '两路口周期不相等、未协调，容易导致排队溢出'),
+            headline: '',
           });
-          nameLayer?.setVisibleNames?.(dc.keep_road_labels || ['经十路', '奥体西路']);
-
-          after(dc.clear_ms ?? 600, () => {
-            frameJingshiEw(target, problemRoad);
-            after(dc.frame_ms ?? 900, () => {
-              clearEwLayer();
-              ewLayer = createJingshiEwFlowLayer({
-                roads,
-                originInter: target,
-                problemRoad,
-                resolution: getResolution?.(),
-              });
-              runtime.scene.add(ewLayer);
-              ewLayer.play(performance.now() / 1000);
-              frameJingshiEw(target, problemRoad);
-              playPhase = 'arterial';
-              annot?.setBeat('arterial');
-              emitHud({
-                phase: 'arterial',
-                caption: '',
-                text: '',
-                headline: '',
-                panel: {
-                  kind: 'arterial',
-                  title: '经十路主干道保护',
-                  metrics: arterialMetrics,
-                  gaps: dc.gaps || [],
-                  copy: copyText(dc, 'arterial', '经十路东西向通行压力突出，信号优先保障主干道通行。'),
-                },
-              });
-
-              // arterial 口播按最新语音文档移除：纯视觉停留后交棒 signal
-              after(dc.ew_flow_ms ?? 3200, () => {
-                playPhase = 'signal';
-                annot?.setBeat('signal');
-                emitHud({
-                  phase: 'signal',
-                  caption: captionFor(beats, 'signal', '受主干道优先约束，当前周期内难以释放北向南有效绿灯窗口'),
-                  text: captionFor(beats, 'signal', '受主干道优先约束，当前周期内难以释放北向南有效绿灯窗口'),
-                  headline: headlineFor(beats, 'signal', '北向南难以增配有效绿灯'),
-                  panel: {
-                    kind: 'signal',
-                    title: '绿灯约束',
-                    value: '经十路主干道优先',
-                    copy: copyText(dc, 'priority', '受主干道优先约束，当前周期内难以再为北向南直行释放有效绿灯窗口。'),
-                  },
-                });
-
-                afterMapAndVoice(beatMs(beats, 'signal', dc.signal_ms ?? 2800), () => {
-                  // 渠化变化弹窗：先红框闪烁 3→5 变化点；口播切到周期不协调时改框两路口
-                  playPhase = 'channel_change';
-                  emitHud({
-                    phase: 'channel_change',
-                    caption: captionFor(beats, 'channel_change', '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加'),
-                    text: captionFor(beats, 'channel_change', '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加'),
-                    headline: '',
-                  });
-                  const splitMs = broadcastSilent.value
-                    ? beatFieldMs(beats, 'channel_change', 'silent_split_ms', CHANNEL_CHANGE_SILENT_SPLIT_MS)
-                    : beatFieldMs(beats, 'channel_change', 'split_ms', CHANNEL_CHANGE_SPLIT_MS);
-                  after(splitMs, () => {
-                    playPhase = 'cycle_mismatch';
-                    emitHud({
-                      phase: 'cycle_mismatch',
-                      caption: captionFor(beats, 'cycle_mismatch', '两路口周期不相等、未协调，容易导致排队溢出'),
-                      text: captionFor(beats, 'cycle_mismatch', '两路口周期不相等、未协调，容易导致排队溢出'),
-                      headline: '',
-                    });
-                  });
-                  Promise.all([
-                    new Promise((resolveVoice) => waitVoiceThen(resolveVoice)),
-                    new Promise((resolveHold) => after(CHANNEL_CHANGE_HOLD_MS, resolveHold)),
-                  ]).then(() => {
-                    // 口播完成：弹窗淡出后直接交棒
-                    playPhase = 'handoff';
-                    after(CHANNEL_CHANGE_EXIT_MS, () => {
-                      hooks.onComplete?.();
-                    });
-                  });
-                });
-              });
-            });
+        });
+        Promise.all([
+          new Promise((resolveVoice) => waitVoiceThen(resolveVoice)),
+          new Promise((resolveHold) => after(CHANNEL_CHANGE_HOLD_MS, resolveHold)),
+        ]).then(() => {
+          playPhase = 'handoff';
+          after(CHANNEL_CHANGE_EXIT_MS, () => {
+            hooks.onComplete?.();
           });
         });
       });

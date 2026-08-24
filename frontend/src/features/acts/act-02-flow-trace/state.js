@@ -50,12 +50,23 @@ const TASK_LABEL_BY_PHASE = {
  */
 export const flowTraceHud = ref({ phase: '', caption: '', text: '', headline: '', panel: null });
 
+/** 经十路绿灯约束 / 东西向进口钉已从演示流程撤下，落到渠化变化 */
+const SKIP_TO_CHANNEL = new Set(['ew_clear', 'arterial', 'signal']);
+const CHANNEL_CHANGE_HUD = {
+  phase: 'channel_change',
+  caption: '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加',
+  text: '路段90米处3车道拓宽为5车道，排队超过拓宽范围后长度急剧增加',
+  headline: '',
+  panel: null,
+};
+
 /** 写入 HUD 状态；phase 变化时同步口播 beat */
 export function setFlowTraceHud(state) {
-  flowTraceHud.value = { ...flowTraceHud.value, ...state };
-  if (VOICE_BEAT_BY_PHASE[state?.phase]) setFlowTraceMapBeat(state.phase);
-  if (TASK_LABEL_BY_PHASE[state?.phase]) taskBarLabel.value = TASK_LABEL_BY_PHASE[state.phase];
-  const beat = VOICE_BEAT_BY_PHASE[state?.phase];
+  const next = SKIP_TO_CHANNEL.has(state?.phase) ? CHANNEL_CHANGE_HUD : state;
+  flowTraceHud.value = { ...flowTraceHud.value, ...next };
+  if (VOICE_BEAT_BY_PHASE[next?.phase]) setFlowTraceMapBeat(next.phase);
+  if (TASK_LABEL_BY_PHASE[next?.phase]) taskBarLabel.value = TASK_LABEL_BY_PHASE[next.phase];
+  const beat = VOICE_BEAT_BY_PHASE[next?.phase];
   if (beat) setBeat(beat);
 }
 

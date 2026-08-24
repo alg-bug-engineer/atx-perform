@@ -449,79 +449,26 @@ export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
       after(beatMs(beats, 'supply', dc.hold_ms ?? 2800), () => {
         clearInflowLayer();
         annot?.setBeat('hidden');
-        hooks.onHud?.({
-          phase: 'ew_clear',
-          caption: '',
-          text: '',
-        });
         nameLayer?.setVisibleNames?.(dc.keep_road_labels || ['经十路', '奥体西路']);
-
-        after(dc.clear_ms ?? 600, () => {
+        playPhase = 'overflow';
+        ewLayer?.setOverflowHint?.(true);
+        annot?.setBeat('overflow');
+        frameProblemLink(via, target);
+        hooks.onHud?.({
+          phase: 'overflow',
+          caption: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
+          text: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
+          panel: {
+            kind: 'overflow',
+            title: '溢流风险',
+            queue_m: beats.overflow?.queue_m || 270,
+            copy: copyText(dc, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散。'),
+          },
+        });
+        after(beatMs(beats, 'overflow', dc.overflow_ms ?? 3600), () => {
           frameJingshiEw(target, problemRoad);
           after(dc.frame_ms ?? 900, () => {
-            clearEwLayer();
-            ewLayer = createJingshiEwFlowLayer({
-              roads,
-              originInter: target,
-              problemRoad,
-              resolution: getResolution?.(),
-            });
-            runtime.scene.add(ewLayer);
-            ewLayer.play(performance.now() / 1000);
-            frameJingshiEw(target, problemRoad);
-            playPhase = 'arterial';
-            annot?.setBeat('arterial');
-            hooks.onHud?.({
-              phase: 'arterial',
-              caption: captionFor(beats, 'arterial', '经十路为通勤主干道，保障东西方向流量'),
-              text: captionFor(beats, 'arterial', '经十路为通勤主干道，保障东西方向流量'),
-              panel: {
-                kind: 'arterial',
-                title: '本口',
-                approaches: dc.approach_cards || [],
-                copy: copyText(dc, 'arterial', '经十路为通勤主干道，保障东西方向流量。'),
-              },
-            });
-
-            after(beatMs(beats, 'arterial', dc.ew_flow_ms ?? 3200), () => {
-              playPhase = 'signal';
-              annot?.setBeat('signal');
-              hooks.onHud?.({
-                phase: 'signal',
-                caption: captionFor(beats, 'signal', '经十路主干道优先，周期内无可用绿灯分配给北向南直行'),
-                text: captionFor(beats, 'signal', '经十路主干道优先，周期内无可用绿灯分配给北向南直行'),
-                panel: {
-                  kind: 'signal',
-                  title: '绿灯约束',
-                  value: '经十路主干道优先',
-                  copy: copyText(dc, 'priority', '经十路主干道优先，周期内无可用绿灯时间分配给北向南直行。'),
-                },
-              });
-
-              after(beatMs(beats, 'signal', dc.signal_ms ?? 2800), () => {
-                playPhase = 'overflow';
-                ewLayer?.setOverflowHint?.(true);
-                annot?.setBeat('overflow');
-                frameProblemLink(via, target);
-                hooks.onHud?.({
-                  phase: 'overflow',
-                  caption: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
-                  text: captionFor(beats, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散'),
-                  panel: {
-                    kind: 'overflow',
-                    title: '溢流风险',
-                    queue_m: beats.overflow?.queue_m || 270,
-                    copy: copyText(dc, 'overflow', '经十路和奥体西路北进口车流在短时间内无法快速消散。'),
-                  },
-                });
-                after(beatMs(beats, 'overflow', dc.overflow_ms ?? 3600), () => {
-                  frameJingshiEw(target, problemRoad);
-                  after(dc.frame_ms ?? 900, () => {
-                    hooks.onComplete?.();
-                  });
-                });
-              });
-            });
+            hooks.onComplete?.();
           });
         });
       });

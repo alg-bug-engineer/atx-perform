@@ -42,17 +42,18 @@ function applyDockPanel(state) {
     dockStack.value = panel ? [panel] : [];
     return;
   }
-  if (phase === 'ew_clear') {
-    dockStack.value = dockStack.value.filter((p) => p.kind !== 'trace');
+  if (
+    phase === 'ew_clear'
+    || phase === 'arterial'
+    || phase === 'signal'
+    || phase === 'channel_change'
+    || phase === 'cycle_mismatch'
+  ) {
+    dockStack.value = [];
     return;
   }
-  if (!panel?.kind) return;
-  const hideSupplyChain = panel.kind === 'arterial' || panel.kind === 'signal';
-  const rest = dockStack.value.filter((p) => {
-    if (p.kind === 'trace' || p.kind === panel.kind) return false;
-    if (hideSupplyChain && p.kind === 'supply') return false;
-    return true;
-  });
+  if (!panel?.kind || panel.kind === 'arterial' || panel.kind === 'signal') return;
+  const rest = dockStack.value.filter((p) => p.kind !== 'trace' && p.kind !== panel.kind);
   dockStack.value = [...rest, panel];
 }
 
@@ -64,7 +65,11 @@ const isDone = computed(() => flowTracePhase.value === 'done');
 // cycle_mismatch 拍（分段时序）时弹窗持续显示，动画自行演出周期不协调段
 const channelChangeOpen = computed(() => {
   const phase = flowTraceHud.value.phase;
-  return phase === 'channel_change' || phase === 'cycle_mismatch';
+  return phase === 'channel_change'
+    || phase === 'cycle_mismatch'
+    || phase === 'signal'
+    || phase === 'arterial'
+    || phase === 'ew_clear';
 });
 const channelCaption = computed(() => flowTraceHud.value.caption
   || (flowTraceHud.value.phase === 'cycle_mismatch'
@@ -79,7 +84,10 @@ const channelChangeDur = computed(() => {
 const headline = computed(() => {
   const phase = flowTraceHud.value.phase;
   if (!phase || phase === 'error' || phase === 'boot') return '';
-  return flowTraceHud.value.headline || '';
+  if (phase === 'signal' || phase === 'arterial' || phase === 'ew_clear') return '';
+  const text = flowTraceHud.value.headline || '';
+  if (/难以增配有效绿灯/.test(text)) return '';
+  return text;
 });
 
 function onReplay() {
