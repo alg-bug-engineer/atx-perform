@@ -1,0 +1,9 @@
+{
+  "name": "atx-perform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "交通智能体平台：前端 Vite + 后端 FastAPI 一键开发脚本",
+  "scripts": {
+    "dev": "bash scripts/dev.sh"
+  }
+}
