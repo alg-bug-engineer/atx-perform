@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     pg_dsn: str = ""
     deepagent_base_url: str = "http://127.0.0.1:8010"
     allow_demo_fallback: bool = False
+    # 文案生成策略：0=纯 PG（只返回库内字段）/ 1=混合（PG 数值 + data/*.json 固化文案）/ 2=LLM 实时生成
+    narration_mode: int = 0
+    # PG schema：路网主 schema 与流量指标 schema
+    pg_schema: str = "road6"
+    pg_flow_schema: str = "xianchang"
 
     @property
     def resolved_data_dir(self) -> Path:
