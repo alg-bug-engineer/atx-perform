@@ -5,10 +5,13 @@ FastAPI 独立进程。Demo 轨读取仓库 `data/1-*.json`；Live 轨（PG / Ag
 ## 启动
 
 ```bash
-conda activate daily
 cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv sync --all-extras                              # 首次：创建 .venv 并安装依赖
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+> 依赖由 uv 管理（Python >=3.11，uv 自动安装匹配版本）；无需 conda。
+> 跑测试：`uv run pytest -q`。
 
 - 健康检查：http://127.0.0.1:8000/api/v1/health
 - OpenAPI：http://127.0.0.1:8000/docs
