@@ -6,13 +6,16 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import '../../features/acts/act-01-problem-locate/index.js'
 import TrafficOriginScene from '../../features/scenes/traffic-origin/TrafficOriginScene.vue'
 import ProblemLocateStage from '../../features/acts/act-01-problem-locate/ProblemLocateStage.vue'
+import { hydrateScene1Datasets } from '../../features/acts/act-01-problem-locate/fixture.js'
 import { narrativeActive } from '../../shared/narrative-state.js'
 import { gateSceneAdvance } from '../../shared/act-playback.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
-import { SCENE_META } from './index.js'
+import { loadScene1Data, SCENE_META } from './index.js'
 
-const { setScene, advanceScene } = useSceneRoute()
+const { setScene } = useSceneRoute()
 
+const datasets = ref(null)
+const loadError = ref('')
 const mapReady = ref(false)
 
 narrativeActive.value = true
@@ -22,8 +25,14 @@ function onActExit() {
   gateSceneAdvance({ nextSceneKey: '2', apply: () => setScene('2') })
 }
 
-onMounted(() => {
-  // mapReady 由 TrafficOriginScene @ready 事件设置
+onMounted(async () => {
+  try {
+    const payload = await loadScene1Data()
+    hydrateScene1Datasets(payload)
+    datasets.value = payload
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : String(err)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -33,8 +42,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="scene-3d" data-testid="scene1-problem-locate">
-    <TrafficOriginScene @ready="mapReady = true" />
-    <ProblemLocateStage v-if="mapReady" @exit="onActExit" />
+    <p v-if="loadError" class="scene-load-error">幕数据加载失败：{{ loadError }}</p>
+    <template v-else-if="datasets">
+      <TrafficOriginScene :scene-datasets="datasets" @ready="mapReady = true" />
+      <ProblemLocateStage v-if="mapReady" @exit="onActExit" />
+    </template>
 
     <div class="scene-actions">
       <span class="scene-tag">{{ SCENE_META.name }}</span>
@@ -48,6 +60,11 @@ onBeforeUnmount(() => {
 .scene-3d {
   position: absolute;
   inset: 0;
+}
+
+.scene-load-error {
+  margin: 24px;
+  color: #ff8b8b;
 }
 
 .scene-3d :deep(.hud),

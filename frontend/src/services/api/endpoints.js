@@ -3,7 +3,7 @@
  * VITE_MOCK !== '0'：Mock，走 caseFixture 静态切片。
  * VITE_MOCK === '0'：Live，仅 runtime 数据；失败报错，严禁回退 fixture。
  */
-import { getJSON, isApiError, postJSON } from './client.js';
+import { apiUrl, getJSON, isApiError, postJSON } from './client.js';
 import { streamPost } from './sse.js';
 
 /** Live 模式：显式 VITE_MOCK=0 */
@@ -43,7 +43,7 @@ export async function runAgent(userInput, opts = {}) {
  */
 export function runAgentStream(userInput, handlers, opts = {}) {
   return streamPost(
-    '/api/v1/agent/run/stream',
+    apiUrl('/api/v1/agent/run/stream'),
     {
       user_input: userInput,
       trace_id: opts.trace_id,
@@ -119,6 +119,13 @@ export async function regeneratePlan(opts) {
 
 export async function fetchHealth() {
   return getJSON('/health');
+}
+
+/**
+ * @param {string} sceneKey
+ */
+export async function fetchScene(sceneKey) {
+  return getJSON(`/scenes/${sceneKey}`);
 }
 
 /**

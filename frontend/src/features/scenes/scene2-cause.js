@@ -201,7 +201,8 @@ function heightForJingshiEw(bounds) {
  * @param {{ onHud?: Function, onComplete?: Function }} hooks
  */
 export async function createScene2Cause(runtime, mapCtx, hooks = {}) {
-  const flowTrace = await fetchJson('/data/1-2-flow-trace.json');
+  const flowTrace = hooks.datasets?.flowTrace
+    || (await fetchJson('/data/1-2-flow-trace.json'));
   const { roads, intersections, topology, getResolution } = mapCtx;
   const hopApproaches = parseApproaches(
     flowTrace?.allowed_approaches || flowTrace?.meta?.approaches,

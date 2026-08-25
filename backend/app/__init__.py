@@ -1,0 +1,1 @@
+"""atx-perform FastAPI application."""

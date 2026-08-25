@@ -53,5 +53,19 @@ export default defineConfig({
     fs: {
       allow: [repoRoot],
     },
+    proxy: {
+      '/api/v1': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        timeout: 420_000,
+        configure(proxy) {
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            if (String(req.url || '').includes('/stream')) {
+              res.setHeader('X-Accel-Buffering', 'no')
+            }
+          })
+        },
+      },
+    },
   },
 })

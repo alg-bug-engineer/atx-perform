@@ -16,6 +16,14 @@
 
 import sceneObjects from '@data/1-scene-objects.json';
 import locateData from '@data/1-1-problem-locate.json';
+import fallbackChannelization from '@data/1-1-channelization.json';
+
+/** 渠化数据可被 API hydrate 覆盖 */
+let channelizationData = fallbackChannelization;
+
+export function getChannelizationData() {
+  return channelizationData;
+}
 
 const SCENE_INTERSECTIONS = sceneObjects.intersections || {};
 const SCENE_PROBLEM_LINK = sceneObjects.problem_link || {};
@@ -487,3 +495,93 @@ export const TRAFFIC_COLOR_CASE_LINKS = COLOR_LINKS.map((l) => ({
   ...(l.is_problem_link ? { queue_length_m: LOCATE_METRICS.queue_length_m, is_problem_link: true } : {}),
   geom: l.geom,
 }));
+
+/**
+ * 用后端 / 网关数据包覆盖幕 1 派生常量。须在挂载地图与舞台之前调用。
+ * @param {{ objects?: object, locate?: object, channelization?: object }} datasets
+ */
+export function hydrateScene1Datasets(datasets = {}) {
+  const objects = datasets.objects;
+  const locate = datasets.locate;
+  if (datasets.channelization) channelizationData = datasets.channelization;
+
+  if (objects?.intersections) {
+    const down = objects.intersections.downstream_jingshi;
+    const up = objects.intersections.upstream_jiefang;
+    if (down) {
+      INTERSECTIONS.jingshi.interId = down.inter_id;
+      INTERSECTIONS.jingshi.lon = down.lon;
+      INTERSECTIONS.jingshi.lat = down.lat;
+    }
+    if (up) {
+      INTERSECTIONS.jiefang.interId = up.inter_id;
+      INTERSECTIONS.jiefang.lon = up.lon;
+      INTERSECTIONS.jiefang.lat = up.lat;
+    }
+  }
+
+  const link = objects?.problem_link;
+  const metrics = locate?.problem_link_metrics;
+  if (link) {
+    PROBLEM_LINK.linkId = link.link_id;
+    PROBLEM_LINK.roadName = link.road_name;
+    PROBLEM_LINK.direction = link.direction;
+    PROBLEM_LINK.lengthM = link.length_m;
+  }
+  if (metrics) {
+    PROBLEM_LINK.queueLengthM = metrics.queue_length_m;
+    PROBLEM_LINK.queueLengthSource = metrics.queue_length_source;
+    PROBLEM_LINK.storageLengthM = metrics.storage_length_m;
+    PROBLEM_LINK.storageLengthSource = metrics.storage_length_source;
+    PROBLEM_LINK.avgSpeedKmh = metrics.avg_speed_kmh;
+    PROBLEM_LINK.delayIndex = metrics.congestion_delay_index;
+    PROBLEM_LINK.jamDelayIndexWeekly = metrics.jam_delay_index_weekly;
+  }
+  if (locate?.jingshi_north_through_saturation) {
+    PROBLEM_LINK.northThroughSaturation = locate.jingshi_north_through_saturation.turn_saturation;
+  }
+
+  if (locate?.map_beats) {
+    Object.keys(PROBLEM_LOCATE_BEATS).forEach((key) => {
+      delete PROBLEM_LOCATE_BEATS[key];
+    });
+    Object.assign(PROBLEM_LOCATE_BEATS, locate.map_beats);
+  }
+
+  const links = locate?.traffic_color_links;
+  if (Array.isArray(links)) {
+    const mapped = links.map((l) => ({
+      link_id: l.link_id,
+      road_name: l.road_name,
+      role: l.is_problem_link ? 'north_entrance' : 'context',
+      avg_speed_kmh: l.avg_speed_kmh,
+      delay_index: l.delay_index_mm,
+      derived_state: l.derived_state_from_speed,
+      ...(l.is_problem_link
+        ? { queue_length_m: metrics?.queue_length_m, is_problem_link: true }
+        : {}),
+      geom: l.geom,
+    }));
+    TRAFFIC_COLOR_CASE_LINKS.splice(0, TRAFFIC_COLOR_CASE_LINKS.length, ...mapped);
+    const problemId = PROBLEM_LINK.linkId;
+    const coords = (links.find((l) => l.link_id === problemId)?.geom?.coordinates) || [];
+    PROBLEM_LINK_COORDS.splice(0, PROBLEM_LINK_COORDS.length, ...coords);
+    PROBLEM_LINK.stateDerived = links.find((l) => l.link_id === problemId)?.derived_state_from_speed ?? 4;
+  }
+
+  if (PROBLEM_LINK.linkId) DIAGNOSIS_TICKET.link_id = PROBLEM_LINK.linkId;
+  if (PROBLEM_LINK.roadName) DIAGNOSIS_TICKET.link_name = PROBLEM_LINK.roadName;
+  DIAGNOSIS_TICKET.inter_id = INTERSECTIONS.jingshi.interId;
+  DIAGNOSIS_TICKET.lng = INTERSECTIONS.jingshi.lon;
+  DIAGNOSIS_TICKET.lat = INTERSECTIONS.jingshi.lat;
+
+  SPATIAL_SCENE.target.inter_id = INTERSECTIONS.jingshi.interId;
+  SPATIAL_SCENE.target.lng = INTERSECTIONS.jingshi.lon;
+  SPATIAL_SCENE.target.lat = INTERSECTIONS.jingshi.lat;
+  if (SPATIAL_SCENE.upstream_nodes?.[0]) {
+    SPATIAL_SCENE.upstream_nodes[0].inter_id = INTERSECTIONS.jiefang.interId;
+    SPATIAL_SCENE.upstream_nodes[0].lng = INTERSECTIONS.jiefang.lon;
+    SPATIAL_SCENE.upstream_nodes[0].lat = INTERSECTIONS.jiefang.lat;
+    SPATIAL_SCENE.upstream_nodes[0].distance_m = PROBLEM_LINK.lengthM;
+  }
+}

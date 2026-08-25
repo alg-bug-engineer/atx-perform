@@ -29,6 +29,7 @@ import { act2MapBeat } from '../../shared/narrative-state.js';
  */
 const props = defineProps({
   routeMode: { type: Boolean, default: false },
+  sceneDatasets: { type: Object, default: null },
 });
 
 const emit = defineEmits(['ready']);
@@ -172,6 +173,7 @@ watch(act2MapBeat, (b) => {
 async function ensureScene2() {
   if (scene2 || !runtimeApi || !mapCtx) return;
   scene2 = await createScene2Cause(runtimeApi, mapCtx, {
+    datasets: props.sceneDatasets,
     onHud: (state) => {
       sceneHud.value = { ...sceneHud.value, ...state };
       applyDockPanel(state);
@@ -305,7 +307,12 @@ async function boot() {
 
   scene0 = createScene0Opening(
     runtimeApi,
-    { cityMonitorFx, intersections: allIntersections, overviewCenter },
+    {
+      cityMonitorFx,
+      intersections: allIntersections,
+      overviewCenter,
+      sceneObjects: props.sceneDatasets?.objects,
+    },
     {},
   );
 

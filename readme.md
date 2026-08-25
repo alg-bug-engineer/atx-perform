@@ -14,6 +14,10 @@
 
 ## 开发
 
-- UI 风格对齐 `references/baseline`
+- 前端：`cd frontend && npm run dev`（:5174）
+- 后端：`conda activate daily && cd backend && uvicorn app.main:app --reload --port 8000`
+- 契约：`contracts/`
 - 功能在时间戳分支开发，禁止自动合入 `main`
-- 配置：`cp env.example .env`
+- 配置：`cp env.example .env`（密钥勿入库）
+
+前后端分离骨架：`backend/`（FastAPI）、`frontend/`（Vue）、`deploy/`。幕 JSON 默认仍打包进前端；设 `VITE_SCENE_API=1` 后改走 `/api/v1/scenes`。

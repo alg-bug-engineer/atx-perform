@@ -12,8 +12,8 @@ import {
   INTERSECTIONS,
   PROBLEM_LINK_COORDS,
   PROBLEM_LOCATE_BEATS,
+  getChannelizationData,
 } from './fixture.js';
-import channelizationData from '@data/1-1-channelization.json';
 import { getConductorSegments } from '../../../shared/sceneNarration.js';
 import {
   createChannelizationLayer,
@@ -130,7 +130,9 @@ function rowsOf(key) {
 export function createAct2MapFx({
   roads = [],
   intersections = [],
+  channelization,
 } = {}) {
+  const channelizationData = channelization || getChannelizationData();
   const group = new THREE.Group();
   group.name = 'act2ProblemLocateCorridorFx';
 

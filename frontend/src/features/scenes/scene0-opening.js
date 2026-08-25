@@ -3,7 +3,7 @@
  * cityScan(~3.2s) → 揭示左栏 → 聚焦 COR-AOTIXI-JFD-JS → 问题路段高德式深红实色带 → 拉近镜头
  * 问题路段几何取本地 data/1-scene-objects.json（剧本要求：拥堵标红 + 自动连贯拉近）
  */
-import sceneObjects from '@data/1-scene-objects.json';
+import fallbackSceneObjects from '@data/1-scene-objects.json';
 import { createCityScan } from '../../layers/cityScan.js';
 import { createProblemLinkAlert } from '../../layers/problemLinkAlert.js';
 import {
@@ -75,6 +75,7 @@ function heightForFocus(focus) {
  */
 export function createScene0Opening(runtime, ctx, hooks = {}) {
   const { cityMonitorFx, intersections = [], overviewCenter } = ctx;
+  const sceneObjects = ctx.sceneObjects || fallbackSceneObjects;
 
   const bounds = scanBoundsFromIntersections(intersections);
   const cityScan = createCityScan(bounds);

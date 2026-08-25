@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atx-perform.local/schemas/scene-bundle.json",
+  "title": "SceneBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scene_key", "source", "contract_version", "generated_at", "datasets"],
+  "properties": {
+    "scene_key": { "type": "string", "pattern": "^[0-5]$" },
+    "source": { "enum": ["demo", "live"] },
+    "contract_version": { "type": "string", "examples": ["1.0"] },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "datasets": {
+      "type": "object",
+      "additionalProperties": { "type": "object" },
+      "description": "键名与 frontend loadSceneData.js 一致：objects/opening/channelization/locate/cause/flowTrace/optimization/signalPlan/effect/skill/sniff"
+    }
+  }
+}

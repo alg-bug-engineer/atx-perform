@@ -3,20 +3,20 @@
  * 幕 2 · 分析成因（3D 原生幕）：TrafficOriginScene 走廊 + act-02 流量溯源舞台。
  * 地图演绎由 flowTraceMapFx 在走廊里直接播放（trace → supply →
  * channel_change），不再切回首页重载。经十路东西向进口钉与绿灯约束画面已撤。
- * 节拍文案与指标读本地 data/1-2-flow-trace.json。
  */
-import { onBeforeUnmount, ref } from 'vue'
-// 副作用注册 act-02：TrafficOriginScene init 时要从注册表取 createAct2FlowMapFx
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import '../../features/acts/act-02-flow-trace/index.js'
 import TrafficOriginScene from '../../features/scenes/traffic-origin/TrafficOriginScene.vue'
 import Act2FlowStage from '../../features/acts/act-02-flow-trace/Act2FlowStage.vue'
 import { narrativeActive } from '../../shared/narrative-state.js'
 import { gateSceneAdvance } from '../../shared/act-playback.js'
 import { useSceneRoute } from '../../shared/useSceneRoute.js'
-import { SCENE_META } from './index.js'
+import { loadScene2Data, SCENE_META } from './index.js'
 
-const { setScene, advanceScene } = useSceneRoute()
+const { setScene } = useSceneRoute()
 
+const datasets = ref(null)
+const loadError = ref('')
 /** 等地图与 flowTraceFx 就位再挂舞台，否则首拍 trace 会被丢掉 */
 const mapReady = ref(false)
 
@@ -27,6 +27,14 @@ function onActExit() {
   gateSceneAdvance({ nextSceneKey: '3', apply: () => setScene('3') })
 }
 
+onMounted(async () => {
+  try {
+    datasets.value = await loadScene2Data()
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : String(err)
+  }
+})
+
 onBeforeUnmount(() => {
   narrativeActive.value = false
 })
@@ -34,8 +42,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="scene-3d" data-testid="scene2-cause-analysis">
-    <TrafficOriginScene @ready="mapReady = true" />
-    <Act2FlowStage v-if="mapReady" @exit="onActExit" />
+    <p v-if="loadError" class="scene-load-error">幕数据加载失败：{{ loadError }}</p>
+    <template v-else-if="datasets">
+      <TrafficOriginScene :scene-datasets="datasets" @ready="mapReady = true" />
+      <Act2FlowStage v-if="mapReady" @exit="onActExit" />
+    </template>
 
     <div class="scene-actions">
       <span class="scene-tag">{{ SCENE_META.name }}</span>
@@ -49,6 +60,11 @@ onBeforeUnmount(() => {
 .scene-3d {
   position: absolute;
   inset: 0;
+}
+
+.scene-load-error {
+  margin: 24px;
+  color: #ff8b8b;
 }
 
 /* 走廊铺满本幕视口（运行时默认写死 100vw/100vh，会顶穿步骤栏） */
