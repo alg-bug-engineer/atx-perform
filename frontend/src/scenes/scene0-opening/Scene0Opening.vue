@@ -4,9 +4,21 @@
  * 分镜：城市扫描 → 揭示监控 → 问题路段高德式深红实色带 → 连贯拉近镜头（scene0-opening.js）。
  * 幕内不自行切幕，跳转统一交给顶部步骤栏 / ?scene= 路由。
  */
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import MapRuntime from '../../features/scenes/MapRuntime.vue'
 import { enterIdle, openingBeat } from '../../shared/home-idle-state.js'
+import { loadScene0Data } from './index.js'
+
+const datasets = ref(null)
+const loadError = ref('')
+
+onMounted(async () => {
+  try {
+    datasets.value = await loadScene0Data()
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : String(err)
+  }
+})
 
 onBeforeUnmount(() => {
   enterIdle()
@@ -16,7 +28,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="scene-3d" data-testid="scene0-opening">
-    <MapRuntime route-mode />
+    <p v-if="loadError" class="scene-load-error">幕数据加载失败：{{ loadError }}</p>
+    <MapRuntime v-else-if="datasets" route-mode :scene-datasets="datasets" />
   </div>
 </template>
 
@@ -24,6 +37,11 @@ onBeforeUnmount(() => {
 .scene-3d {
   position: absolute;
   inset: 0;
+}
+
+.scene-load-error {
+  margin: 24px;
+  color: #ff8b8b;
 }
 
 /* 顶部大字报与时钟由 AppChrome 统一出，隐去运行时自带的一套 */

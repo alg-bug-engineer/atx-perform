@@ -1,6 +1,9 @@
 /**
- * 统一从仓库 data/ 加载幕 JSON（Vite alias @data → ../data）
+ * 幕 JSON 加载。
+ * 默认 @data 打包（不依赖后端）；VITE_SCENE_API=1 时走 /api/v1/scenes/bundle。
  */
+import { isSceneApiEnabled, loadSceneBundleFromApi } from './gateways/sceneDataGateway.js'
+
 const loaders = {
   objects: () => import('@data/1-scene-objects.json'),
   opening: () => import('@data/1-0-opening.json'),
@@ -16,6 +19,11 @@ const loaders = {
 }
 
 export async function loadJson(name) {
+  if (isSceneApiEnabled()) {
+    const datasets = await loadSceneBundleFromApi([name])
+    if (!datasets[name]) throw new Error(`[loadSceneData] api missing dataset: ${name}`)
+    return datasets[name]
+  }
   const loader = loaders[name]
   if (!loader) throw new Error(`[loadSceneData] unknown dataset: ${name}`)
   const mod = await loader()
@@ -23,6 +31,9 @@ export async function loadJson(name) {
 }
 
 export async function loadSceneBundle(names) {
+  if (isSceneApiEnabled()) {
+    return loadSceneBundleFromApi(names)
+  }
   const entries = await Promise.all(
     names.map(async (name) => [name, await loadJson(name)]),
   )

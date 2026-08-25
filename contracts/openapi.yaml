@@ -1,0 +1,169 @@
+openapi: 3.1.0
+info:
+  title: atx-perform API
+  version: "1.0"
+  description: |
+    前后端分离契约。Demo 轨由 FileSceneRepository 读 data/1-*.json；
+    Live 轨（PG / DeepAgent / 技能落盘）为模块占位，返回 NOT_IMPLEMENTED。
+servers:
+  - url: http://127.0.0.1:8000/api/v1
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: 健康检查
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, status, data_mode, contract_version]
+                properties:
+                  ok: { type: boolean, enum: [true] }
+                  status: { type: string, enum: [ok] }
+                  data_mode: { type: string, enum: [demo, live] }
+                  contract_version: { type: string }
+  /scenes/{scene_key}:
+    get:
+      operationId: getScene
+      summary: 按幕加载数据集
+      parameters:
+        - in: path
+          name: scene_key
+          required: true
+          schema: { type: string, enum: ["0", "1", "2", "3", "4", "5"] }
+      responses:
+        "200":
+          description: 幕数据包
+          content:
+            application/json:
+              schema: { $ref: "./schemas/scene-bundle.json" }
+        "404":
+          description: 未知幕
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /scenes/bundle:
+    get:
+      operationId: getSceneBundle
+      summary: 按数据集名加载（对齐 loadSceneBundle）
+      parameters:
+        - in: query
+          name: names
+          required: true
+          schema: { type: string }
+          description: 逗号分隔，如 locate,channelization
+      responses:
+        "200":
+          description: 数据集对象
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [source, contract_version, generated_at, datasets]
+                properties:
+                  source: { type: string, enum: [demo, live] }
+                  contract_version: { type: string }
+                  generated_at: { type: string, format: date-time }
+                  datasets:
+                    type: object
+                    additionalProperties: { type: object }
+        "400":
+          description: 非法数据集名
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /intersection/load:
+    post:
+      operationId: loadIntersection
+      summary: PG 预载路口（占位）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                inter_id: { type: string }
+                intersection_name: { type: string }
+                time_range: { type: string }
+                direction: { type: string }
+                movement: { type: string }
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /traffic/color-links:
+    get:
+      operationId: getTrafficColorLinks
+      summary: 路况着色（占位）
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /agent/run:
+    post:
+      operationId: runAgent
+      summary: 同步推演（占位）
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /agent/run/stream:
+    post:
+      operationId: runAgentStream
+      summary: SSE 推演（占位）
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /agent/plan/decision:
+    post:
+      operationId: submitPlanDecision
+      summary: 方案接受/拒绝（占位）
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /agent/plan/regenerate:
+    post:
+      operationId: regeneratePlan
+      summary: 方案重生成（占位）
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /agent/skill/solidify:
+    post:
+      operationId: solidifySkill
+      summary: 技能固化落盘（占位；开发期仍可用 Vite /api/skill/solidify）
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }
+  /voice/brief:
+    post:
+      operationId: postVoiceBrief
+      summary: 口播摘要（占位）
+      responses:
+        "501":
+          description: 模块尚未实现
+          content:
+            application/json:
+              schema: { $ref: "./schemas/error.json" }

@@ -104,6 +104,10 @@ const METERS_PER_UNIT = 10;
 const DEFAULT_INTER_ID = '6f9d6a722f3651';
 const FOCUS_RADIUS_UNITS = 400; // 2km = 200 Three.js单位
 
+const props = defineProps({
+  sceneDatasets: { type: Object, default: null },
+});
+
 /** 地图（含各幕地图特效工厂）初始化完成 */
 const emit = defineEmits(['ready']);
 
@@ -842,7 +846,12 @@ async function initInner() {
   {
     const { createAct2MapFx } = getActFxCompat();
     if (createAct2MapFx) {
-        act2Fx = createAct2MapFx({ project, roads: allRoads, intersections: allIntersections });
+        act2Fx = createAct2MapFx({
+          project,
+          roads: allRoads,
+          intersections: allIntersections,
+          channelization: props.sceneDatasets?.channelization,
+        });
       scene.add(act2Fx.group);
     }
   }
@@ -863,6 +872,7 @@ async function initInner() {
           ),
         },
         {
+          datasets: props.sceneDatasets,
           onComplete: () => {
             getActCompatExports().markFlowTraceRevealed?.();
             getActCompatExports().completeFlowTrace?.();
@@ -2722,7 +2732,12 @@ watch(act2Phase, (phase, prev) => {
     {
       const { createAct2MapFx } = getActFxCompat();
       if (createAct2MapFx) {
-        act2Fx = createAct2MapFx({ project, roads: allRoads, intersections: allIntersections });
+        act2Fx = createAct2MapFx({
+          project,
+          roads: allRoads,
+          intersections: allIntersections,
+          channelization: props.sceneDatasets?.channelization,
+        });
         scene.add(act2Fx.group);
         act2Fx.group.visible = true;
       }

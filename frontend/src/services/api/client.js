@@ -1,8 +1,18 @@
 /**
  * 统一 HTTP 客户端：非 2xx / 网络错误规整为 { ok: false }，不抛裸异常。
+ * VITE_API_BASE 为空时走同域 /api/v1（开发由 Vite 代理到 FastAPI）。
  */
 
-const BASE = '/api/v1';
+function apiOrigin() {
+  return String(import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+}
+
+export function apiUrl(path) {
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return `${apiOrigin()}${p}`;
+}
+
+const BASE = `${apiOrigin()}/api/v1`;
 
 /**
  * @typedef {{ ok: false, reason: string, detail?: unknown }} ApiError
@@ -59,7 +69,16 @@ export async function getJSON(path, params) {
         .join('&')}`
       : '';
     const res = await fetch(`${BASE}${path}${qs}`);
-    if (!res.ok) return { ok: false, reason: `http_${res.status}` };
+    if (!res.ok) {
+      let detail = null;
+      try {
+        detail = await res.json();
+      } catch {
+        /* ignore */
+      }
+      const reason = detail?.reason || `http_${res.status}`;
+      return { ok: false, reason, code: detail?.code, detail };
+    }
     return /** @type {T} */ (await res.json());
   } catch (e) {
     return { ok: false, reason: 'network_error', detail: String(e) };

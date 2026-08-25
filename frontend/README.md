@@ -5,7 +5,7 @@ Vue 3 + Vite。分幕独立调试，幕 0–5 可并行开发。
 - **幕 0 / 1 / 2**：three.js 3D 地图演绎（baseline 路网底图 + 走廊/溯源特效）
 - **幕 3 / 4 / 5**：面板式大屏（相位协调时距图与相序图、效果评估、技能固化）
 
-两类幕共用同一个壳：顶部步骤栏 + `?scene=` 路由，各自只读自己的 `data/1-*.json`。
+两类幕共用同一个壳：顶部步骤栏 + `?scene=` 路由。幕 JSON 默认由 `@data` 打包；开启 `VITE_SCENE_API=1` 后走后端 `/api/v1/scenes`（见 `src/services/gateways/sceneDataGateway.js`）。
 
 ## 启动
 
@@ -67,6 +67,8 @@ src/features/**  src/layers/**  src/mesh/**  src/geo/**   # 3D 运行时（幕 0
 
 默认关闭（`broadcastSilent`）：开发阶段只做地图与面板动作，避免播报卡住面板揭示顺序。
 需要幕 3/4/5 的预合成讲解与数字人字幕时，在 `frontend/.env.local` 里设 `VITE_TTS_ENABLED=true`。
+
+前后端联调：另开终端启动 `backend`（见仓库 `backend/README.md`）。Vite 已将 `/api/v1` 代理到 `127.0.0.1:8000`。变量模板见 `frontend/.env.example`。
 
 ## 幕间流转
 

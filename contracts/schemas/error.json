@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atx-perform.local/schemas/error.json",
+  "title": "ApiError",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "code", "reason", "trace_id"],
+  "properties": {
+    "ok": { "const": false },
+    "code": {
+      "type": "string",
+      "examples": [
+        "SCENE_NOT_FOUND",
+        "DATASET_NOT_ALLOWED",
+        "PATH_NOT_ALLOWED",
+        "NOT_IMPLEMENTED",
+        "INTERSECTION_NOT_FOUND"
+      ]
+    },
+    "reason": { "type": "string" },
+    "trace_id": { "type": "string" },
+    "detail": {}
+  }
+}

@@ -227,9 +227,14 @@ function heightForJingshiEw() {
  * @param {{ onHud?: Function, onComplete?: Function }} hooks
  */
 export async function createFlowTraceMapFx(runtime, mapCtx, hooks = {}) {
+  const injected = hooks.datasets || {};
   const [flowTrace, causeAnalysis] = await Promise.all([
-    fetchJson('/data/1-2-flow-trace.json'),
-    fetchJson('/data/1-2-cause-analysis.json'),
+    injected.flowTrace
+      ? Promise.resolve(injected.flowTrace)
+      : fetchJson('/data/1-2-flow-trace.json'),
+    injected.cause
+      ? Promise.resolve(injected.cause)
+      : fetchJson('/data/1-2-cause-analysis.json'),
   ]);
   const { roads, intersections, topology, getResolution } = mapCtx;
 
